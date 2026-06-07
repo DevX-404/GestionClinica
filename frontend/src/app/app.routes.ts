@@ -26,6 +26,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/dashboard/ecommerce/ecommerce.component').then(m => m.EcommerceComponent),
         title: 'Dashboard - Panel de Control'
       },
+      {
+        path: 'pacientes',
+        loadComponent: () => import('./pages/pacientes/pacientes').then(m => m.PacientesComponent),
+        title: 'Pacientes'
+      },
       // Aquí agregaremos en los siguientes pasos los hijos de 'pacientes' y 'medicos'
       {
         path: 'ejemplo',

@@ -1,0 +1,159 @@
+<div class="mx-auto max-w-7xl p-4 md:p-6 2xl:p-10">
+  
+  <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-2xl font-bold text-black dark:text-white">Gestión de Pacientes</h2>
+      <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Registra y administra los expedientes clínicos de la clínica</p>
+    </div>
+    <button (click)="openModal()" class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-6 py-3 font-medium text-white hover:bg-brand-600 transition text-sm shadow-theme-md">
+      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Nuevo Paciente
+    </button>
+  </div>
+
+  <div class="mb-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.02]">
+    <div class="relative w-full max-w-md">
+      <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      </span>
+      <input type="text" [(ngModel)]="filtroBusqueda" (input)="filtrar()" placeholder="Buscar por Nombre o DNI..." class="w-full rounded-lg border border-gray-300 bg-transparent py-2.5 pl-12 pr-4 text-sm text-black outline-none transition focus:border-brand-500 dark:border-gray-700 dark:text-white dark:focus:border-brand-500" />
+    </div>
+  </div>
+
+  <div class="rounded-2xl border border-gray-200 bg-white shadow-theme-xl dark:border-gray-800 dark:bg-white/[0.02] overflow-hidden">
+    <div class="max-w-full overflow-x-auto">
+      <table class="w-full table-auto text-left">
+        <thead>
+          <tr class="border-b border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.02]">
+            <th class="px-6 py-4 text-sm font-semibold text-gray-500 dark:text-gray-400">Documento/DNI</th>
+            <th class="px-6 py-4 text-sm font-semibold text-gray-500 dark:text-gray-400">Paciente</th>
+            <th class="px-6 py-4 text-sm font-semibold text-gray-500 dark:text-gray-400">Teléfono/Correo</th>
+            <th class="px-6 py-4 text-sm font-semibold text-gray-500 dark:text-gray-400">Estado</th>
+            <th class="px-6 py-4 text-sm font-semibold text-gray-500 dark:text-gray-400 text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+          @for (p of pacientesFiltrados; track p.idPaciente) {
+            <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors">
+              <td class="px-6 py-4">
+                <span class="block text-xs font-semibold text-gray-400">{{ p.tipoDocumento }}</span>
+                <span class="text-sm font-medium text-black dark:text-white">{{ p.dni }}</span>
+              </td>
+              <td class="px-6 py-4 text-sm font-medium text-black dark:text-white capitalize">
+                {{ p.nombres }} {{ p.apellidoPaterno }} {{ p.apellidoMaterno }}
+              </td>
+              <td class="px-6 py-4">
+                <span class="block text-sm text-black dark:text-white">{{ p.telefono }}</span>
+                <span class="block text-xs text-gray-400">{{ p.correo }}</span>
+              </td>
+              <td class="px-6 py-4">
+                <span [ngClass]="p.estado === 'ACTIVO' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'" class="inline-flex rounded-full px-3 py-1 text-xs font-medium uppercase">
+                  {{ p.estado }}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <div class="flex justify-end gap-3">
+                  <button (click)="openModal(p)" class="text-gray-400 hover:text-brand-500 transition">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                  </button>
+                  <button (click)="cambiarEstado(p)" class="text-gray-400 hover:text-red-500 transition">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="px-6 py-10 text-center text-sm text-gray-400">No se encontraron pacientes registrados en la clínica.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  @if (isModalOpen) {
+    <div class="fixed inset-0 z-99999 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+      <div class="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-xl dark:border-gray-800 dark:bg-gray-dark max-h-[90vh] overflow-y-auto">
+        
+        <div class="mb-6 flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-4">
+          <h3 class="text-xl font-bold text-black dark:text-white">{{ isEditing ? 'Modificar Historial de Paciente' : 'Apertura de Expediente de Paciente' }}</h3>
+          <button (click)="closeModal()" class="text-gray-400 hover:text-black dark:hover:text-white">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        @if (errorMsg) { <div class="mb-4 rounded-lg bg-red-500/10 p-3 text-sm text-red-500 font-medium text-center border border-red-500/20">{{ errorMsg }}</div> }
+        @if (successMsg) { <div class="mb-4 rounded-lg bg-green-500/10 p-3 text-sm text-green-500 font-medium text-center border border-green-500/20">{{ successMsg }}</div> }
+
+        <form (submit)="guardarPaciente()" class="space-y-4">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo de Documento</label>
+              <select name="tipoDoc" [(ngModel)]="pacienteForm.tipoDocumento" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm outline-none transition focus:border-brand-500 dark:border-gray-700 dark:bg-gray-900">
+                <option value="DNI">DNI (Perú)</option>
+                <option value="PASAPORTE">Pasaporte</option>
+                <option value="CEX">Carnet de Extranjería</option>
+              </select>
+            </div>
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Número de Documento</label>
+              <input type="text" name="dni" [(ngModel)]="pacienteForm.dni" [disabled]="isEditing" placeholder="Ej: 74635241" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm outline-none transition focus:border-brand-500 dark:border-gray-700 dark:bg-gray-900 disabled:opacity-50" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Nombres</label>
+              <input type="text" name="nombres" [(ngModel)]="pacienteForm.nombres" placeholder="Nombres del paciente" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm outline-none transition focus:border-brand-500 dark:border-gray-700 dark:bg-gray-900" />
+            </div>
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Apellido Paterno</label>
+              <input type="text" name="paterno" [(ngModel)]="pacienteForm.apellidoPaterno" placeholder="Apellido paterno" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm outline-none transition focus:border-brand-500 dark:border-gray-700 dark:bg-gray-900" />
+            </div>
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Apellido Materno</label>
+              <input type="text" name="materno" [(ngModel)]="pacienteForm.apellidoMaterno" placeholder="Apellido materno" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm outline-none transition focus:border-brand-500 dark:border-gray-700 dark:bg-gray-900" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha de Nacimiento</label>
+              <input type="date" name="fechaNac" [(ngModel)]="pacienteForm.fechaNacimiento" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm outline-none transition focus:border-brand-500 dark:border-gray-700 dark:bg-gray-900" />
+            </div>
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Sexo Biológico</label>
+              <select name="sexo" [(ngModel)]="pacienteForm.sexo" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm outline-none transition focus:border-brand-500 dark:border-gray-700 dark:bg-gray-900">
+                <option value="MASCULINO">Masculino</option>
+                <option value="FEMENINO">Femenino</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Teléfono</label>
+              <input type="text" name="telefono" [(ngModel)]="pacienteForm.telefono" placeholder="Ej: 987654321" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm outline-none transition focus:border-brand-500 dark:border-gray-700 dark:bg-gray-900" />
+            </div>
+            <div>
+              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Correo Electrónico</label>
+              <input type="email" name="correo" [(ngModel)]="pacienteForm.correo" placeholder="paciente@correo.com" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm outline-none transition focus:border-brand-500 dark:border-gray-700 dark:bg-gray-900" />
+            </div>
+          </div>
+
+          <div>
+            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Dirección Domiciliaria</label>
+            <input type="text" name="direccion" [(ngModel)]="pacienteForm.direccion" placeholder="Dirección actual de residencia" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm outline-none transition focus:border-brand-500 dark:border-gray-700 dark:bg-gray-900" />
+          </div>
+
+          <div class="flex justify-end gap-4 border-t border-gray-200 dark:border-gray-800 pt-4 mt-6">
+            <button type="button" (click)="closeModal()" class="rounded-lg border border-gray-300 px-5 py-2.5 font-medium text-gray-700 hover:bg-gray-50 text-sm transition">Cancelar</button>
+            <button type="submit" class="rounded-lg bg-brand-500 px-5 py-2.5 font-medium text-white hover:bg-brand-600 text-sm transition">Guardar Expediente</button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  }
+</div>
