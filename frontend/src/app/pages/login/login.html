@@ -1,0 +1,9 @@
+@if (errorMsg) {
+  <div class="mb-4 rounded-lg bg-red-500/10 p-3 text-sm text-red-500 font-medium text-center">
+    {{ errorMsg }}
+  </div>
+}
+
+<input type="text" name="user" [(ngModel)]="usernameTxt" placeholder="ejemplo_admin" ... />
+
+<input type="password" name="pass" [(ngModel)]="passwordTxt" placeholder="••••••••" ... />
