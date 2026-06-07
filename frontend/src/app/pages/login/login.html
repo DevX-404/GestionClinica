@@ -1,9 +1,65 @@
-@if (errorMsg) {
-  <div class="mb-4 rounded-lg bg-red-500/10 p-3 text-sm text-red-500 font-medium text-center">
-    {{ errorMsg }}
+<div class="flex min-h-screen items-center justify-center bg-gray-50 p-4 dark:bg-gray-dark">
+  <div class="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-xl dark:border-gray-800 dark:bg-white/[0.02] sm:p-8">
+    
+    <div class="mb-8 text-center">
+      <h1 class="text-2xl font-bold text-black dark:text-white mb-2">
+        Gestión<span class="text-brand-500">Clínica</span>
+      </h1>
+      <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+        Ingresa tus credenciales para acceder al sistema
+      </p>
+    </div>
+
+    @if (errorMsg) {
+      <div class="mb-5 rounded-lg bg-red-500/10 p-3 text-sm text-red-500 font-medium text-center border border-red-500/20">
+        {{ errorMsg }}
+      </div>
+    }
+
+    <form (submit)="onLogin($event)" class="space-y-5">
+      
+      <div>
+        <label class="mb-2.5 block font-medium text-gray-700 text-sm dark:text-gray-300">
+          Nombre de Usuario
+        </label>
+        <input 
+          type="text" 
+          name="username" 
+          [(ngModel)]="usernameTxt" 
+          placeholder="Ej: luis_admin" 
+          [disabled]="loading"
+          class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-black outline-none transition focus:border-brand-500 dark:border-gray-700 dark:text-white dark:focus:border-brand-500 disabled:opacity-50" />
+      </div>
+
+      <div>
+        <label class="mb-2.5 block font-medium text-gray-700 text-sm dark:text-gray-300">
+          Contraseña
+        </label>
+        <input 
+          type="password" 
+          name="password" 
+          [(ngModel)]="passwordTxt" 
+          placeholder="••••••••" 
+          [disabled]="loading"
+          class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-black outline-none transition focus:border-brand-500 dark:border-gray-700 dark:text-white dark:focus:border-brand-500 disabled:opacity-50" />
+      </div>
+
+      <button 
+        type="submit" 
+        [disabled]="loading"
+        class="w-full rounded-lg bg-brand-500 py-3 font-medium text-white transition hover:bg-brand-600 text-sm shadow-theme-md disabled:opacity-50 flex items-center justify-center gap-2">
+        
+        @if (loading) {
+          <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Autenticando...
+        } @else {
+          Iniciar Sesión
+        }
+      </button>
+
+    </form>
   </div>
-}
-
-<input type="text" name="user" [(ngModel)]="usernameTxt" placeholder="ejemplo_admin" ... />
-
-<input type="password" name="pass" [(ngModel)]="passwordTxt" placeholder="••••••••" ... />
+</div>

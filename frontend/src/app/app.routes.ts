@@ -3,10 +3,18 @@ import { AppLayoutComponent } from './shared/layout/app-layout/app-layout.compon
 import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
+  // 1. Ruta pública e independiente (A pantalla completa, sin Sidebar ni Header)
+  {
+    path: 'login',
+    loadComponent: () => import('./pages/login/login').then(m => m.LoginComponent),
+    title: 'Iniciar Sesión - Gestión Clínica'
+  },
+
+  // 2. Rutas protegidas dentro del Layout de la Clínica (Llevan Sidebar, Header y Navbar)
   {
     path: '',
     component: AppLayoutComponent,
-    canActivate: [authGuard],
+    canActivate: [authGuard], // Protege todo este bloque de accesos no autorizados
     children: [
       {
         path: '',
@@ -14,16 +22,9 @@ export const routes: Routes = [
         pathMatch: 'full'
       },
       {
-        path: 'login',
-        loadComponent: () => import('./pages/login/login').then(m => m.LoginComponent),
-        title: 'Iniciar Sesión'
-      },
-      {
         path: 'dashboard',
-        loadComponent: () =>
-          import('./pages/dashboard/ecommerce/ecommerce.component').then(
-            (m) => m.EcommerceComponent
-          )
+        loadComponent: () => import('./pages/dashboard/ecommerce/ecommerce.component').then(m => m.EcommerceComponent),
+        title: 'Dashboard - Panel de Control'
       },
       // Aquí agregaremos en los siguientes pasos los hijos de 'pacientes' y 'medicos'
       {
