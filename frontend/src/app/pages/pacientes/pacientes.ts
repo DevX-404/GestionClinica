@@ -28,6 +28,10 @@ export class PacientesComponent implements OnInit {
   errorMsg: string = '';
   successMsg: string = '';
 
+  isLoading: boolean = false; // <-- Control de carga
+  globalMsg: string = ''; // <-- Mensaje para la vista principal
+  globalMsgType: 'success' | 'error' = 'success';
+
   constructor(private pacienteService: PacienteService) {}
 
   ngOnInit(): void {
@@ -35,12 +39,18 @@ export class PacientesComponent implements OnInit {
   }
 
   cargarPacientes(): void {
+    this.isLoading = true; // Inicia la carga
     this.pacienteService.listarTodos().subscribe({
       next: (data) => {
         this.pacientes = data;
         this.pacientesFiltrados = data;
+        this.isLoading = false; // Termina la carga
       },
-      error: (err) => console.error('Error al traer pacientes:', err)
+      error: (err) => {
+        console.error('Error al traer pacientes:', err);
+        this.isLoading = false;
+        this.mostrarMensajeGlobal('Error al conectar con el servidor. Intenta de nuevo.', 'error');
+      }
     });
   }
 
@@ -77,22 +87,20 @@ export class PacientesComponent implements OnInit {
 
   guardarPaciente(): void {
     if (this.isEditing && this.pacienteForm.idPaciente) {
-      // Actualizar paciente
       this.pacienteService.actualizar(this.pacienteForm.idPaciente, this.pacienteForm).subscribe({
         next: () => {
-          this.successMsg = '¡Paciente actualizado con éxito!';
+          this.closeModal(); // Cierra al instante
+          this.mostrarMensajeGlobal('¡Paciente actualizado con éxito!', 'success');
           this.cargarPacientes();
-          setTimeout(() => this.closeModal(), 1500);
         },
-        error: (err) => this.errorMsg = 'No se pudo actualizar al paciente.'
+        error: (err) => this.errorMsg = 'No se pudo actualizar al paciente.' // El error sí se queda en el modal
       });
     } else {
-      // Registrar nuevo paciente
       this.pacienteService.registrar(this.pacienteForm).subscribe({
         next: () => {
-          this.successMsg = '¡Paciente registrado e Historia Clínica inicializada!';
+          this.closeModal(); // Cierra al instante
+          this.mostrarMensajeGlobal('¡Paciente registrado e Historia Clínica inicializada!', 'success');
           this.cargarPacientes();
-          setTimeout(() => this.closeModal(), 1500);
         },
         error: (err) => {
           if (err.status === 400) {
@@ -103,6 +111,12 @@ export class PacientesComponent implements OnInit {
         }
       });
     }
+  }
+
+  mostrarMensajeGlobal(msg: string, type: 'success' | 'error'): void {
+    this.globalMsg = msg;
+    this.globalMsgType = type;
+    setTimeout(() => this.globalMsg = '', 4000); // Desaparece solo a los 4 segundos
   }
 
   cambiarEstado(paciente: Paciente): void {
