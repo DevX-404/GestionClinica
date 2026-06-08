@@ -55,4 +55,8 @@ public class Medico {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_especialidad", nullable = false)
     private Especialidad specialty;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "id_usuario", referencedColumnName = "idUsuario")
+    private Usuario usuario;
 }

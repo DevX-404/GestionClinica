@@ -4,10 +4,14 @@ import com.example.GestionClinica.dto.MedicoDTO;
 import com.example.GestionClinica.exception.ResourceNotFoundException;
 import com.example.GestionClinica.model.Especialidad;
 import com.example.GestionClinica.model.Medico;
+import com.example.GestionClinica.model.Usuario;
+import com.example.GestionClinica.model.Rol;
 import com.example.GestionClinica.repository.EspecialidadRepository;
 import com.example.GestionClinica.repository.MedicoRepository;
+import com.example.GestionClinica.repository.UsuarioRepository;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +26,12 @@ public class MedicoServiceImpl implements MedicoService {
 
     @Autowired
     private EspecialidadRepository specialtyRepository;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository; // <-- Añadido
+
+    @Autowired
+    private PasswordEncoder passwordEncoder; // <-- Añadido
 
     @Override
     @Transactional(readOnly = true)
@@ -42,10 +52,15 @@ public class MedicoServiceImpl implements MedicoService {
     }
 
     @Override
-    @Transactional
+    @Transactional // Si falla la creación del usuario, se hace un rollback y no se crea el médico
     public MedicoDTO registrar(MedicoDTO dto) {
         if (medicoRepository.existsByCodigoColegiatura(dto.getCodigoColegiatura())) {
             throw new IllegalArgumentException("El código de colegiatura ya está registrado.");
+        }
+        
+        // Validar que el correo no esté en uso por otro usuario
+        if (usuarioRepository.existsByUsername(dto.getCorreo()) || usuarioRepository.existsByEmail(dto.getCorreo())) {
+            throw new IllegalArgumentException("El correo ya está registrado en el sistema de usuarios.");
         }
         
         Especialidad esp = specialtyRepository.findById(dto.getIdEspecialidad())
@@ -56,6 +71,16 @@ public class MedicoServiceImpl implements MedicoService {
         medico.setSpecialty(esp);
         medico.setEstado("ACTIVO");
         
+        // Lógica automática de creación de Usuario
+        Usuario nuevoUsuario = new Usuario();
+        nuevoUsuario.setUsername(dto.getCorreo()); // Usamos el correo como username
+        nuevoUsuario.setEmail(dto.getCorreo());
+        nuevoUsuario.setPassword(passwordEncoder.encode(dto.getCodigoColegiatura())); // Contraseña por defecto
+        nuevoUsuario.setRol(Rol.MEDICO);
+        nuevoUsuario.setActivo(true);
+        
+        medico.setUsuario(nuevoUsuario); // Vinculamos ambas entidades
+
         return convertirADto(medicoRepository.save(medico));
     }
 
@@ -78,9 +103,18 @@ public class MedicoServiceImpl implements MedicoService {
         medico.setApellidoPaterno(dto.getApellidoPaterno());
         medico.setApellidoMaterno(dto.getApellidoMaterno());
         medico.setTelefono(dto.getTelefono());
-        medico.setCorreo(dto.getCorreo());
         medico.setEstadoDisponibilidad(dto.getEstadoDisponibilidad());
         medico.setSpecialty(esp);
+        
+        // Si cambió el correo, actualizamos el username/email del usuario asociado
+        if (medico.getUsuario() != null && !medico.getCorreo().equals(dto.getCorreo())) {
+            if (usuarioRepository.existsByUsername(dto.getCorreo()) || usuarioRepository.existsByEmail(dto.getCorreo())) {
+                throw new IllegalArgumentException("El nuevo correo ya está en uso por otro usuario.");
+            }
+            medico.getUsuario().setUsername(dto.getCorreo());
+            medico.getUsuario().setEmail(dto.getCorreo());
+        }
+        medico.setCorreo(dto.getCorreo());
 
         return convertirADto(medicoRepository.save(medico));
     }
@@ -90,7 +124,15 @@ public class MedicoServiceImpl implements MedicoService {
     public void eliminarLogico(Long id) {
         Medico medico = medicoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Médico no encontrado con el ID: " + id));
+        
         medico.setEstado("INACTIVO");
+        medico.setEstadoDisponibilidad("INACTIVO");
+        
+        // Desactivamos el acceso al sistema del médico
+        if (medico.getUsuario() != null) {
+            medico.getUsuario().setActivo(false);
+        }
+        
         medicoRepository.save(medico);
     }
 
