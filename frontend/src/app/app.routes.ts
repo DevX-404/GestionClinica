@@ -51,6 +51,16 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/citas/citas.component').then(m => m.CitasComponent),
         title: 'Citas Médicas'
       },
+      {
+        path: 'pagos',
+        loadComponent: () => import('./pages/pagos/pagos.component').then(m => m.PagosComponent),
+        title: 'Pagos'
+      },
+      {
+        path: 'auditoria',
+        loadComponent: () => import('./pages/auditoria/auditoria.component').then(m => m.AuditoriaComponent),
+        title: 'Registro de Auditoría'
+      },
       // Aquí agregaremos en los siguientes pasos los hijos de 'pacientes' y 'medicos'
       {
         path: 'ejemplo',

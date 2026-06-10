@@ -1,0 +1,61 @@
+<div class="mx-auto max-w-7xl p-4 md:p-6 2xl:p-10">
+  
+  <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-2xl font-bold text-black dark:text-white flex items-center gap-2">
+        <svg class="h-6 w-6 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+        Registro de Auditoría (Logs)
+      </h2>
+      <p class="text-sm text-gray-500">Trazabilidad de seguridad de las operaciones del sistema.</p>
+    </div>
+    <div class="flex items-center">
+      <input type="text" [(ngModel)]="searchTerm" (input)="filtrar()" placeholder="Filtrar por usuario, acción o módulo..."
+        class="w-full rounded-lg border border-gray-300 bg-transparent px-5 py-2.5 outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 sm:w-80" />
+    </div>
+  </div>
+
+  <div class="rounded-2xl border border-gray-200 bg-white shadow-theme-sm dark:border-gray-800 dark:bg-gray-900 overflow-hidden">
+    <div class="max-w-full overflow-x-auto">
+      <table class="w-full table-auto text-left">
+        <thead>
+          <tr class="border-b border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.02]">
+            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">Fecha y Hora</th>
+            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">Usuario</th>
+            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">Módulo Afectado</th>
+            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">Tipo de Acción</th>
+            <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">Detalle del Sistema</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+          @if (isLoading) {
+            <tr><td colspan="5" class="px-6 py-10 text-center text-sm font-medium text-brand-500 animate-pulse">Analizando trazas de seguridad...</td></tr>
+          } @else {
+            @for (log of logsFiltrados; track log.idAuditoria) {
+              <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.01]">
+                <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-300">
+                  {{ log.fechaHora | date:'dd/MM/yyyy HH:mm:ss' }}
+                </td>
+                <td class="px-6 py-4 text-sm font-bold text-gray-900 dark:text-white">
+                  {{ log.username }}
+                </td>
+                <td class="px-6 py-4 text-sm font-semibold text-brand-600 dark:text-brand-400 uppercase tracking-wide">
+                  {{ log.entidad }}
+                </td>
+                <td class="px-6 py-4">
+                  <span [ngClass]="getColorAccion(log.accion)" class="inline-flex border rounded-md px-2.5 py-0.5 text-[10px] font-bold uppercase">
+                    {{ log.accion }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-xs text-gray-500 font-mono">
+                  {{ log.detalle }}
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="px-6 py-10 text-center text-sm text-gray-400">No hay movimientos registrados.</td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
