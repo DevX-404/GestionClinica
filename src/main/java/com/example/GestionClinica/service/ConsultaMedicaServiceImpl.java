@@ -18,10 +18,14 @@ public class ConsultaMedicaServiceImpl implements ConsultaMedicaService {
 
     @Override
     @Transactional
-    public ConsultaMedica registrarAtencionMedica(Long idCita, String sintomas, String diagnostico, String observaciones) {
+    public ConsultaMedica registrarAtencionMedica(Long idCita, String sintomas, String diagnostico, String observaciones , String tratamiento) {
         // 1. Validar que la cita exista
         CitaMedica cita = citaRepository.findById(idCita)
                 .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada con ID: " + idCita));
+//MODIFIQUE ACA PARA QUE NO SE PUEDA ATENDER UNA CITA CANCELADA O YA ATENDIDA
+            if (cita.getEstado().equalsIgnoreCase("CANCELADA") || cita.getEstado().equalsIgnoreCase("ATENDIDA")) {
+            throw new IllegalStateException("No se puede atender una cita en estado: " + cita.getEstado());
+        }
 
         // 2. Obtener u optimizar la creación de la Historia Clínica del Paciente
         HistoriaClinica historia = historiaRepository.findByPacienteIdPaciente(cita.getPaciente().getIdPaciente())

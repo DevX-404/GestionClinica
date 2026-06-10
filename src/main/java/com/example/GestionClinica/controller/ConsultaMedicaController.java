@@ -20,9 +20,10 @@ public class ConsultaMedicaController {
     public ResponseEntity<ConsultaMedica> registrarAtencion(@PathVariable Long idCita, @RequestBody Map<String, String> body) {
         String sintomas = body.get("sintomas");
         String diagnostico = body.get("diagnostico");
+        String tratamiento = body.get("tratamiento");
         String observaciones = body.get("observaciones");
 
-        ConsultaMedica nuevaConsulta = consultaService.registrarAtencionMedica(idCita, sintomas, diagnostico, observaciones);
+        ConsultaMedica nuevaConsulta = consultaService.registrarAtencionMedica(idCita, sintomas, diagnostico, observaciones , tratamiento);
         return new ResponseEntity<>(nuevaConsulta, HttpStatus.CREATED);
     }
 

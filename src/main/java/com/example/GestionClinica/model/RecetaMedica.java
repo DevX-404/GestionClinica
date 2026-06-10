@@ -18,13 +18,13 @@ public class RecetaMedica {
     @Column(nullable = false)
     private LocalDate fechaEmision = LocalDate.now();
 
-    @Column(length = 255)
+    @Column(columnDefinition = "TEXT")
     private String observaciones;
 
     @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_consulta", nullable = false, unique = true)
     private ConsultaMedica consultaMedica;
 
-    @OneToMany(mappedBy = "recetaMedica", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "recetaMedica", cascade = CascadeType.ALL, fetch = FetchType.EAGER , orphanRemoval = true)
     private List<DetalleReceta> detalles = new ArrayList<>();
 }
