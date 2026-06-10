@@ -1,0 +1,149 @@
+<div class="mx-auto max-w-7xl p-4 md:p-6 2xl:p-10">
+  
+  <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-2xl font-bold text-black dark:text-white">Programación de Citas</h2>
+      <p class="text-sm text-gray-500">Gestiona las atenciones médicas y la disponibilidad de los pacientes.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <input type="text" [(ngModel)]="searchTerm" (input)="filtrar()" placeholder="Buscar paciente o médico..."
+        class="w-full rounded-lg border border-gray-300 bg-transparent px-5 py-2.5 outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:focus:border-brand-500 sm:w-64" />
+      <button (click)="openModal()" class="flex items-center gap-2 rounded-lg bg-brand-500 px-5 py-2.5 font-medium text-white hover:bg-brand-600 transition-colors">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        Agendar Cita
+      </button>
+    </div>
+  </div>
+
+  @if (globalMsg) {
+    <div [ngClass]="globalMsgType === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'" class="mb-4 rounded-lg border p-4 text-base font-medium shadow-sm transition-all">
+      {{ globalMsg }}
+    </div>
+  }
+
+  <div class="rounded-2xl border border-gray-200 bg-white shadow-theme-xl dark:border-gray-800 dark:bg-white/[0.02] overflow-hidden">
+    <div class="max-w-full overflow-x-auto">
+      <table class="w-full table-auto text-left">
+        <thead>
+          <tr class="border-b border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.02]">
+            <th class="px-6 py-4 text-base font-semibold text-gray-500">Paciente</th>
+            <th class="px-6 py-4 text-base font-semibold text-gray-500">Especialidad / Médico</th>
+            <th class="px-6 py-4 text-base font-semibold text-gray-500">Fecha y Hora</th>
+            <th class="px-6 py-4 text-base font-semibold text-gray-500">Estado</th>
+            <th class="px-6 py-4 text-base font-semibold text-gray-500 text-center">Gestión</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+          @if (isLoading) {
+            <tr><td colspan="5" class="px-6 py-10 text-center text-base text-brand-500 font-medium animate-pulse">Cargando registros...</td></tr>
+          } @else {
+            @for (c of citasFiltradas; track c.idCita) {
+              <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors">
+                <td class="px-6 py-4 text-base font-bold text-gray-900 dark:text-white">{{ c.nombreCompletoPaciente }}</td>
+                <td class="px-6 py-4">
+                  <span class="block text-sm font-semibold text-brand-500">{{ c.nombreEspecialidad }}</span>
+                  <span class="block text-base text-gray-700 dark:text-gray-300">Dr. {{ c.nombreCompletoMedico }}</span>
+                </td>
+                <td class="px-6 py-4">
+                  <span class="block text-base font-medium text-gray-900 dark:text-white">{{ c.fecha }}</span>
+                  <span class="block text-sm text-gray-500">{{ c.hora.substring(0,5) }} hrs</span>
+                </td>
+                <td class="px-6 py-4">
+                  <span [ngClass]="{
+                    'bg-yellow-100 text-yellow-800 border-yellow-200': c.estado === 'PENDIENTE',
+                    'bg-blue-100 text-blue-800 border-blue-200': c.estado === 'CONFIRMADA',
+                    'bg-green-100 text-green-800 border-green-200': c.estado === 'ATENDIDA',
+                    'bg-red-100 text-red-800 border-red-200': c.estado === 'CANCELADA'
+                  }" class="inline-flex border rounded-md px-3 py-1 text-xs font-bold uppercase tracking-wider">
+                    {{ c.estado }}
+                  </span>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="flex items-center justify-center gap-2">
+                    @if (c.estado === 'PENDIENTE') {
+                      <button (click)="cambiarEstado(c.idCita!, 'CONFIRMADA')" title="Confirmar Asistencia" class="text-blue-500 hover:text-blue-700 bg-blue-50 dark:bg-blue-500/10 p-2 rounded-lg transition-colors">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                      </button>
+                      <button (click)="cambiarEstado(c.idCita!, 'CANCELADA')" title="Cancelar Cita" class="text-red-500 hover:text-red-700 bg-red-50 dark:bg-red-500/10 p-2 rounded-lg transition-colors">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="px-6 py-10 text-center text-base text-gray-400">No hay citas registradas en el sistema.</td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  @if (isModalOpen) {
+    <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm transition-all">
+      <div class="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900">
+        
+        <div class="mb-5 flex items-center justify-between border-b pb-3 dark:border-gray-800">
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white">Agendar Nueva Cita</h3>
+          <button (click)="closeModal()" class="text-gray-400 hover:text-gray-700 dark:hover:text-white text-2xl">&times;</button>
+        </div>
+
+        @if (errorMsg) {
+          <div class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 border border-red-200">{{ errorMsg }}</div>
+        }
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="md:col-span-2">
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Paciente *</label>
+            <select [(ngModel)]="citaForm.idPaciente" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:border-brand-500">
+              <option [ngValue]="0" disabled>Seleccione el paciente...</option>
+              @for (p of pacientes; track p.idPaciente) {
+                <option [ngValue]="p.idPaciente">{{ p.dni }} - {{ p.nombres }} {{ p.apellidoPaterno }} {{ p.apellidoMaterno }}</option>
+              }
+            </select>
+          </div>
+
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Especialidad Requerida *</label>
+            <select [(ngModel)]="citaForm.idEspecialidad" (change)="onEspecialidadChange()" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:border-brand-500">
+              <option [ngValue]="0" disabled>Elija la especialidad</option>
+              @for (e of especialidades; track e.idEspecialidad) {
+                <option [ngValue]="e.idEspecialidad">{{ e.nombre }}</option>
+              }
+            </select>
+          </div>
+
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Médico Asignado *</label>
+            <select [(ngModel)]="citaForm.idMedico" [disabled]="!citaForm.idEspecialidad" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:border-brand-500 disabled:opacity-50">
+              <option [ngValue]="0" disabled>Elija al doctor</option>
+              @for (m of medicosFiltradosPorEspecialidad; track m.idMedico) {
+                <option [ngValue]="m.idMedico">Dr. {{ m.nombres }} {{ m.apellidoPaterno }}</option>
+              }
+            </select>
+          </div>
+
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha de la Cita *</label>
+            <input type="date" [(ngModel)]="citaForm.fecha" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:border-brand-500" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Hora *</label>
+            <input type="time" [(ngModel)]="citaForm.hora" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:border-brand-500" />
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Motivo de la Consulta</label>
+            <textarea [(ngModel)]="citaForm.motivoConsulta" rows="2" placeholder="Ej: Dolor abdominal recurrente..." class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:border-brand-500"></textarea>
+          </div>
+        </div>
+
+        <div class="mt-6 flex justify-end gap-3 border-t pt-4 dark:border-gray-800">
+          <button (click)="closeModal()" class="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 transition-colors">Cancelar</button>
+          <button (click)="guardarCita()" class="rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600 shadow-sm transition-colors">Confirmar Cita</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
