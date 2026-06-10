@@ -41,6 +41,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/especialidades/especialidades.component').then(m => m.EspecialidadesComponent),
         title: 'Especialidades'
       },
+      {
+        path: 'agenda',
+        loadComponent: () => import('./pages/agenda/agenda.component').then(m => m.AgendaComponent),
+        title: 'Agenda Médica'
+      },
       // Aquí agregaremos en los siguientes pasos los hijos de 'pacientes' y 'medicos'
       {
         path: 'ejemplo',

@@ -3,8 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MedicoService } from '../../shared/services/medico.service';
 import { EspecialidadService } from '../../shared/services/especialidad.service';
+import { HorarioMedicoService } from '../../shared/services/horario-medico.service';
 import { Medico } from '../../shared/models/medico.model';
 import { Especialidad } from '../../shared/models/especialidad.model';
+import { HorarioMedico } from '../../shared/models/horario-medico.model';
 
 @Component({
   selector: 'app-medicos',
@@ -15,25 +17,40 @@ import { Especialidad } from '../../shared/models/especialidad.model';
 export class MedicosComponent implements OnInit {
   private medicoService = inject(MedicoService);
   private especialidadService = inject(EspecialidadService);
+  private horarioService = inject(HorarioMedicoService);
 
   medicos: Medico[] = [];
   medicosFiltrados: Medico[] = [];
   especialidades: Especialidad[] = [];
+  horarios: HorarioMedico[] = [];
   
   searchTerm: string = '';
   isLoading: boolean = false;
+  isLoadingHorarios: boolean = false;
   
-  // Mensajes Globales
+  // Alertas Globales
   globalMsg: string = '';
   globalMsgType: 'success' | 'error' = 'success';
 
-  // Modal
+  // Modal Médico
   isModalOpen: boolean = false;
   isEditing: boolean = false;
   errorMsg: string = '';
-
-  // Formulario inicial
   medicoForm: Medico = this.resetForm();
+
+  // Modal Horarios
+  isScheduleModalOpen: boolean = false;
+  medicoSeleccionado?: Medico;
+  errorScheduleMsg: string = '';
+  
+  // Formulario interno de horario
+  horarioForm = {
+    diaSemana: 'LUNES',
+    horaInicio: '',
+    horaFin: ''
+  };
+
+  diasSemana: string[] = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
 
   ngOnInit(): void {
     this.cargarEspecialidades();
@@ -55,7 +72,7 @@ export class MedicosComponent implements OnInit {
         this.medicosFiltrados = data;
         this.isLoading = false;
       },
-      error: (err) => {
+      error: () => {
         this.isLoading = false;
         this.mostrarMensajeGlobal('Error al cargar la lista de médicos.', 'error');
       }
@@ -71,6 +88,7 @@ export class MedicosComponent implements OnInit {
     );
   }
 
+  // Métodos del Modal de Médico
   openModal(medico?: Medico): void {
     this.errorMsg = '';
     if (medico) {
@@ -100,30 +118,91 @@ export class MedicosComponent implements OnInit {
           this.mostrarMensajeGlobal('Médico actualizado con éxito.', 'success');
           this.cargarMedicos();
         },
-        error: (err) => this.errorMsg = 'Error al actualizar: ' + (err.error?.message || 'Revisa los datos.')
+        error: (err) => this.errorMsg = err.error?.message || 'Error al actualizar.'
       });
     } else {
       this.medicoService.registrar(this.medicoForm).subscribe({
         next: () => {
           this.closeModal();
-          this.mostrarMensajeGlobal('Médico registrado y cuenta de usuario creada.', 'success');
+          this.mostrarMensajeGlobal('Médico registrado y cuenta creada con su correo.', 'success');
           this.cargarMedicos();
         },
-        error: (err) => this.errorMsg = 'Error al registrar: ' + (err.error?.message || 'El correo o colegiatura ya existe.')
+        error: (err) => this.errorMsg = err.error?.message || 'El correo o colegiatura ya existe.'
       });
     }
   }
 
   eliminarMedico(id: number): void {
-    if (confirm('¿Estás seguro de dar de baja a este médico? Se deshabilitará su acceso al sistema.')) {
+    if (confirm('¿Estás seguro de dar de baja a este médico?')) {
       this.medicoService.eliminar(id).subscribe({
         next: () => {
-          this.mostrarMensajeGlobal('Médico dado de baja exitosamente.', 'success');
+          this.mostrarMensajeGlobal('Médico deshabilitado del sistema.', 'success');
           this.cargarMedicos();
         },
-        error: () => this.mostrarMensajeGlobal('No se pudo eliminar al médico.', 'error')
+        error: () => this.mostrarMensajeGlobal('No se pudo procesar la baja del médico.', 'error')
       });
     }
+  }
+
+  // Métodos del Modal de Horarios específicos
+  openScheduleModal(medico: Medico): void {
+    this.medicoSeleccionado = medico;
+    this.errorScheduleMsg = '';
+    this.horarioForm = { diaSemana: 'LUNES', horaInicio: '', horaFin: '' };
+    this.cargarHorariosDelMedico(medico.idMedico!);
+    this.isScheduleModalOpen = true;
+  }
+
+  closeScheduleModal(): void {
+    this.isScheduleModalOpen = false;
+  }
+
+  cargarHorariosDelMedico(idMedico: number): void {
+    this.isLoadingHorarios = true;
+    this.horarioService.listarPorMedico(idMedico).subscribe({
+      next: (data) => {
+        this.horarios = data;
+        this.isLoadingHorarios = false;
+      },
+      error: () => {
+        this.isLoadingHorarios = false;
+        this.errorScheduleMsg = 'No se pudieron recuperar los horarios del servidor.';
+      }
+    });
+  }
+
+  agregarHorario(): void {
+    if (!this.horarioForm.horaInicio || !this.horarioForm.horaFin) {
+      this.errorScheduleMsg = 'Define las horas de inicio y fin del turno.';
+      return;
+    }
+    this.errorScheduleMsg = '';
+
+    // Enviar DTO mapeado al Backend (formato HH:mm:ss que requiere LocalTime)
+    const nuevoHorario: HorarioMedico = {
+      idMedico: this.medicoSeleccionado!.idMedico!,
+      diaSemana: this.horarioForm.diaSemana,
+      horaInicio: this.horarioForm.horaInicio + ':00',
+      horaFin: this.horarioForm.horaFin + ':00'
+    };
+
+    this.horarioService.registrar(nuevoHorario).subscribe({
+      next: () => {
+        this.horarioForm.horaInicio = '';
+        this.horarioForm.horaFin = '';
+        this.cargarHorariosDelMedico(this.medicoSeleccionado!.idMedico!);
+      },
+      error: (err) => {
+        this.errorScheduleMsg = err.error?.message || 'Error: El médico ya tiene horario este día o las horas son inválidas.';
+      }
+    });
+  }
+
+  eliminarHorario(idHorario: number): void {
+    this.horarioService.eliminar(idHorario).subscribe({
+      next: () => this.cargarHorariosDelMedico(this.medicoSeleccionado!.idMedico!),
+      error: () => this.errorScheduleMsg = 'No se pudo eliminar el horario.'
+    });
   }
 
   mostrarMensajeGlobal(msg: string, type: 'success' | 'error'): void {

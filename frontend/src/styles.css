@@ -865,3 +865,13 @@ pre[class*="language-"] {
 pre[class*="language-"].line-numbers {
   padding-left: 2.8em !important;
 }
+
+.calendar-container .fc {
+  @apply text-gray-700 dark:text-gray-300;
+}
+.calendar-container .fc-theme-standard td, .calendar-container .fc-theme-standard th {
+  @apply border-gray-200 dark:border-gray-800;
+}
+.calendar-container .fc-col-header-cell-cushion {
+  @apply text-sm font-semibold p-2;
+}
