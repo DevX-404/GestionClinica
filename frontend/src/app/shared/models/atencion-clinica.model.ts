@@ -1,5 +1,5 @@
-export interface DetalleReceta {
-  idDetalle?: number;
+export interface DetalleRecetaDTO {
+  idDetalleReceta?: number;
   medicamento: string;
   dosis: string;
   frecuencia: string;
@@ -8,16 +8,17 @@ export interface DetalleReceta {
 
 export interface RecetaMedicaDTO {
   idReceta?: number;
-  idConsulta?: number; // Se ligará al ID devuelto por la consulta
+  idConsulta: number; 
   fechaEmision?: string;
-  indicacionesGenerales?: string;
-  detalles: DetalleReceta[];
+  observaciones?: string; 
+  detalles: DetalleRecetaDTO[];
 }
 
 export interface ConsultaMedica {
   idConsulta?: number;
-  idCita: number;
+  idCita?: number;
   sintomas: string;
   diagnostico: string;
-  observaciones: string;
+  tratamiento: string; 
+  observaciones?: string;
 }

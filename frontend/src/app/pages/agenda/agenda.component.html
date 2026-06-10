@@ -21,7 +21,40 @@
 
     <div class="lg:col-span-4 flex flex-col gap-6">
       
-      @if (citaSeleccionada) {
+      @if (!citaSeleccionada) {
+        <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-sm dark:border-gray-800 dark:bg-gray-900 h-full">
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Citas de Hoy</h3>
+          
+          <div class="overflow-y-auto max-h-[600px] -mx-2 px-2">
+            @if (citasDelDia.length === 0) {
+              <div class="text-center py-10 text-sm text-gray-500 bg-gray-50 rounded-xl dark:bg-white/[0.02]">
+                No tienes citas programadas para hoy.
+              </div>
+            } @else {
+              <div class="space-y-3">
+                @for (cita of citasDelDia; track cita.idCita) {
+                  <div (click)="citaSeleccionada = cita" class="group cursor-pointer rounded-xl border border-gray-100 bg-gray-50 p-4 transition-all hover:border-brand-300 hover:bg-brand-50 hover:shadow-sm dark:border-gray-800 dark:bg-white/[0.02] dark:hover:border-brand-500/30 dark:hover:bg-brand-500/10">
+                    <div class="flex items-start justify-between">
+                      <div>
+                        <p class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">{{ cita.nombreCompletoPaciente }}</p>
+                        <div class="mt-1 flex items-center gap-2 text-xs text-gray-500">
+                          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                          {{ cita.hora.substring(0,5) }}
+                        </div>
+                      </div>
+                      <span [ngClass]="cita.estado === 'CONFIRMADA' ? 'bg-blue-100 text-blue-700' : (cita.estado === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-700' : (cita.estado === 'ATENDIDA' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'))" class="rounded px-2 py-0.5 text-[10px] font-bold uppercase">
+                        {{ cita.estado}}
+                      </span>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      @else if (citaSeleccionada && !mostrarFormAtencion && !mostrarFormReceta) {
         <div class="rounded-2xl border border-brand-200 bg-brand-50/50 p-6 shadow-theme-sm dark:border-brand-900 dark:bg-brand-900/10 transition-all duration-300">
           <div class="flex items-center justify-between mb-4 border-b border-gray-200 dark:border-gray-800 pb-3">
             <h3 class="text-lg font-bold text-gray-900 dark:text-white">Detalle de Turno</h3>
@@ -50,7 +83,8 @@
               <span [ngClass]="{
                 'bg-yellow-100 text-yellow-800 border-yellow-200': citaSeleccionada.estado === 'PENDIENTE',
                 'bg-blue-100 text-blue-800 border-blue-200': citaSeleccionada.estado === 'CONFIRMADA',
-                'bg-green-100 text-green-800 border-green-200': citaSeleccionada.estado === 'ATENDIDA'
+                'bg-green-100 text-green-800 border-green-200': citaSeleccionada.estado === 'ATENDIDA',
+                'bg-red-100 text-red-800 border-red-200': citaSeleccionada.estado === 'CANCELADA'
               }" class="inline-flex border rounded-md px-3 py-1 text-xs font-bold uppercase tracking-wider">
                 {{ citaSeleccionada.estado }}
               </span>
@@ -63,43 +97,118 @@
             </div>
           </div>
 
-          <button (click)="iniciarAtencion()" [disabled]="citaSeleccionada.estado === 'ATENDIDA'"
-                  [ngClass]="citaSeleccionada.estado === 'ATENDIDA' ? 'bg-gray-300 cursor-not-allowed text-gray-500' : 'bg-brand-500 hover:bg-brand-600 text-white shadow-md'"
+          <button (click)="iniciarAtencion()" [disabled]="citaSeleccionada.estado === 'ATENDIDA' || citaSeleccionada.estado === 'CANCELADA'"
+                  [ngClass]="(citaSeleccionada.estado === 'ATENDIDA' || citaSeleccionada.estado === 'CANCELADA') ? 'bg-gray-300 cursor-not-allowed text-gray-500' : 'bg-brand-500 hover:bg-brand-600 text-white shadow-md'"
                   class="mt-6 w-full rounded-lg py-3 text-sm font-bold transition-colors">
-            {{ citaSeleccionada.estado === 'ATENDIDA' ? 'Atención Finalizada' : 'Iniciar Atención Médica' }}
+            {{ citaSeleccionada.estado === 'ATENDIDA' ? 'Atención Finalizada' : (citaSeleccionada.estado === 'CANCELADA' ? 'Cita Cancelada' : 'Iniciar Atención Médica') }}
           </button>
         </div>
-      } 
-      
-      @else {
-        <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-sm dark:border-gray-800 dark:bg-gray-900 h-full">
-          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Citas de Hoy</h3>
-          
-          <div class="overflow-y-auto max-h-[600px] -mx-2 px-2">
-            @if (citasDelDia.length === 0) {
-              <div class="text-center py-10 text-sm text-gray-500 bg-gray-50 rounded-xl dark:bg-white/[0.02]">
-                No tienes citas programadas para hoy.
-              </div>
-            } @else {
-              <div class="space-y-3">
-                @for (cita of citasDelDia; track cita.idCita) {
-                  <div (click)="citaSeleccionada = cita" class="group cursor-pointer rounded-xl border border-gray-100 bg-gray-50 p-4 transition-all hover:border-brand-300 hover:bg-brand-50 hover:shadow-sm dark:border-gray-800 dark:bg-white/[0.02] dark:hover:border-brand-500/30 dark:hover:bg-brand-500/10">
-                    <div class="flex items-start justify-between">
-                      <div>
-                        <p class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">{{ cita.nombreCompletoPaciente }}</p>
-                        <div class="mt-1 flex items-center gap-2 text-xs text-gray-500">
-                          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                          {{ cita.hora.substring(0,5) }}
-                        </div>
-                      </div>
-                      <span [ngClass]="cita.estado === 'CONFIRMADA' ? 'bg-blue-100 text-blue-700' : (cita.estado === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700')" class="rounded px-2 py-0.5 text-[10px] font-bold uppercase">
-                        {{ cita.estado}}
-                      </span>
-                    </div>
-                  </div>
+      }
+
+      @else if (citaSeleccionada && mostrarFormAtencion) {
+        <div class="rounded-2xl border border-brand-300 bg-white p-6 shadow-theme-lg dark:border-brand-700 dark:bg-gray-900 transition-all duration-300">
+          <div class="flex items-center justify-between mb-4 border-b border-gray-200 dark:border-gray-800 pb-3">
+            <div>
+              <h3 class="text-lg font-bold text-brand-600 dark:text-brand-400">Paso 5: Consulta Médica</h3>
+              <p class="text-xs text-gray-500">Paciente: {{ citaSeleccionada.nombreCompletoPaciente }}</p>
+            </div>
+            <button (click)="verTablaCitas()" class="text-xs font-semibold text-gray-400 hover:text-red-500">Cancelar</button>
+          </div>
+
+          <form (ngSubmit)="guardarAtencion()" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Síntomas presentados <span class="text-red-500">*</span></label>
+              <textarea [(ngModel)]="consulta.sintomas" name="sintomas" rows="2" placeholder="Ej. Fiebre persistente..." class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:text-white" required></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Diagnóstico General <span class="text-red-500">*</span></label>
+              <textarea [(ngModel)]="consulta.diagnostico" name="diagnostico" rows="2" placeholder="Ej. Faringitis aguda..." class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:text-white" required></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tratamiento Indicado <span class="text-red-500">*</span></label>
+              <textarea [(ngModel)]="consulta.tratamiento" name="tratamiento" rows="2" placeholder="Ej. Reposo por 3 días..." class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-3 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:text-white" required></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Observaciones</label>
+              <textarea [(ngModel)]="consulta.observaciones" name="observaciones" rows="1" placeholder="Opcional" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:text-white"></textarea>
+            </div>
+            
+            <button type="submit" class="mt-4 w-full bg-brand-500 hover:bg-brand-600 text-white rounded-lg py-3 text-sm font-bold shadow-md transition-colors flex justify-center items-center gap-2">
+              Guardar y Crear Receta
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </button>
+          </form>
+        </div>
+      }
+
+      @else if (citaSeleccionada && mostrarFormReceta) {
+        <div class="rounded-2xl border border-green-300 bg-white p-6 shadow-theme-lg dark:border-green-800 dark:bg-gray-900 transition-all duration-300">
+          <div class="flex items-center justify-between mb-4 border-b border-gray-200 dark:border-gray-800 pb-3">
+            <div>
+              <h3 class="text-lg font-bold text-green-600 dark:text-green-400 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                Paso 6: Receta Médica
+              </h3>
+              <p class="text-xs text-gray-500 mt-1">Consulta ID: {{ receta.idConsulta }}</p>
+            </div>
+          </div>
+
+          <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700 mb-5 space-y-3">
+            <h4 class="text-xs font-bold text-gray-800 dark:text-gray-300 uppercase tracking-wide">Añadir Medicamento</h4>
+            <input type="text" [(ngModel)]="nuevoDetalle.medicamento" placeholder="Nombre (Ej. Paracetamol 500mg)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+            <div class="grid grid-cols-2 gap-3">
+              <input type="text" [(ngModel)]="nuevoDetalle.dosis" placeholder="Dosis (Ej. 1 tableta)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+              <input type="text" [(ngModel)]="nuevoDetalle.frecuencia" placeholder="Frecuencia (Ej. c/8 hrs)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+            </div>
+            <div class="flex gap-3">
+              <input type="text" [(ngModel)]="nuevoDetalle.duracion" placeholder="Duración (Ej. 5 días)" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+              <button type="button" (click)="agregarMedicamento()" class="bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg px-4 py-2 text-sm transition-colors flex-shrink-0">
+                + Añadir
+              </button>
+            </div>
+          </div>
+
+          <div class="mb-5 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            <table class="w-full text-left text-sm text-gray-500 dark:text-gray-400">
+              <thead class="bg-gray-100 text-xs uppercase text-gray-700 dark:bg-gray-800 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                <tr>
+                  <th class="px-3 py-2">Medicamento</th>
+                  <th class="px-3 py-2">Indicación</th>
+                  <th class="px-2 py-2 text-center w-10"></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                @if (receta.detalles.length === 0) {
+                  <tr><td colspan="3" class="text-center py-4 text-xs text-gray-400 italic">No hay medicamentos en esta receta.</td></tr>
                 }
-              </div>
-            }
+                @for (m of receta.detalles; track $index) {
+                  <tr class="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                    <td class="px-3 py-2 font-medium text-gray-900 dark:text-white">{{ m.medicamento }}</td>
+                    <td class="px-3 py-2 text-xs">{{ m.dosis }} | {{ m.frecuencia }} | {{ m.duracion }}</td>
+                    <td class="px-2 py-2 text-center">
+                      <button type="button" (click)="eliminarMedicamento($index)" class="text-red-400 hover:text-red-600 p-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mb-6">
+            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 uppercase tracking-wide">Notas de la Receta</label>
+            <textarea [(ngModel)]="receta.observaciones" rows="2" placeholder="Indicaciones generales para la receta..." class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2 text-sm text-gray-800 focus:border-green-500 focus:outline-none dark:border-gray-700 dark:text-white"></textarea>
+          </div>
+
+          <div class="flex justify-between items-center pt-3 border-t border-gray-200 dark:border-gray-800">
+            <button type="button" (click)="limpiarYRegresar()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-sm font-semibold underline decoration-transparent hover:decoration-gray-500 transition-all">
+              Omitir Receta
+            </button>
+            <button type="button" (click)="guardarRecetaCompleta()" class="bg-green-600 hover:bg-green-700 text-white rounded-lg px-6 py-2.5 text-sm font-bold shadow-md transition-colors flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              Emitir Receta
+            </button>
           </div>
         </div>
       }

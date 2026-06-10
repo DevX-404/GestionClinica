@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { FullCalendarModule } from '@fullcalendar/angular';
 import { CalendarOptions, EventInput } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -8,15 +9,20 @@ import interactionPlugin from '@fullcalendar/interaction';
 import esLocale from '@fullcalendar/core/locales/es';
 import { CitaMedicaService } from '../../shared/services/cita-medica.service';
 import { CitaMedica } from '../../shared/models/cita-medica.model';
+import { ConsultaMedicaService } from '../../shared/services/consulta-medica.service';
+import { RecetaMedicaService } from '../../shared/services/receta-medica.service';
+import { ConsultaMedica, RecetaMedicaDTO, DetalleRecetaDTO } from '../../shared/models/atencion-clinica.model';
 
 @Component({
   selector: 'app-agenda',
   standalone: true,
-  imports: [CommonModule, FullCalendarModule],
+  imports: [CommonModule, FullCalendarModule,FormsModule],
   templateUrl: './agenda.component.html'
 })
 export class AgendaComponent implements OnInit {
   private citaService = inject(CitaMedicaService);
+  private consultaService = inject(ConsultaMedicaService); // <-- AÑADIDO
+  private recetaService = inject(RecetaMedicaService);
 
   // Simulación: En producción sacarías el ID del token JWT del médico logueado
   medicoLogueadoId: number = 1; 
@@ -24,6 +30,33 @@ export class AgendaComponent implements OnInit {
   citasDelDia: CitaMedica[] = [];
   citaSeleccionada: CitaMedica | null = null;
   isLoading: boolean = false;
+
+  // ==========================================
+  // VARIABLES DE LA FASE 3 (ATENCIÓN CLÍNICA)
+  // ==========================================
+  mostrarFormAtencion: boolean = false;
+  mostrarFormReceta: boolean = false;
+
+  consulta: ConsultaMedica = {
+    sintomas: '',
+    diagnostico: '',
+    tratamiento: '',
+    observaciones: ''
+  };
+
+  receta: RecetaMedicaDTO = {
+    idConsulta: 0,
+    observaciones: '',
+    detalles: []
+  };
+
+  nuevoDetalle: DetalleRecetaDTO = {
+    medicamento: '',
+    dosis: '',
+    frecuencia: '',
+    duracion: ''
+  };
+  // ==========================================
 
   // Configuración del Calendario
   calendarOptions: CalendarOptions = {
@@ -104,5 +137,69 @@ export class AgendaComponent implements OnInit {
       case 'CANCELADA': return '#ef4444'; // Rojo
       default: return '#6b7280';
     }
+  }
+
+  // ==========================================
+  // MÉTODOS DE LA FASE 3 (FLUJO DEL MÉDICO)
+  // ==========================================
+
+  guardarAtencion(): void {
+    if (!this.consulta.sintomas || !this.consulta.diagnostico || !this.consulta.tratamiento) {
+      alert('Por favor, completa los campos obligatorios: Síntomas, Diagnóstico y Tratamiento.');
+      return;
+    }
+
+    const bodyConsulta = {
+      sintomas: this.consulta.sintomas,
+      diagnostico: this.consulta.diagnostico,
+      tratamiento: this.consulta.tratamiento,
+      observaciones: this.consulta.observaciones || ''
+    };
+
+    // Usamos el ID de la cita que seleccionaste en el calendario
+    this.consultaService.atenderCita(this.citaSeleccionada!.idCita!, bodyConsulta).subscribe({
+      next: (consultaCreada) => {
+        alert('¡Atención Médica registrada! La cita ahora es ATENDIDA.');
+        
+        // Preparamos el formulario de recetas
+        this.receta.idConsulta = consultaCreada.idConsulta!;
+        this.receta.detalles = [];
+        this.receta.observaciones = '';
+        
+        this.mostrarFormAtencion = false;
+        this.mostrarFormReceta = true;
+        this.cargarAgenda(); // Refrescamos para que se ponga en verde en el calendario
+      },
+      error: (err) => alert('Error al registrar la atención: ' + (err.error?.message || err.message))
+    });
+  }
+
+  agregarMedicamento(): void {
+    if (!this.nuevoDetalle.medicamento || !this.nuevoDetalle.dosis || !this.nuevoDetalle.frecuencia || !this.nuevoDetalle.duracion) {
+      alert('Por favor, rellena todos los campos del medicamento.');
+      return;
+    }
+    this.receta.detalles.push({ ...this.nuevoDetalle });
+    this.nuevoDetalle = { medicamento: '', dosis: '', frecuencia: '', duracion: '' };
+  }
+
+  eliminarMedicamento(index: number): void {
+    this.receta.detalles.splice(index, 1);
+  }
+
+  guardarRecetaCompleta(): void {
+    this.recetaService.generarReceta(this.receta).subscribe({
+      next: () => {
+        alert('¡Receta médica generada correctamente con sus detalles! Flujo terminado.');
+        this.limpiarYRegresar();
+      },
+      error: (err) => alert('Error al guardar la receta: ' + (err.error?.message || err.message))
+    });
+  }
+
+  limpiarYRegresar(): void {
+    this.citaSeleccionada = null;
+    this.mostrarFormAtencion = false;
+    this.mostrarFormReceta = false;
   }
 }
