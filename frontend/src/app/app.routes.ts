@@ -61,6 +61,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/auditoria/auditoria.component').then(m => m.AuditoriaComponent),
         title: 'Registro de Auditoría'
       },
+      {
+        path: 'seguridad',
+        loadComponent: () => import('./pages/seguridad/seguridad.component').then(m => m.SeguridadComponent),
+        title: 'Seguridad y Usuarios'
+      },
       // Aquí agregaremos en los siguientes pasos los hijos de 'pacientes' y 'medicos'
       {
         path: 'ejemplo',

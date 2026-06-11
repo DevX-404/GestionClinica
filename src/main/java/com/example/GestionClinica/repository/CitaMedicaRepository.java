@@ -21,4 +21,8 @@ public interface CitaMedicaRepository extends JpaRepository<CitaMedica, Long> {
 
     // Listar citas de un médico (Requisito del Rol de Médico en tu flujo)
     List<CitaMedica> findByMedicoIdMedico(Long idMedico);
+
+    // Métricas para el Dashboard
+    long countByFecha(LocalDate fecha);
+    long countByFechaAndEstado(LocalDate fecha, String estado);
 }
