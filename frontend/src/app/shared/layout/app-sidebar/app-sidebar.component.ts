@@ -4,7 +4,6 @@ import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { SidebarService } from '../../services/sidebar.service';
 import { SafeHtmlPipe } from '../../pipe/safe-html.pipe';
-import { SidebarWidgetComponent } from "./app-sidebar-widget.component";
 
 interface SubItem {
   name: string;
@@ -25,8 +24,7 @@ interface NavItem {
   imports: [
     CommonModule,
     RouterModule,
-    SafeHtmlPipe,
-    SidebarWidgetComponent
+    SafeHtmlPipe
   ],
   templateUrl: './app-sidebar.component.html'
 })

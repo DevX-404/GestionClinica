@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms'; // ← REQUISITO: Para usar [(ngModel)]
@@ -19,7 +19,7 @@ export class LoginComponent {
   errorMsg: string = '';
   loading: boolean = false;
 
-  constructor(private authService: AuthService, private router: Router) { }
+  constructor(private authService: AuthService, private router: Router, private cdr: ChangeDetectorRef) { }
 
   onLogin(event: Event): void {
     event.preventDefault(); // Evitar que la página se recargue por defecto
@@ -53,6 +53,8 @@ export class LoginComponent {
           this.errorMsg = 'Hubo un problema al conectar con el servidor de la clínica.';
         }
         console.error('Error de autenticación:', err);
+
+        this.cdr.detectChanges(); // Asegura que la UI se actualice con el nuevo estado de error y loading
       }
     });
   }
