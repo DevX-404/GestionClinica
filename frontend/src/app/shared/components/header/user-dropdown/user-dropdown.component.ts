@@ -12,6 +12,8 @@ import { Router, RouterModule } from '@angular/router';
 export class UserDropdownComponent implements OnInit {
   // Variables para la vista
   nombreUsuario: string = 'Usuario';
+  primerNombre: string = 'Usuario';
+  iniciales: string = 'U';
   rolUsuario: string = 'Personal';
   isDropdownOpen: boolean = false; // Control del menú desplegable
 
@@ -29,6 +31,21 @@ export class UserDropdownComponent implements OnInit {
     if (sessionRol) {
       // Formateamos el rol para que no se vea en mayúsculas secas (opcional)
       this.rolUsuario = sessionRol.toLowerCase();
+    }
+  }
+
+  // Función para procesar el nombre dinámicamente
+  extraerDatosUsuario(nombreCompleto: string): void {
+    const partes = nombreCompleto.trim().split(' ');
+    
+    // Obtenemos el primer nombre para el saludo
+    this.primerNombre = partes[0];
+
+    // Lógica para las iniciales (Ej: Luis Bances -> LB)
+    if (partes.length > 1) {
+      this.iniciales = (partes[0].charAt(0) + partes[1].charAt(0)).toUpperCase();
+    } else {
+      this.iniciales = partes[0].charAt(0).toUpperCase();
     }
   }
 
