@@ -38,4 +38,14 @@ public class UsuarioController {
         usuarioService.restablecerPassword(id, dto.getNuevaPassword());
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping
+    public ResponseEntity<UsuarioDTO> registrar(@RequestBody UsuarioDTO dto) {
+        return ResponseEntity.ok(usuarioService.registrarUsuario(dto));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<UsuarioDTO> actualizar(@PathVariable Long id, @RequestBody UsuarioDTO dto) {
+        return ResponseEntity.ok(usuarioService.actualizarUsuario(id, dto));
+    }
 }

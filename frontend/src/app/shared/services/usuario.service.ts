@@ -25,4 +25,12 @@ export class UsuarioService {
   restablecerPassword(idUsuario: number, nuevaPassword: string): Observable<void> {
     return this.http.post<void>(`${this.apiUrl}/${idUsuario}/reset-password`, { nuevaPassword });
   }
+
+  crear(usuario: any): Observable<any> {
+    return this.http.post<any>(this.apiUrl, usuario);
+  }
+
+  actualizar(idUsuario: number, usuario: any): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/${idUsuario}`, usuario);
+  }
 }

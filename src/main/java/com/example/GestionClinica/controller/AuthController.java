@@ -39,13 +39,15 @@ public class AuthController {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         if (passwordEncoder.matches(password, usuario.getPassword())) {
-            // Generar el JWT enviando el username y su rol correspondiente
+            // Generar el JWT enviando el username y su rol
             String token = tokenProvider.generarToken(usuario.getUsername(), usuario.getRol().name());
             
-            Map<String, String> response = new HashMap<>();
+            // CAMBIO AQUÍ: Cambiamos a <String, Object> para poder enviar la lista (Array) de módulos
+            Map<String, Object> response = new HashMap<>();
             response.put("username", usuario.getUsername());
             response.put("rol", usuario.getRol().name());
             response.put("token", token);
+            response.put("modulos", usuario.getModulosAcceso()); // <-- Enviamos sus permisos
             
             return ResponseEntity.ok(response);
         } else {

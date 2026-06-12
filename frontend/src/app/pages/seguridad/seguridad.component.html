@@ -8,9 +8,13 @@
       </h2>
       <p class="text-sm text-gray-500">Administra los accesos, roles y contraseñas del personal de la clínica.</p>
     </div>
-    <div class="flex items-center">
+    
+    <div class="flex items-center gap-3">
       <input type="text" [(ngModel)]="searchTerm" (input)="filtrar()" placeholder="Buscar usuario o correo..."
         class="w-full rounded-lg border border-gray-300 bg-transparent px-5 py-2.5 outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 sm:w-80" />
+      <button (click)="openUserModal()" class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-bold text-white hover:bg-brand-600 shadow-sm transition-colors">
+        + Nuevo Usuario
+      </button>
     </div>
   </div>
 
@@ -54,11 +58,18 @@
                     {{ u.activo ? 'Cuenta Activa' : 'Bloqueado' }}
                   </button>
                 </td>
+                
                 <td class="px-6 py-4 text-center">
-                  <button (click)="openPasswordModal(u)" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors">
-                    <svg class="h-4 w-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
-                    Restablecer Clave
-                  </button>
+                  <div class="flex items-center justify-center gap-2">
+                    <button (click)="openUserModal(u)" class="inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-900/20 dark:text-blue-300 transition-colors">
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                      Editar/Permisos
+                    </button>
+                    <button (click)="openPasswordModal(u)" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors">
+                      <svg class="h-4 w-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                      Restablecer Clave
+                    </button>
+                  </div>
                 </td>
               </tr>
             } @empty {
@@ -69,6 +80,67 @@
       </table>
     </div>
   </div>
+
+  @if (isUserModalOpen) {
+    <div class="fixed inset-0 z-99999 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+      <div class="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+        
+        <div class="mb-5 border-b pb-3 dark:border-gray-800">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+              {{ isEditMode ? 'Editar Usuario y Permisos' : 'Crear Nuevo Usuario' }}
+            </h3>
+            <button (click)="closeUserModal()" class="text-gray-400 hover:text-red-500 text-2xl">&times;</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Username</label>
+            <input type="text" [(ngModel)]="usuarioForm.username" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Correo Electrónico</label>
+            <input type="email" [(ngModel)]="usuarioForm.email" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Rol del Sistema</label>
+            <select [(ngModel)]="usuarioForm.rol" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+              <option value="ADMINISTRADOR">Administrador</option>
+              <option value="RECEPCIONISTA">Recepcionista</option>
+              <option value="MEDICO">Médico</option>
+            </select>
+          </div>
+          @if (!isEditMode) {
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Contraseña Inicial</label>
+              <input type="text" [(ngModel)]="usuarioForm.password" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white font-mono" />
+            </div>
+          }
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm font-bold text-brand-500 mb-3 border-b pb-1 dark:border-gray-800">Asignar Permisos de Módulos (Visualización)</label>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+            @for (modulo of modulosDisponibles; track modulo) {
+              <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-1.5 rounded transition-colors">
+                <input type="checkbox" 
+                       [checked]="usuarioForm.modulosAcceso.includes(modulo)"
+                       (change)="toggleModulo(modulo)"
+                       class="rounded border-gray-300 text-brand-500 focus:ring-brand-500 bg-white dark:bg-gray-900" />
+                {{ modulo }}
+              </label>
+            }
+          </div>
+        </div>
+
+        <div class="mt-6 flex justify-end gap-2 border-t pt-4 dark:border-gray-800">
+          <button (click)="closeUserModal()" class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 transition-colors">Cancelar</button>
+          <button (click)="guardarUsuario()" class="rounded-lg bg-brand-500 px-4 py-2 text-xs font-bold text-white hover:bg-brand-600 shadow-sm transition-colors">Guardar Cambios</button>
+        </div>
+      </div>
+    </div>
+  }
 
   @if (isPasswordModalOpen) {
     <div class="fixed inset-0 z-99999 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">

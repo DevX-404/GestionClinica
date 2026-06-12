@@ -67,6 +67,33 @@ public class UsuarioServiceImpl implements UsuarioService {
         return convertirADto(usuarioRepository.save(usuario));
     }
 
+    @Override
+    @Transactional
+    public UsuarioDTO registrarUsuario(UsuarioDTO dto) {
+        Usuario usuario = new Usuario();
+        usuario.setUsername(dto.getUsername());
+        usuario.setEmail(dto.getEmail());
+        usuario.setPassword(passwordEncoder.encode(dto.getPassword()));
+        usuario.setRol(Rol.valueOf(dto.getRol().toUpperCase()));
+        usuario.setActivo(true);
+        usuario.setModulosAcceso(dto.getModulosAcceso());
+        return convertirADto(usuarioRepository.save(usuario));
+    }
+
+    @Override
+    @Transactional
+    public UsuarioDTO actualizarUsuario(Long idUsuario, UsuarioDTO dto) {
+        Usuario usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        
+        usuario.setUsername(dto.getUsername());
+        usuario.setEmail(dto.getEmail());
+        usuario.setRol(Rol.valueOf(dto.getRol().toUpperCase()));
+        usuario.setModulosAcceso(dto.getModulosAcceso());
+        
+        return convertirADto(usuarioRepository.save(usuario));
+    }
+
     private UsuarioDTO convertirADto(Usuario usuario) {
         UsuarioDTO dto = new UsuarioDTO();
         dto.setIdUsuario(usuario.getIdUsuario());
@@ -74,6 +101,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         dto.setEmail(usuario.getEmail());
         dto.setRol(usuario.getRol() != null ? usuario.getRol().toString() : "SIN_ROL");
         dto.setActivo(usuario.isActivo());
+        dto.setModulosAcceso(usuario.getModulosAcceso());
         return dto;
     }
 }

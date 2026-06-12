@@ -29,4 +29,8 @@ public class Especialidad {
 
     @Column(length = 15, nullable = false)
     private String estado = "ACTIVO";
+
+    // Tarifario por especialidad, por ejemplo, el costo de una consulta.
+    @Column(nullable = false, precision = 10, scale = 2)
+    private java.math.BigDecimal precioConsulta = new java.math.BigDecimal("150.00");
 }

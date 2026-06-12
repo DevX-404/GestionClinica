@@ -8,4 +8,6 @@ public interface UsuarioService {
     UsuarioDTO cambiarEstado(Long idUsuario);
     void restablecerPassword(Long idUsuario, String nuevaPassword);
     UsuarioDTO cambiarRol(Long idUsuario, String nuevoRol);
+    UsuarioDTO registrarUsuario(UsuarioDTO dto);
+    UsuarioDTO actualizarUsuario(Long idUsuario, UsuarioDTO dto);
 }

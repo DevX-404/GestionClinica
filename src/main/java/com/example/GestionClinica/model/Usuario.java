@@ -1,5 +1,7 @@
 package com.example.GestionClinica.model;
 
+import java.util.List;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -31,4 +33,9 @@ public class Usuario {
     private Rol rol; // ADMINISTRADOR, MEDICO o RECEPCIONISTA
 
     private boolean activo = true;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "usuario_modulos", joinColumns = @JoinColumn(name = "id_usuario"))
+    @Column(name = "modulo")
+    private List<String> modulosAcceso;
 }

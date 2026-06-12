@@ -148,18 +148,25 @@ export class AppSidebarComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
+    const rolActual = localStorage.getItem('rol')?.toUpperCase() ?? 'RECEPCIONISTA';
+    const modulosStr = localStorage.getItem('modulos');
+    const modulosPermitidos: string[] = modulosStr ? JSON.parse(modulosStr) : [];
 
-    const rolActual =
-      localStorage.getItem('rol')?.toUpperCase() ??
-      'RECEPCIONISTA';
+    // Filtro original por Roles
+    let navs = this.menuMaestro.filter(item => item.roles.includes(rolActual));
+    let others = this.menuOtrosMaestro.filter(item => item.roles.includes(rolActual));
 
-    this.navItems = this.menuMaestro.filter(item =>
-      item.roles.includes(rolActual)
-    );
+    // NUEVO: Filtro súper estricto basado en los checkboxes de los módulos asignados
+    // (Solo aplicamos si el usuario tiene una lista de módulos configurada en DB)
+    if (modulosPermitidos && modulosPermitidos.length > 0) {
+      navs = navs.filter(item => modulosPermitidos.includes(item.name));
+      
+      // Mantenemos "Mi Perfil" visible para todos, y verificamos el resto
+      others = others.filter(item => item.name === 'Mi Perfil' || modulosPermitidos.includes(item.name));
+    }
 
-    this.othersItems = this.menuOtrosMaestro.filter(item =>
-      item.roles.includes(rolActual)
-    );
+    this.navItems = navs;
+    this.othersItems = others;
 
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))

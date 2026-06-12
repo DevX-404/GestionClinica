@@ -39,27 +39,30 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .cors(cors -> {})
-            .csrf(csrf -> csrf.disable()) // Desactivamos CSRF porque usaremos JWT tokens
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                // Permitir acceso libre al endpoint de autenticación (Login/Registro)
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/error").permitAll()
-                
-                // REGLAS DEL FLUJO CLÍNICO:
-                // 1. Pacientes: ADMIN y RECEPCIONISTA pueden gestionar todo.
-                .requestMatchers("/api/pacientes/**").hasAnyRole("ADMINISTRADOR", "RECEPCIONISTA")
-                
-                // 2. Médicos: Solo el ADMINISTRADOR puede gestionar personal médico.
-                .requestMatchers("/api/medicos/**").hasRole("ADMINISTRADOR")
-                
-                // 3. Citas: RECEPCIONISTA (programa), MEDICO (ve su agenda), ADMIN (todo)
-                .requestMatchers("/api/citas/**").hasAnyRole("ADMINISTRADOR", "MEDICO", "RECEPCIONISTA")
-                
-                // Cualquier otra petición requiere estar logueado
-                .anyRequest().authenticated()
-            );
+                .cors(cors -> {
+                })
+                .csrf(csrf -> csrf.disable()) // Desactivamos CSRF porque usaremos JWT tokens
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        // Permitir acceso libre al endpoint de autenticación (Login/Registro)
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/error").permitAll()
+
+                        // REGLAS DEL FLUJO CLÍNICO:
+                        // 1. Pacientes: ADMIN y RECEPCIONISTA pueden gestionar todo.
+                        .requestMatchers("/api/pacientes/**").hasAnyRole("ADMINISTRADOR", "RECEPCIONISTA")
+
+                        // 2. Médicos: TODOS pueden consultar (GET) la lista de médicos para las citas.
+                        .requestMatchers(HttpMethod.GET, "/api/medicos/**")
+                        .hasAnyRole("ADMINISTRADOR", "RECEPCIONISTA", "MEDICO")
+                        // PERO solo el ADMIN puede modificarlos (POST, PUT, DELETE).
+                        .requestMatchers("/api/medicos/**").hasRole("ADMINISTRADOR")
+
+                        // 3. Citas: RECEPCIONISTA (programa), MEDICO (ve su agenda), ADMIN (todo)
+                        .requestMatchers("/api/citas/**").hasAnyRole("ADMINISTRADOR", "MEDICO", "RECEPCIONISTA")
+
+                        // Cualquier otra petición requiere estar logueado
+                        .anyRequest().authenticated());
 
         // Inyectamos nuestro filtro de JWT antes del filtro por defecto de Spring
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -76,7 +79,7 @@ public class SecurityConfig {
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept"));
         configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

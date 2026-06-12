@@ -19,4 +19,5 @@ public class PagoDTO {
     private String numeroComprobante;
     private BigDecimal subtotal;
     private BigDecimal igv;
+    private String concepto; // ADELANTO_30, PAGO_FINAL, etc.
 }

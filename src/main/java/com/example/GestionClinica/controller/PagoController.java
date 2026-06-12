@@ -26,12 +26,6 @@ public class PagoController {
         return ResponseEntity.ok(pagoService.obtenerPorCita(idCita));
     }
 
-    // Al confirmar una cita, la recepcionista o el sistema puede invocar este método para inicializar el cobro
-    @PostMapping("/generar/{idCita}")
-    public ResponseEntity<PagoDTO> generarPagoPendiente(@PathVariable Long idCita) {
-        return ResponseEntity.ok(pagoService.generarPagoPendiente(idCita));
-    }
-
     // Cuando el paciente pasa la tarjeta o da el efectivo
     @PostMapping("/procesar/{idPago}")
     public ResponseEntity<PagoDTO> procesarPago(@PathVariable Long idPago, @RequestBody PagoDTO dto) {

@@ -32,11 +32,14 @@ public class Pago {
     private String estadoPago = "PENDIENTE"; // PENDIENTE, PAGADO, ANULADO
 
     // Un pago corresponde a una cita médica
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_cita", nullable = false)
     private CitaMedica cita;
 
     // Relación bidireccional con el comprobante (se crea al pagar)
     @OneToOne(mappedBy = "pago", cascade = CascadeType.ALL)
     private Comprobante comprobante;
+
+    @Column(length = 30, nullable = false)
+    private String concepto;
 }

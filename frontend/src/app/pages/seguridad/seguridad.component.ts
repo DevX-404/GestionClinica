@@ -29,6 +29,18 @@ export class SeguridadComponent implements OnInit {
   nuevaPassword: string = '';
   errorPwdMsg: string = '';
 
+  // Modal CRUD Usuarios
+  isUserModalOpen: boolean = false;
+  isEditMode: boolean = false;
+  usuarioForm: any = { username: '', email: '', password: '', rol: 'RECEPCIONISTA', modulosAcceso: [] };
+
+  // Lista de módulos para los Checkboxes
+  modulosDisponibles = [
+    'Dashboard', 'Agenda Médica', 'Pacientes', 'Citas Médicas', 'Historia Clínica', 
+    'Recetas Médicas', 'Personal Médico', 'Pagos y Facturación', 'Reportes Globales', 
+    'Seguridad y Usuarios', 'Auditoría del Sistema'
+  ];
+
   ngOnInit(): void {
     this.cargarUsuarios();
   }
@@ -59,6 +71,54 @@ export class SeguridadComponent implements OnInit {
       u.email.toLowerCase().includes(term) ||
       u.rol.toLowerCase().includes(term)
     );
+  }
+
+  // --- CRUD Modal Lógica ---
+  openUserModal(usuario?: any): void {
+    if (usuario) {
+      this.isEditMode = true;
+      this.usuarioForm = { ...usuario };
+      if (!this.usuarioForm.modulosAcceso) this.usuarioForm.modulosAcceso = [];
+    } else {
+      this.isEditMode = false;
+      this.usuarioForm = { username: '', email: '', password: '', rol: 'RECEPCIONISTA', modulosAcceso: [] };
+    }
+    this.isUserModalOpen = true;
+  }
+
+  closeUserModal(): void {
+    this.isUserModalOpen = false;
+  }
+
+  toggleModulo(modulo: string): void {
+    const index = this.usuarioForm.modulosAcceso.indexOf(modulo);
+    if (index === -1) {
+      this.usuarioForm.modulosAcceso.push(modulo);
+    } else {
+      this.usuarioForm.modulosAcceso.splice(index, 1);
+    }
+  }
+
+  guardarUsuario(): void {
+    if (this.isEditMode) {
+      this.usuarioService.actualizar(this.usuarioForm.idUsuario, this.usuarioForm).subscribe({
+        next: () => {
+          this.mostrarMensajeGlobal('Usuario actualizado correctamente.', 'success');
+          this.cargarUsuarios();
+          this.closeUserModal();
+        },
+        error: () => this.mostrarMensajeGlobal('Error al actualizar usuario.', 'error')
+      });
+    } else {
+      this.usuarioService.crear(this.usuarioForm).subscribe({
+        next: () => {
+          this.mostrarMensajeGlobal('Usuario creado correctamente.', 'success');
+          this.cargarUsuarios();
+          this.closeUserModal();
+        },
+        error: () => this.mostrarMensajeGlobal('Error al crear usuario.', 'error')
+      });
+    }
   }
 
   toggleEstado(usuario: Usuario): void {

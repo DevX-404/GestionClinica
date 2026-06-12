@@ -9,6 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
 
 @Service
 public class CitaMedicaServiceImpl implements CitaMedicaService {
@@ -17,6 +20,7 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
     @Autowired private PacienteRepository pacienteRepository;
     @Autowired private MedicoRepository medicoRepository;
     @Autowired private EspecialidadRepository especialidadRepository;
+    @Autowired private PagoRepository pagoRepository;
 
     @Override
     @Transactional
@@ -41,9 +45,24 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
         cita.setFecha(dto.getFecha());
         cita.setHora(dto.getHora());
         cita.setMotivoConsulta(dto.getMotivoConsulta());
-        cita.setEstado("PENDIENTE");
+        cita.setEstado("PENDIENTE_PAGO");
 
-        return convertirADto(citaRepository.save(cita));
+        CitaMedica citaGuardada = citaRepository.save(cita);
+
+        // --- LÓGICA DE NEGOCIO: GENERAR ADELANTO (30%) ---
+        BigDecimal precioTotal = esp.getPrecioConsulta() != null ? esp.getPrecioConsulta() : new BigDecimal("150.00");
+        BigDecimal adelanto = precioTotal.multiply(new BigDecimal("0.30")).setScale(2, RoundingMode.HALF_UP);
+
+        Pago pagoAdelanto = new Pago();
+        pagoAdelanto.setCita(citaGuardada);
+        pagoAdelanto.setFechaPago(LocalDate.now());
+        pagoAdelanto.setMonto(adelanto);
+        pagoAdelanto.setMetodoPago("POR DEFINIR");
+        pagoAdelanto.setEstadoPago("PENDIENTE");
+        pagoAdelanto.setConcepto("ADELANTO_30");
+        pagoRepository.save(pagoAdelanto);
+
+        return convertirADto(citaGuardada);
     }
 
     @Override

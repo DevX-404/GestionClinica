@@ -20,34 +20,8 @@ import java.util.stream.Collectors;
 @Service
 public class PagoServiceImpl implements PagoService {
 
-    @Autowired
-    private PagoRepository pagoRepository;
-
-    @Autowired
-    private CitaMedicaRepository citaRepository;
-
-    // Tarifa base de consulta médica (Podría venir de la Especialidad en el futuro)
-    private static final BigDecimal TARIFA_CONSULTA = new BigDecimal("150.00");
-
-    @Override
-    @Transactional
-    public PagoDTO generarPagoPendiente(Long idCita) {
-        CitaMedica cita = citaRepository.findById(idCita)
-                .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada"));
-
-        // Verificamos si ya tiene un pago pendiente
-        return pagoRepository.findByCitaIdCita(idCita)
-                .map(this::convertirADto)
-                .orElseGet(() -> {
-                    Pago nuevoPago = new Pago();
-                    nuevoPago.setCita(cita);
-                    nuevoPago.setFechaPago(LocalDate.now());
-                    nuevoPago.setMonto(TARIFA_CONSULTA);
-                    nuevoPago.setMetodoPago("POR DEFINIR");
-                    nuevoPago.setEstadoPago("PENDIENTE");
-                    return convertirADto(pagoRepository.save(nuevoPago));
-                });
-    }
+    @Autowired private PagoRepository pagoRepository;
+    @Autowired private CitaMedicaRepository citaRepository;
 
     @Override
     @Transactional
@@ -56,36 +30,54 @@ public class PagoServiceImpl implements PagoService {
                 .orElseThrow(() -> new ResourceNotFoundException("Registro de pago no encontrado"));
 
         if ("PAGADO".equals(pago.getEstadoPago())) {
-            throw new IllegalArgumentException("Esta cita ya se encuentra pagada.");
+            throw new IllegalArgumentException("Este recibo ya se encuentra pagado.");
         }
 
-        // 1. Actualizar el Pago
+        // 1. Actualizar y procesar el Pago actual
         pago.setMetodoPago(dto.getMetodoPago().toUpperCase());
         pago.setEstadoPago("PAGADO");
         pago.setFechaPago(LocalDate.now());
 
-        // 2. Generar el Comprobante (Factura o Boleta)
+        // Generación de comprobante (tu código original intacto)
         Comprobante comp = new Comprobante();
         comp.setTipoComprobante(dto.getTipoComprobante().toUpperCase());
         comp.setFechaEmision(LocalDate.now());
         comp.setTotal(pago.getMonto());
-
-        // Calcular Subtotal e IGV (18%)
-        // Total = Subtotal * 1.18  => Subtotal = Total / 1.18
         BigDecimal divisorIgv = new BigDecimal("1.18");
         BigDecimal subtotal = pago.getMonto().divide(divisorIgv, 2, RoundingMode.HALF_UP);
-        BigDecimal igv = pago.getMonto().subtract(subtotal);
-
         comp.setSubtotal(subtotal);
-        comp.setIgv(igv);
+        comp.setIgv(pago.getMonto().subtract(subtotal));
         comp.setPago(pago);
-
-        // Simulador de Correlativo (Ej: B001-00012)
         String serie = comp.getTipoComprobante().equals("FACTURA") ? "F001" : "B001";
-        // En producción contarías en base de datos. Usamos el ID del pago + 1000 para simular correlativo
         comp.setNumeroComprobante(serie + "-" + String.format("%06d", pago.getIdPago() + 1000));
-
         pago.setComprobante(comp);
+
+        // --- 2. AUTOMATIZACIÓN DEL FLUJO CLÍNICO ---
+        CitaMedica cita = pago.getCita();
+        
+        if ("ADELANTO_30".equals(pago.getConcepto())) {
+            // El paciente pagó la reserva. Confirmamos su cita para el médico.
+            cita.setEstado("CONFIRMADA");
+            citaRepository.save(cita);
+
+            // Inmediatamente generamos el cobro del 70% para cuando llegue a la clínica
+            BigDecimal precioTotal = cita.getEspecialidad().getPrecioConsulta();
+            BigDecimal saldoRestante = precioTotal.subtract(pago.getMonto());
+
+            Pago saldo = new Pago();
+            saldo.setCita(cita);
+            saldo.setFechaPago(cita.getFecha()); // Sugerimos la fecha de la cita para el pago
+            saldo.setMonto(saldoRestante);
+            saldo.setMetodoPago("POR DEFINIR");
+            saldo.setEstadoPago("PENDIENTE");
+            saldo.setConcepto("SALDO_70");
+            pagoRepository.save(saldo);
+
+        } else if ("SALDO_70".equals(pago.getConcepto())) {
+            // El paciente pagó en ventanilla al llegar a la clínica.
+            cita.setEstado("EN_ESPERA"); // Cambia de estado para que el médico sepa que ya llegó
+            citaRepository.save(cita);
+        }
 
         return convertirADto(pagoRepository.save(pago));
     }
@@ -99,9 +91,13 @@ public class PagoServiceImpl implements PagoService {
     @Override
     @Transactional(readOnly = true)
     public PagoDTO obtenerPorCita(Long idCita) {
-        Pago pago = pagoRepository.findByCitaIdCita(idCita)
-                .orElseThrow(() -> new ResourceNotFoundException("No hay pagos asociados a esta cita"));
-        return convertirADto(pago);
+        // Como ahora hay dos pagos, podríamos buscar el que esté PENDIENTE para cobrar en la UI
+        // o devolver una lista (List<PagoDTO>). Por simplicidad para tu frontend actual:
+        return pagoRepository.findAll().stream()
+                .filter(p -> p.getCita().getIdCita().equals(idCita) && "PENDIENTE".equals(p.getEstadoPago()))
+                .findFirst()
+                .map(this::convertirADto)
+                .orElseThrow(() -> new ResourceNotFoundException("No hay pagos pendientes para esta cita"));
     }
 
     private PagoDTO convertirADto(Pago pago) {
@@ -113,6 +109,7 @@ public class PagoServiceImpl implements PagoService {
         dto.setMonto(pago.getMonto());
         dto.setMetodoPago(pago.getMetodoPago());
         dto.setEstadoPago(pago.getEstadoPago());
+        dto.setConcepto(pago.getConcepto());
 
         if (pago.getComprobante() != null) {
             dto.setTipoComprobante(pago.getComprobante().getTipoComprobante());
