@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MedicoService } from '../../shared/services/medico.service';
@@ -18,6 +18,7 @@ export class MedicosComponent implements OnInit {
   private medicoService = inject(MedicoService);
   private especialidadService = inject(EspecialidadService);
   private horarioService = inject(HorarioMedicoService);
+  private cdr = inject(ChangeDetectorRef);
 
   medicos: Medico[] = [];
   medicosFiltrados: Medico[] = [];
@@ -66,15 +67,19 @@ export class MedicosComponent implements OnInit {
 
   cargarMedicos(): void {
     this.isLoading = true;
+    this.cdr.detectChanges();
+
     this.medicoService.listarTodos().subscribe({
       next: (data) => {
         this.medicos = data;
         this.medicosFiltrados = data;
         this.isLoading = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.isLoading = false;
         this.mostrarMensajeGlobal('Error al cargar la lista de médicos.', 'error');
+        this.cdr.detectChanges();
       }
     });
   }
@@ -108,6 +113,7 @@ export class MedicosComponent implements OnInit {
   guardarMedico(): void {
     if (!this.medicoForm.nombres || !this.medicoForm.codigoColegiatura || !this.medicoForm.correo || !this.medicoForm.idEspecialidad) {
       this.errorMsg = 'Por favor, completa los campos obligatorios.';
+      this.cdr.detectChanges();
       return;
     }
 
@@ -118,7 +124,10 @@ export class MedicosComponent implements OnInit {
           this.mostrarMensajeGlobal('Médico actualizado con éxito.', 'success');
           this.cargarMedicos();
         },
-        error: (err) => this.errorMsg = err.error?.message || 'Error al actualizar.'
+        error: (err) => {
+          this.errorMsg = err.error?.message || 'Error al actualizar.';
+          this.cdr.detectChanges();
+        }
       });
     } else {
       this.medicoService.registrar(this.medicoForm).subscribe({
@@ -127,7 +136,10 @@ export class MedicosComponent implements OnInit {
           this.mostrarMensajeGlobal('Médico registrado y cuenta creada con su correo.', 'success');
           this.cargarMedicos();
         },
-        error: (err) => this.errorMsg = err.error?.message || 'El correo o colegiatura ya existe.'
+        error: (err) => {
+          this.errorMsg = err.error?.message || 'El correo o colegiatura ya existe.';
+          this.cdr.detectChanges(); // Mostrar error al instante sin doble clic
+        }
       });
     }
   }
@@ -159,14 +171,18 @@ export class MedicosComponent implements OnInit {
 
   cargarHorariosDelMedico(idMedico: number): void {
     this.isLoadingHorarios = true;
+    this.cdr.detectChanges();
+
     this.horarioService.listarPorMedico(idMedico).subscribe({
       next: (data) => {
         this.horarios = data;
         this.isLoadingHorarios = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.isLoadingHorarios = false;
         this.errorScheduleMsg = 'No se pudieron recuperar los horarios del servidor.';
+        this.cdr.detectChanges();
       }
     });
   }
@@ -208,7 +224,11 @@ export class MedicosComponent implements OnInit {
   mostrarMensajeGlobal(msg: string, type: 'success' | 'error'): void {
     this.globalMsg = msg;
     this.globalMsgType = type;
-    setTimeout(() => this.globalMsg = '', 4000);
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.globalMsg = '';
+      this.cdr.detectChanges();
+    }, 4000);
   }
 
   private resetForm(): Medico {

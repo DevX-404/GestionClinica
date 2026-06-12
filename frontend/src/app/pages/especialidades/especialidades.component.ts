@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EspecialidadService } from '../../shared/services/especialidad.service';
@@ -12,6 +12,7 @@ import { Especialidad } from '../../shared/models/especialidad.model';
 })
 export class EspecialidadesComponent implements OnInit {
   private especialidadService = inject(EspecialidadService);
+  private cdr = inject(ChangeDetectorRef);
 
   especialidades: Especialidad[] = [];
   especialidadesFiltradas: Especialidad[] = [];
@@ -36,15 +37,19 @@ export class EspecialidadesComponent implements OnInit {
 
   cargarEspecialidades(): void {
     this.isLoading = true;
+    this.cdr.detectChanges();
+
     this.especialidadService.listarTodas().subscribe({
       next: (data) => {
         this.especialidades = data;
         this.especialidadesFiltradas = data;
         this.isLoading = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.isLoading = false;
         this.mostrarMensajeGlobal('No se pudo conectar con el servidor de especialidades.', 'error');
+        this.cdr.detectChanges();
       }
     });
   }
@@ -76,6 +81,7 @@ export class EspecialidadesComponent implements OnInit {
   guardarEspecialidad(): void {
     if (!this.especialidadForm.nombre.trim()) {
       this.errorMsg = 'El nombre de la especialidad es obligatorio.';
+      this.cdr.detectChanges();
       return;
     }
 
@@ -86,7 +92,10 @@ export class EspecialidadesComponent implements OnInit {
           this.mostrarMensajeGlobal('Especialidad actualizada correctamente.', 'success');
           this.cargarEspecialidades();
         },
-        error: (err) => this.errorMsg = err.error?.message || 'Error al actualizar la especialidad.'
+        error: (err) => {
+          this.errorMsg = err.error?.message || 'Error al actualizar la especialidad.';
+          this.cdr.detectChanges();
+        }
       });
     } else {
       this.especialidadService.registrar(this.especialidadForm).subscribe({
@@ -95,7 +104,10 @@ export class EspecialidadesComponent implements OnInit {
           this.mostrarMensajeGlobal('Nueva especialidad registrada con éxito.', 'success');
           this.cargarEspecialidades();
         },
-        error: (err) => this.errorMsg = err.error?.message || 'El nombre de la especialidad ya se encuentra registrado.'
+        error: (err) => {
+          this.errorMsg = err.error?.message || 'El nombre de la especialidad ya se encuentra registrado.';
+          this.cdr.detectChanges();
+        }
       });
     }
   }
@@ -107,7 +119,10 @@ export class EspecialidadesComponent implements OnInit {
           this.mostrarMensajeGlobal('Especialidad dada de baja correctamente.', 'success');
           this.cargarEspecialidades();
         },
-        error: () => this.mostrarMensajeGlobal('No se pudo eliminar la especialidad.', 'error')
+        error: () => {
+          this.mostrarMensajeGlobal('No se pudo eliminar la especialidad.', 'error');
+          this.cdr.detectChanges();
+        }
       });
     }
   }
@@ -115,7 +130,11 @@ export class EspecialidadesComponent implements OnInit {
   mostrarMensajeGlobal(msg: string, type: 'success' | 'error'): void {
     this.globalMsg = msg;
     this.globalMsgType = type;
-    setTimeout(() => this.globalMsg = '', 4000);
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.globalMsg = '';
+      this.cdr.detectChanges();
+    }, 4000);
   }
 
   private resetForm(): Especialidad {

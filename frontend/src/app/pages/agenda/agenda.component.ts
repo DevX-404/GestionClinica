@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FullCalendarModule } from '@fullcalendar/angular';
@@ -23,6 +23,7 @@ export class AgendaComponent implements OnInit {
   private citaService = inject(CitaMedicaService);
   private consultaService = inject(ConsultaMedicaService); // <-- AÑADIDO
   private recetaService = inject(RecetaMedicaService);
+  private cdr = inject(ChangeDetectorRef);
 
   // Simulación: En producción sacarías el ID del token JWT del médico logueado
   medicoLogueadoId: number = 1; 
@@ -81,6 +82,8 @@ export class AgendaComponent implements OnInit {
 
   cargarAgenda(): void {
     this.isLoading = true;
+    this.cdr.detectChanges();
+    
     this.citaService.listarPorMedico(this.medicoLogueadoId).subscribe({
       next: (citas) => {
         // 1. Mapear citas para el Calendario
@@ -106,10 +109,13 @@ export class AgendaComponent implements OnInit {
         // 2. Filtrar citas de "Hoy" para la tabla lateral
         const hoy = new Date().toISOString().split('T')[0];
         this.citasDelDia = citas.filter(c => c.fecha === hoy);
-        
         this.isLoading = false;
+        this.cdr.detectChanges();
       },
-      error: () => this.isLoading = false
+      error: () => {
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 
@@ -146,6 +152,7 @@ export class AgendaComponent implements OnInit {
   guardarAtencion(): void {
     if (!this.consulta.sintomas || !this.consulta.diagnostico || !this.consulta.tratamiento) {
       alert('Por favor, completa los campos obligatorios: Síntomas, Diagnóstico y Tratamiento.');
+      this.cdr.detectChanges();
       return;
     }
 
@@ -170,13 +177,17 @@ export class AgendaComponent implements OnInit {
         this.mostrarFormReceta = true;
         this.cargarAgenda(); // Refrescamos para que se ponga en verde en el calendario
       },
-      error: (err) => alert('Error al registrar la atención: ' + (err.error?.message || err.message))
+      error: (err) => {
+        alert('Error al registrar la atención: ' + (err.error?.message || err.message));
+        this.cdr.detectChanges();
+      }
     });
   }
 
   agregarMedicamento(): void {
     if (!this.nuevoDetalle.medicamento || !this.nuevoDetalle.dosis || !this.nuevoDetalle.frecuencia || !this.nuevoDetalle.duracion) {
       alert('Por favor, rellena todos los campos del medicamento.');
+      this.cdr.detectChanges();
       return;
     }
     this.receta.detalles.push({ ...this.nuevoDetalle });
@@ -192,8 +203,12 @@ export class AgendaComponent implements OnInit {
       next: () => {
         alert('¡Receta médica generada correctamente con sus detalles! Flujo terminado.');
         this.limpiarYRegresar();
+        this.cdr.detectChanges();
       },
-      error: (err) => alert('Error al guardar la receta: ' + (err.error?.message || err.message))
+      error: (err) => {
+        alert('Error al guardar la receta: ' + (err.error?.message || err.message));
+        this.cdr.detectChanges();
+      }
     });
   }
 

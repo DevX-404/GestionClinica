@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuditoriaService } from '../../shared/services/auditoria.service';
@@ -13,6 +13,7 @@ import { Auditoria } from '../../shared/models/auditoria.model';
 })
 export class AuditoriaComponent implements OnInit {
   private auditoriaService = inject(AuditoriaService);
+  private cdr = inject(ChangeDetectorRef);
 
   logs: Auditoria[] = [];
   logsFiltrados: Auditoria[] = [];
@@ -25,13 +26,19 @@ export class AuditoriaComponent implements OnInit {
 
   cargarLogs(): void {
     this.isLoading = true;
+    this.cdr.detectChanges();
+
     this.auditoriaService.listarLogs().subscribe({
       next: (data) => {
         this.logs = data;
         this.logsFiltrados = data;
         this.isLoading = false;
+        this.cdr.detectChanges();
       },
-      error: () => this.isLoading = false
+      error: () => {
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 

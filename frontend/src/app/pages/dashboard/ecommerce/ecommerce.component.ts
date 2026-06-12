@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { DashboardService, DashboardMetrics } from '../../../shared/services/dashboard.service';
 import { RouterModule } from '@angular/router';
@@ -12,6 +12,7 @@ import { RouterModule } from '@angular/router';
 })
 export class EcommerceComponent implements OnInit {
   private dashboardService = inject(DashboardService);
+  private cdr = inject(ChangeDetectorRef);
   
   metrics: DashboardMetrics = {
     totalPacientes: 0, totalMedicos: 0, citasHoy: 0, citasPendientesHoy: 0, ingresosHoy: 0
@@ -29,10 +30,12 @@ export class EcommerceComponent implements OnInit {
       next: (data) => {
         this.metrics = data;
         this.isLoading = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error cargando el dashboard', err);
         this.isLoading = false;
+        this.cdr.detectChanges();
       }
     });
   }

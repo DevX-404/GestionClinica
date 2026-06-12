@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CitaMedicaService } from '../../shared/services/cita-medica.service';
@@ -22,6 +22,7 @@ export class CitasComponent implements OnInit {
   private pacienteService = inject(PacienteService);
   private especialidadService = inject(EspecialidadService);
   private medicoService = inject(MedicoService);
+  private cdr = inject(ChangeDetectorRef);
 
   citas: CitaMedica[] = [];
   citasFiltradas: CitaMedica[] = [];
@@ -51,15 +52,19 @@ export class CitasComponent implements OnInit {
 
   cargarCitas(): void {
     this.isLoading = true;
+    this.cdr.detectChanges();
+
     this.citaService.listarTodas().subscribe({
       next: (data) => {
         this.citas = data;
         this.citasFiltradas = data;
         this.isLoading = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.isLoading = false;
         this.mostrarMensajeGlobal('Error al cargar el registro de citas.', 'error');
+        this.cdr.detectChanges();
       }
     });
   }
@@ -101,6 +106,7 @@ export class CitasComponent implements OnInit {
   guardarCita(): void {
     if (!this.citaForm.idPaciente || !this.citaForm.idEspecialidad || !this.citaForm.idMedico || !this.citaForm.fecha || !this.citaForm.hora) {
       this.errorMsg = 'Por favor, completa todos los campos requeridos.';
+      this.cdr.detectChanges();
       return;
     }
 
@@ -117,6 +123,7 @@ export class CitasComponent implements OnInit {
       },
       error: (err) => {
         this.errorMsg = err.error?.message || 'Error: El médico no está disponible o hubo un problema en el registro.';
+        this.cdr.detectChanges();
       }
     });
   }
@@ -136,7 +143,11 @@ export class CitasComponent implements OnInit {
   mostrarMensajeGlobal(msg: string, type: 'success' | 'error'): void {
     this.globalMsg = msg;
     this.globalMsgType = type;
-    setTimeout(() => this.globalMsg = '', 4000);
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.globalMsg = '';
+      this.cdr.detectChanges();
+    }, 4000);
   }
 
   private resetForm(): Partial<CitaMedica> {

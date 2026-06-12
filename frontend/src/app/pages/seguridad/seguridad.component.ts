@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UsuarioService } from '../../shared/services/usuario.service';
@@ -12,6 +12,7 @@ import { Usuario } from '../../shared/models/usuario.model';
 })
 export class SeguridadComponent implements OnInit {
   private usuarioService = inject(UsuarioService);
+  private cdr = inject(ChangeDetectorRef);
 
   usuarios: Usuario[] = [];
   usuariosFiltrados: Usuario[] = [];
@@ -34,15 +35,19 @@ export class SeguridadComponent implements OnInit {
 
   cargarUsuarios(): void {
     this.isLoading = true;
+    this.cdr.detectChanges();
+
     this.usuarioService.listarTodos().subscribe({
       next: (data) => {
         this.usuarios = data;
         this.usuariosFiltrados = data;
         this.isLoading = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.isLoading = false;
         this.mostrarMensajeGlobal('Error al cargar la lista de usuarios.', 'error');
+        this.cdr.detectChanges();
       }
     });
   }
@@ -65,8 +70,12 @@ export class SeguridadComponent implements OnInit {
           // Actualizamos el objeto en la vista sin recargar todo
           const idx = this.usuariosFiltrados.findIndex(u => u.idUsuario === usuario.idUsuario);
           if (idx !== -1) this.usuariosFiltrados[idx].activo = userAcutalizado.activo;
+          this.cdr.detectChanges();
         },
-        error: () => this.mostrarMensajeGlobal('No se pudo cambiar el estado.', 'error')
+        error: () => {
+          this.mostrarMensajeGlobal('No se pudo cambiar el estado.', 'error');
+          this.cdr.detectChanges();
+        }
       });
     }
   }
@@ -110,8 +119,12 @@ export class SeguridadComponent implements OnInit {
         next: () => {
           this.closePasswordModal();
           this.mostrarMensajeGlobal(`Contraseña de ${this.usuarioSeleccionado?.username} restablecida con éxito.`, 'success');
+          this.cdr.detectChanges();
         },
-        error: () => this.errorPwdMsg = 'No se pudo restablecer la contraseña en el servidor.'
+        error: () => {
+          this.errorPwdMsg = 'No se pudo restablecer la contraseña en el servidor.';
+          this.cdr.detectChanges();
+        }
       });
     }
   }
@@ -119,6 +132,10 @@ export class SeguridadComponent implements OnInit {
   mostrarMensajeGlobal(msg: string, type: 'success' | 'error'): void {
     this.globalMsg = msg;
     this.globalMsgType = type;
-    setTimeout(() => this.globalMsg = '', 4000);
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.globalMsg = '';
+      this.cdr.detectChanges();
+    }, 4000);
   }
 }

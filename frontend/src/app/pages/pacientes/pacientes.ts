@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Paciente } from '../../shared/models/paciente.model';
@@ -32,7 +32,7 @@ export class PacientesComponent implements OnInit {
   globalMsg: string = ''; // <-- Mensaje para la vista principal
   globalMsgType: 'success' | 'error' = 'success';
 
-  constructor(private pacienteService: PacienteService) {}
+  constructor(private pacienteService: PacienteService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.cargarPacientes();
@@ -40,16 +40,20 @@ export class PacientesComponent implements OnInit {
 
   cargarPacientes(): void {
     this.isLoading = true; // Inicia la carga
+    this.cdr.detectChanges();
+
     this.pacienteService.listarTodos().subscribe({
       next: (data) => {
         this.pacientes = data;
         this.pacientesFiltrados = data;
         this.isLoading = false; // Termina la carga
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error al traer pacientes:', err);
         this.isLoading = false;
         this.mostrarMensajeGlobal('Error al conectar con el servidor. Intenta de nuevo.', 'error');
+        this.cdr.detectChanges();
       }
     });
   }
@@ -93,7 +97,10 @@ export class PacientesComponent implements OnInit {
           this.mostrarMensajeGlobal('¡Paciente actualizado con éxito!', 'success');
           this.cargarPacientes();
         },
-        error: (err) => this.errorMsg = 'No se pudo actualizar al paciente.' // El error sí se queda en el modal
+        error: (err) => {
+          this.errorMsg = 'No se pudo actualizar al paciente.';
+          this.cdr.detectChanges();
+        }
       });
     } else {
       this.pacienteService.registrar(this.pacienteForm).subscribe({
@@ -108,6 +115,7 @@ export class PacientesComponent implements OnInit {
           } else {
             this.errorMsg = 'Error al guardar la ficha del paciente.';
           }
+          this.cdr.detectChanges();
         }
       });
     }
@@ -116,7 +124,12 @@ export class PacientesComponent implements OnInit {
   mostrarMensajeGlobal(msg: string, type: 'success' | 'error'): void {
     this.globalMsg = msg;
     this.globalMsgType = type;
-    setTimeout(() => this.globalMsg = '', 4000); // Desaparece solo a los 4 segundos
+    this.cdr.detectChanges(); // <-- Forzar que la alerta aparezca INMEDIATAMENTE
+
+    setTimeout(() => {
+      this.globalMsg = '';
+      this.cdr.detectChanges(); // <-- Forzar que la alerta desaparezca
+    }, 4000); 
   }
 
   cambiarEstado(paciente: Paciente): void {

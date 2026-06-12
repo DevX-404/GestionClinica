@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PagoService } from '../../shared/services/pago.service';
@@ -13,6 +13,7 @@ import { Pago } from '../../shared/models/pago.model';
 })
 export class PagosComponent implements OnInit {
   private pagoService = inject(PagoService);
+  private cdr = inject(ChangeDetectorRef);
 
   pagos: Pago[] = [];
   pagosFiltrados: Pago[] = [];
@@ -42,15 +43,19 @@ export class PagosComponent implements OnInit {
 
   cargarPagos(): void {
     this.isLoading = true;
+    this.cdr.detectChanges();
+
     this.pagoService.listarTodos().subscribe({
       next: (data) => {
         this.pagos = data;
         this.pagosFiltrados = data;
         this.isLoading = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.isLoading = false;
         this.mostrarMensajeGlobal('Error al conectar con el servidor financiero.', 'error');
+        this.cdr.detectChanges();
       }
     });
   }
@@ -93,6 +98,7 @@ export class PagosComponent implements OnInit {
       },
       error: (err) => {
         this.errorMsg = err.error?.message || 'Ocurrió un error al procesar la transacción.';
+        this.cdr.detectChanges();
       }
     });
   }
@@ -115,6 +121,10 @@ export class PagosComponent implements OnInit {
   mostrarMensajeGlobal(msg: string, type: 'success' | 'error'): void {
     this.globalMsg = msg;
     this.globalMsgType = type;
-    setTimeout(() => this.globalMsg = '', 4000);
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.globalMsg = '';
+      this.cdr.detectChanges();
+    }, 4000);
   }
 }
