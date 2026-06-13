@@ -1,5 +1,7 @@
 package com.example.GestionClinica.dto;
 
+import java.math.BigDecimal;
+
 import lombok.Data;
 
 @Data
@@ -8,4 +10,6 @@ public class EspecialidadDTO {
     private String nombre;
     private String descripcion;
     private String estado;
+    private BigDecimal precioConsulta;
+    
 }

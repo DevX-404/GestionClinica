@@ -38,12 +38,19 @@ public class EspecialidadServiceImpl implements EspecialidadService {
     @Override
     @Transactional
     public EspecialidadDTO registrar(EspecialidadDTO dto) {
-        if (repository.existsByNombre(dto.getNombre())) {
-            throw new IllegalArgumentException("Ya existe una especialidad con el nombre: " + dto.getNombre());
+        if (repository.existsByNombreAndEstado(dto.getNombre(), "ACTIVO")) {
+            throw new IllegalArgumentException("Ya existe una especialidad ACTIVA con el nombre: " + dto.getNombre());
         }
+        
         Especialidad esp = new Especialidad();
         BeanUtils.copyProperties(dto, esp);
         esp.setEstado("ACTIVO");
+        
+        // BLINDAJE: Si el precio llega nulo desde el frontend, le forzamos el valor por defecto
+        if (esp.getPrecioConsulta() == null) {
+            esp.setPrecioConsulta(new java.math.BigDecimal("150.00"));
+        }
+        
         return convertirADto(repository.save(esp));
     }
 

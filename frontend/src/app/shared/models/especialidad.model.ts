@@ -3,4 +3,5 @@ export interface Especialidad {
   nombre: string;
   descripcion?: string;
   estado?: string;
+  precioConsulta?: number;
 }

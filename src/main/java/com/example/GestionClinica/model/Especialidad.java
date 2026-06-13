@@ -20,7 +20,7 @@ public class Especialidad {
 
     @NotBlank(message = "El nombre de la especialidad es obligatorio")
     @Size(max = 50)
-    @Column(length = 50, nullable = false, unique = true)
+    @Column(length = 50, nullable = false)
     private String nombre;
 
     @Size(max = 250)
@@ -31,6 +31,6 @@ public class Especialidad {
     private String estado = "ACTIVO";
 
     // Tarifario por especialidad, por ejemplo, el costo de una consulta.
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column( precision = 10, scale = 2)
     private java.math.BigDecimal precioConsulta = new java.math.BigDecimal("150.00");
 }
