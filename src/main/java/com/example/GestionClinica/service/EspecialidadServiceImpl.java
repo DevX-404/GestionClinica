@@ -22,7 +22,7 @@ public class EspecialidadServiceImpl implements EspecialidadService {
     @Transactional(readOnly = true)
     public List<EspecialidadDTO> listarTodas() {
         return repository.findAll().stream()
-                .filter(e -> "ACTIVO".equals(e.getEstado()))
+                //.filter(e -> "ACTIVO".equals(e.getEstado())) impide que se muestren las inactivas, pero lo dejamos para que el filtro en frontend funcione
                 .map(this::convertirADto)
                 .collect(Collectors.toList());
     }
@@ -62,6 +62,14 @@ public class EspecialidadServiceImpl implements EspecialidadService {
         
         esp.setNombre(dto.getNombre());
         esp.setDescripcion(dto.getDescripcion());
+        // Necesitamos guardar el estado para que el botón "Restaurar" funcione
+        if (dto.getEstado() != null) {
+            esp.setEstado(dto.getEstado());
+        }
+        // Necesitamos guardar el precio por si lo editas
+        if (dto.getPrecioConsulta() != null) {
+            esp.setPrecioConsulta(dto.getPrecioConsulta());
+        }
         return convertirADto(repository.save(esp));
     }
 

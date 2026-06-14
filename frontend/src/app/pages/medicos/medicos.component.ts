@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule,ReactiveFormsModule,FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MedicoService } from '../../shared/services/medico.service';
 import { EspecialidadService } from '../../shared/services/especialidad.service';
 import { HorarioMedicoService } from '../../shared/services/horario-medico.service';
@@ -11,14 +11,16 @@ import { HorarioMedico } from '../../shared/models/horario-medico.model';
 @Component({
   selector: 'app-medicos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule,ReactiveFormsModule],
   templateUrl: './medicos.component.html'
+  
 })
 export class MedicosComponent implements OnInit {
   private medicoService = inject(MedicoService);
   private especialidadService = inject(EspecialidadService);
   private horarioService = inject(HorarioMedicoService);
   private cdr = inject(ChangeDetectorRef);
+  private fb = inject(FormBuilder);
 
   medicos: Medico[] = [];
   medicosFiltrados: Medico[] = [];
@@ -37,7 +39,11 @@ export class MedicosComponent implements OnInit {
   isModalOpen: boolean = false;
   isEditing: boolean = false;
   errorMsg: string = '';
-  medicoForm: Medico = this.resetForm();
+  //medicoForm: Medico = this.resetForm();
+  // FORMULARIO REACTIVO
+  medicoForm: FormGroup;
+
+
 
   // Modal Horarios
   isScheduleModalOpen: boolean = false;
@@ -49,10 +55,25 @@ export class MedicosComponent implements OnInit {
     diaSemana: 'LUNES',
     horaInicio: '',
     horaFin: ''
+
   };
 
   diasSemana: string[] = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
-
+  constructor() {
+    this.medicoForm = this.fb.group({
+      idMedico: [null],
+      nombres: ['', Validators.required],
+      apellidoPaterno: ['', Validators.required],
+      apellidoMaterno: ['', Validators.required],
+      // Validación: 9 dígitos exactos
+      telefono: ['', [Validators.required, Validators.pattern('^[0-9]{9}$')]], 
+      correo: ['', [Validators.required, Validators.email]],
+      idEspecialidad: [0, Validators.required],
+      estadoDisponibilidad: ['DISPONIBLE'],
+      // Validación: CMP seguido de números
+      codigoColegiatura: ['', Validators.pattern('^[0-9]+$')] 
+    });
+  }
   ngOnInit(): void {
     this.cargarEspecialidades();
     this.cargarMedicos();
@@ -98,10 +119,14 @@ export class MedicosComponent implements OnInit {
     this.errorMsg = '';
     if (medico) {
       this.isEditing = true;
-      this.medicoForm = { ...medico };
+     this.medicoForm.patchValue(medico);
     } else {
       this.isEditing = false;
-      this.medicoForm = this.resetForm();
+      this.medicoForm.reset({
+        estadoDisponibilidad: 'DISPONIBLE',
+        idEspecialidad: 0,
+        codigoColegiatura: ''
+      });
     }
     this.isModalOpen = true;
   }
@@ -111,39 +136,48 @@ export class MedicosComponent implements OnInit {
   }
 
   guardarMedico(): void {
-    if (!this.medicoForm.nombres || !this.medicoForm.codigoColegiatura || !this.medicoForm.correo || !this.medicoForm.idEspecialidad) {
-      this.errorMsg = 'Por favor, completa los campos obligatorios.';
-      this.cdr.detectChanges();
+    if (this.medicoForm.invalid) {
+      this.errorMsg = 'Por favor, corrige los errores en el formulario.';
+      this.medicoForm.markAllAsTouched();
       return;
     }
+    let data = this.medicoForm.value;
 
-    if (this.isEditing && this.medicoForm.idMedico) {
-      this.medicoService.actualizar(this.medicoForm.idMedico, this.medicoForm).subscribe({
+   // console.log("Datos que estoy enviando al backend:", data);
+
+  if (data.codigoColegiatura && !data.codigoColegiatura.startsWith('CMP-')) {
+       data.codigoColegiatura = 'CMP-' + data.codigoColegiatura;
+    }
+    console.log("JSON final enviado al servidor:", JSON.stringify(data));
+
+    if (this.isEditing && data.idMedico) {
+      this.medicoService.actualizar(data.idMedico, data).subscribe({
         next: () => {
           this.closeModal();
           this.mostrarMensajeGlobal('Médico actualizado con éxito.', 'success');
           this.cargarMedicos();
         },
         error: (err) => {
+          console.error("Error del servidor:", err);
           this.errorMsg = err.error?.message || 'Error al actualizar.';
           this.cdr.detectChanges();
         }
       });
     } else {
-      this.medicoService.registrar(this.medicoForm).subscribe({
+      this.medicoService.registrar(data).subscribe({
         next: () => {
           this.closeModal();
-          this.mostrarMensajeGlobal('Médico registrado y cuenta creada con su correo.', 'success');
+          this.mostrarMensajeGlobal('Médico registrado correctamente.', 'success');
           this.cargarMedicos();
         },
         error: (err) => {
+          console.error("Error del servidor:", err);
           this.errorMsg = err.error?.message || 'El correo o colegiatura ya existe.';
-          this.cdr.detectChanges(); // Mostrar error al instante sin doble clic
+          this.cdr.detectChanges();
         }
       });
     }
   }
-
   eliminarMedico(id: number): void {
     if (confirm('¿Estás seguro de dar de baja a este médico?')) {
       this.medicoService.eliminar(id).subscribe({

@@ -1,5 +1,5 @@
 <div class="mx-auto max-w-7xl p-4 md:p-6 2xl:p-10">
-  
+
   <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <h2 class="text-2xl font-bold text-black dark:text-white">Especialidades Médicas</h2>
@@ -8,51 +8,98 @@
     <div class="flex items-center gap-3">
       <input type="text" [(ngModel)]="searchTerm" (input)="filtrar()" placeholder="Buscar especialidad..."
         class="w-full rounded-lg border border-gray-300 bg-transparent px-5 py-2.5 outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:focus:border-brand-500 sm:w-64" />
-      <button (click)="openModal()" class="flex items-center gap-2 rounded-lg bg-brand-500 px-5 py-2.5 font-medium text-white hover:bg-brand-600 transition-colors">
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+      <button (click)="toggleVista()"
+        [ngClass]="mostrandoInactivos ? 'border-brand-500 text-brand-500 bg-brand-50 dark:bg-brand-500/10' : 'border-gray-300 text-gray-600 bg-white dark:bg-gray-800 dark:border-gray-700'"
+        class="flex items-center gap-2 rounded-lg border px-5 py-2.5 font-medium transition-colors">
+        <svg *ngIf="!mostrandoInactivos" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+          </path>
+        </svg>
+        <svg *ngIf="mostrandoInactivos" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+        </svg>
+        {{ mostrandoInactivos ? 'Volver a Activos' : 'Inactivos' }}
+      </button>
+      <button (click)="openModal()"
+        class="flex items-center gap-2 rounded-lg bg-brand-500 px-5 py-2.5 font-medium text-white hover:bg-brand-600 transition-colors">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
         Nueva Especialidad
       </button>
     </div>
   </div>
 
   @if (globalMsg) {
-    <div [ngClass]="globalMsgType === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'" class="mb-4 rounded-lg border p-4 text-base font-medium shadow-sm transition-all">
-      {{ globalMsg }}
-    </div>
+  <div
+    [ngClass]="globalMsgType === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'"
+    class="mb-4 rounded-lg border p-4 text-base font-medium shadow-sm transition-all">
+    {{ globalMsg }}
+  </div>
   }
 
-  <div class="rounded-2xl border border-gray-200 bg-white shadow-theme-xl dark:border-gray-800 dark:bg-white/[0.02] overflow-hidden">
+  <div
+    class="rounded-2xl border border-gray-200 bg-white shadow-theme-xl dark:border-gray-800 dark:bg-white/[0.02] overflow-hidden">
     <div class="max-w-full overflow-x-auto">
       <table class="w-full table-auto text-left">
         <thead>
           <tr class="border-b border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.02]">
             <th class="px-6 py-4 text-base font-semibold text-gray-500">Especialidad</th>
             <th class="px-6 py-4 text-base font-semibold text-gray-500">Descripción</th>
+            <th class="px-6 py-4 text-base font-semibold text-gray-500">Precio de Consulta </th>
             <th class="px-6 py-4 text-base font-semibold text-gray-500">Estado</th>
             <th class="px-6 py-4 text-base font-semibold text-gray-500 text-right">Acciones</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
           @if (isLoading) {
-            <tr><td colspan="4" class="px-6 py-10 text-center text-base text-brand-500 font-medium animate-pulse">Consultando catálogo clínico...</td></tr>
+          <tr>
+            <td colspan="5" class="px-6 py-10 text-center text-base text-brand-500 font-medium animate-pulse">
+              Consultando catálogo clínico...</td>
+          </tr>
           } @else {
-            @for (esp of especialidadesFiltradas; track esp.idEspecialidad) {
-              <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors">
-                <td class="px-6 py-4 text-base font-semibold text-gray-900 dark:text-white">{{ esp.nombre }}</td>
-                <td class="px-6 py-4 text-base text-gray-600 dark:text-gray-300 max-w-xs truncate">{{ esp.descripcion || 'Sin descripción adicional.' }}</td>
-                <td class="px-6 py-4">
-                  <span [ngClass]="esp.estado === 'ACTIVO' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'" class="inline-flex rounded-full px-3 py-1 text-sm font-medium uppercase">
-                    {{ esp.estado }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 text-right text-base">
-                  <button (click)="openModal(esp)" class="text-brand-500 hover:text-brand-700 mr-4 font-medium">Editar</button>
-                  <button (click)="eliminarEspecialidad(esp.idEspecialidad!)" class="text-red-500 hover:text-red-700 font-medium">Dar Baja</button>
-                </td>
-              </tr>
-            } @empty {
-              <tr><td colspan="4" class="px-6 py-10 text-center text-base text-gray-400">No hay ramas médicas configuradas todavía.</td></tr>
-            }
+          @for (esp of especialidadesFiltradas; track esp.idEspecialidad) {
+          <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors">
+            <td class="px-6 py-4 text-base font-semibold text-gray-900 dark:text-white">{{ esp.nombre }}</td>
+            <td class="px-6 py-4 text-base text-gray-600 dark:text-gray-300 max-w-xs truncate">{{ esp.descripcion ||
+              'Sin descripción adicional.' }}</td>
+
+            <td class="px-6 py-4 text-base font-medium text-gray-900 dark:text-white">S/ {{
+              esp.precioConsulta?.toFixed(2) || '0.00' }}</td>
+
+            <td class="px-6 py-4">
+              <span [ngClass]="esp.estado === 'ACTIVO' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'"
+                class="inline-flex rounded-full px-3 py-1 text-sm font-medium uppercase">
+                {{ esp.estado }}
+              </span>
+            </td>
+            <td class="px-6 py-4 text-right text-base">
+              @if (esp.estado === 'ACTIVO') {
+              <button (click)="openModal(esp)"
+                class="text-brand-500 hover:text-brand-700 mr-4 font-medium">Editar</button>
+              <button (click)="eliminarEspecialidad(esp.idEspecialidad!)"
+                class="text-red-500 hover:text-red-700 font-medium">Dar Baja</button>
+              } @else {
+              <button (click)="restaurarEspecialidad(esp)"
+                class="text-green-600 hover:text-green-800 font-medium flex items-center justify-end gap-1 ml-auto">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                  </path>
+                </svg>
+                Restaurar
+              </button>
+              }
+            </td>
+          </tr>
+          } @empty {
+          <tr>
+            <td colspan="5" class="px-6 py-10 text-center text-base text-gray-400">No hay ramas médicas configuradas
+              todavía.</td>
+          </tr>
+          }
           }
         </tbody>
       </table>
@@ -60,33 +107,53 @@
   </div>
 
   @if (isModalOpen) {
-    <div class="fixed inset-0 z-99999 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-      <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900">
-        <div class="mb-5 flex items-center justify-between border-b pb-3 dark:border-gray-800">
-          <h3 class="text-xl font-bold text-gray-900 dark:text-white">{{ isEditing ? 'Modificar Especialidad' : 'Crear Especialidad' }}</h3>
-          <button (click)="closeModal()" class="text-gray-400 hover:text-gray-700 dark:hover:text-white text-2xl">&times;</button>
+  <div class="fixed inset-0 z-99999 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+    <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900">
+      <div class="mb-5 flex items-center justify-between border-b pb-3 dark:border-gray-800">
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white">{{ isEditing ? 'Modificar Especialidad' : 'Crear
+          Especialidad' }}</h3>
+        <button (click)="closeModal()"
+          class="text-gray-400 hover:text-gray-700 dark:hover:text-white text-2xl">&times;</button>
+      </div>
+
+      @if (errorMsg) {
+      <div class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 border border-red-200">{{ errorMsg }}</div>
+      }
+
+      <div class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Nombre de la Especialidad
+            *</label>
+          <input type="text" [(ngModel)]="especialidadForm.nombre" placeholder="Ej: Pediatría"
+            class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-base text-gray-900 focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
         </div>
-
-        @if (errorMsg) {
-          <div class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 border border-red-200">{{ errorMsg }}</div>
-        }
-
-        <div class="space-y-4">
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Nombre de la Especialidad *</label>
-            <input type="text" [(ngModel)]="especialidadForm.nombre" placeholder="Ej: Pediatría" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-base text-gray-900 focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Descripción Breve</label>
-            <textarea [(ngModel)]="especialidadForm.descripcion" rows="3" placeholder="Detalles de la especialidad..." class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-base text-gray-900 focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"></textarea>
-          </div>
+        <div class="mt-4">
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Precio de la Consulta (S/.)
+            *</label>
+          <input type="number" [(ngModel)]="especialidadForm.precioConsulta" placeholder="Ej: 99.90" step="0.10" min="1"
+            class="w-full rounded-lg border border-gray-300 bg-white p-2.5 text-gray-900 focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
         </div>
-
-        <div class="mt-6 flex justify-end gap-3 border-t pt-4 dark:border-gray-800">
-          <button (click)="closeModal()" class="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">Cancelar</button>
-          <button (click)="guardarEspecialidad()" class="rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600 shadow-sm transition-colors">Guardar Cambios</button>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Descripción Breve</label>
+          <textarea [(ngModel)]="especialidadForm.descripcion" rows="3" placeholder="Detalles de la especialidad..."
+            class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-base text-gray-900 focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"></textarea>
         </div>
       </div>
+
+      <div class="mt-6 flex justify-end gap-3 border-t pt-4 dark:border-gray-800">
+        <button (click)="closeModal()"
+          class="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">Cancelar</button>
+        <button (click)="guardarEspecialidad()" [disabled]="isSaving"
+          class="flex items-center justify-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all min-w-[160px]">
+
+          @if (isSaving) {
+          <div class="h-5 w-5 animate-spin rounded-full border-2 border-solid border-white border-t-transparent"></div>
+          }
+
+          <span>{{ isSaving ? 'Guardando...' : 'Guardar Cambios' }}</span>
+        </button>
+      </div>
     </div>
+  </div>
   }
 </div>
