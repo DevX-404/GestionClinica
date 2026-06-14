@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.math.BigDecimal;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 @Data
 public class CitaMedicaDTO {
@@ -22,11 +24,15 @@ public class CitaMedicaDTO {
     private String nombreEspecialidad;
 
     @NotNull(message = "Fecha obligatoria")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate fecha;
 
     @NotNull(message = "Hora obligatoria")
+    @JsonFormat(pattern = "HH:mm:ss")
     private LocalTime hora;
 
     private String estado;
     private String motivoConsulta;
+    // --- NUEVO CAMPO DE DINERO ---
+    private BigDecimal montoPagadoAdelanto;
 }

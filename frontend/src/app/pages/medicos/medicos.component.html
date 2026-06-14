@@ -85,59 +85,75 @@
           <h3 class="text-xl font-bold text-gray-900 dark:text-white">{{ isEditing ? 'Editar Ficha Médica' : 'Registrar Personal Médico' }}</h3>
           <button (click)="closeModal()" class="text-gray-400 hover:text-gray-700 dark:hover:text-white text-2xl">&times;</button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Nombres *</label>
-            <input type="text" formControlName="nombres" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+        
+        <form [formGroup]="medicoForm">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            <div class="md:col-span-2">
+              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Colegiatura (CMP)</label>
+              <input type="text" [value]="cmpActual" disabled
+                     class="w-full rounded-lg border border-gray-200 bg-gray-100 p-2.5 font-bold text-brand-600 outline-none dark:border-gray-700 dark:bg-gray-800/50" />
+              <p class="text-xs text-gray-500 mt-1">Este código se genera automáticamente.</p>
+            </div>
+
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Nombres *</label>
+              <input type="text" formControlName="nombres" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+            </div>
+
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Apellido Paterno *</label>
+              <input type="text" formControlName="apellidoPaterno" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+            </div>
+            
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Apellido Materno *</label>
+              <input type="text" formControlName="apellidoMaterno" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+            </div>
+
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Teléfono *</label>
+              <input type="text" formControlName="telefono" placeholder="Ej: 999888777" 
+                     maxlength="9" (input)="validarTelefono($event)"
+                     class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+              
+              <div *ngIf="medicoForm.get('telefono')?.invalid && medicoForm.get('telefono')?.touched" class="text-red-500 text-sm mt-1">
+                El teléfono debe tener 9 números exactos.
+              </div>
+            </div>
+
+            <div class="md:col-span-2">
+              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Correo Electrónico (Opcional)</label>
+              <input type="email" formControlName="correo" placeholder="correo@ejemplo.com"
+                     class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+            </div>
+
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Especialidad *</label>
+              <select formControlName="idEspecialidad" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                <option [ngValue]="0" disabled>Seleccione una especialidad</option>
+                @for (esp of especialidades; track esp.idEspecialidad) {
+                  <option [ngValue]="esp.idEspecialidad">{{ esp.nombre }}</option>
+                }
+              </select>
+            </div>
+
+            <div>
+              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Estado Disponibilidad</label>
+              <select formControlName="estadoDisponibilidad" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                <option value="DISPONIBLE">Disponible</option>
+                <option value="VACACIONES">Vacaciones</option>
+                <option value="LICENCIA">Licencia Médica</option>
+              </select>
+            </div>
+
           </div>
-          <div>
-  <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Colegiatura (CMP)</label>
-  <input type="text" formControlName="codigoColegiatura" placeholder="Ej: CMP-12345" 
-         class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
-  
-  <div *ngIf="medicoForm.get('codigoColegiatura')?.invalid && medicoForm.get('codigoColegiatura')?.touched" class="text-red-500 text-sm">
-    Formato inválido (debe iniciar con CMP-).
-  </div>
-</div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Apellido Paterno</label>
-            <input type="text" formControlName="apellidoPaterno" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Apellido Materno</label>
-            <input type="text" formControlName="apellidoMaterno" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
-          </div>
-          <div class="md:col-span-2">
-            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Correo Electrónico *</label>
-            <input type="email" formControlName="correo" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
-          </div>
-          <div>
-  <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Teléfono *</label>
-  <input type="text" formControlName="telefono" placeholder="999888777" 
-         class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
-  
-  <div *ngIf="medicoForm.get('telefono')?.invalid && medicoForm.get('telefono')?.touched" class="text-red-500 text-sm">
-    El teléfono debe tener 9 números exactos.
-  </div>
-</div>
-          <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Especialidad *</label>
-            <select formControlName="idEspecialidad" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white">
-              <option [ngValue]="0" disabled>Seleccione una especialidad</option>
-              @for (esp of especialidades; track esp.idEspecialidad) {
-                <option [ngValue]="esp.idEspecialidad">{{ esp.nombre }}</option>
-              }
-            </select>
-          </div>
-          <div class="md:col-span-2">
-            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Estado Disponibilidad</label>
-            <select formControlName="estadoDisponibilidad" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white">
-              <option value="DISPONIBLE">Disponible</option>
-              <option value="VACACIONES">Vacaciones</option>
-              <option value="LICENCIA">Licencia Médica</option>
-            </select>
-          </div>
-        </div>
+        </form>
+
+        @if (errorMsg) {
+          <div class="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 border border-red-200">{{ errorMsg }}</div>
+        }
+
         <div class="mt-6 flex justify-end gap-3 border-t pt-4 dark:border-gray-800">
           <button (click)="closeModal()" class="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800">Cancelar</button>
           <button (click)="guardarMedico()" class="rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600">Guardar Médico</button>

@@ -19,13 +19,10 @@ public class MedicoDTO {
     @NotBlank(message = "El apellido materno es obligatorio")
     private String apellidoMaterno;
 
-
-    @NotBlank(message = "El teléfono es obligatorio")
-    @Size(min = 9, max = 9, message = "El teléfono debe tener exactamente 9 dígitos")
-    @Pattern(regexp = "^[0-9]+$", message = "El teléfono solo debe contener números")
+    @Pattern(regexp = "^(|[0-9]{9})$", message = "El teléfono debe tener exactamente 9 dígitos numéricos o estar vacío")
     private String telefono;
 
-    @NotBlank(message = "El correo es obligatorio")
+    
     @Email(message = "El correo debe tener un formato válido")
     private String correo;
     

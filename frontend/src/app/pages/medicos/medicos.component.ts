@@ -39,11 +39,12 @@ export class MedicosComponent implements OnInit {
   isModalOpen: boolean = false;
   isEditing: boolean = false;
   errorMsg: string = '';
-  //medicoForm: Medico = this.resetForm();
+  
   // FORMULARIO REACTIVO
   medicoForm: FormGroup;
-
-
+  
+  // Variable para guardar el CMP generado o el actual
+  cmpActual: string = '';
 
   // Modal Horarios
   isScheduleModalOpen: boolean = false;
@@ -59,21 +60,22 @@ export class MedicosComponent implements OnInit {
   };
 
   diasSemana: string[] = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
+  
   constructor() {
     this.medicoForm = this.fb.group({
       idMedico: [null],
       nombres: ['', Validators.required],
       apellidoPaterno: ['', Validators.required],
       apellidoMaterno: ['', Validators.required],
-      // Validación: 9 dígitos exactos
+      // Validación: 9 dígitos exactos numéricos
       telefono: ['', [Validators.required, Validators.pattern('^[0-9]{9}$')]], 
-      correo: ['', [Validators.required, Validators.email]],
+      // Correo opcional
+      correo: ['', [Validators.email]],
       idEspecialidad: [0, Validators.required],
-      estadoDisponibilidad: ['DISPONIBLE'],
-      // Validación: CMP seguido de números
-      codigoColegiatura: ['', Validators.pattern('^[0-9]+$')] 
+      estadoDisponibilidad: ['DISPONIBLE']
     });
   }
+
   ngOnInit(): void {
     this.cargarEspecialidades();
     this.cargarMedicos();
@@ -114,19 +116,27 @@ export class MedicosComponent implements OnInit {
     );
   }
 
+  // --- GENERADOR DE CMP ALEATORIO ---
+  generarCMPAleatorio(): string {
+    const numeroAleatorio = Math.floor(10000 + Math.random() * 90000); // 5 dígitos
+    return `CMP-${numeroAleatorio}`;
+  }
+
   // Métodos del Modal de Médico
   openModal(medico?: Medico): void {
     this.errorMsg = '';
     if (medico) {
       this.isEditing = true;
-     this.medicoForm.patchValue(medico);
+      this.medicoForm.patchValue(medico);
+      this.cmpActual = medico.codigoColegiatura; // Muestra el actual
     } else {
       this.isEditing = false;
       this.medicoForm.reset({
         estadoDisponibilidad: 'DISPONIBLE',
-        idEspecialidad: 0,
-        codigoColegiatura: ''
+        idEspecialidad: 0
       });
+      // Generar CMP automáticamente para nuevos médicos
+      this.cmpActual = this.generarCMPAleatorio();
     }
     this.isModalOpen = true;
   }
@@ -135,20 +145,39 @@ export class MedicosComponent implements OnInit {
     this.isModalOpen = false;
   }
 
+  // Limitar ingreso de teléfono a 9 números y bloquear letras
+  validarTelefono(event: any) {
+    const input = event.target;
+    // Forzamos a que solo queden números
+    let valorFiltrado = input.value.replace(/[^0-9]/g, '');
+    
+    // Si excede 9 caracteres, lo cortamos
+    if (valorFiltrado.length > 9) {
+        valorFiltrado = valorFiltrado.substring(0, 9);
+    }
+    
+    // Actualizamos el campo visible
+    input.value = valorFiltrado;
+    
+    // Actualizamos el controlador de Angular para que la validación funcione
+    this.medicoForm.controls['telefono'].setValue(valorFiltrado);
+  }
+
   guardarMedico(): void {
     if (this.medicoForm.invalid) {
       this.errorMsg = 'Por favor, corrige los errores en el formulario.';
       this.medicoForm.markAllAsTouched();
       return;
     }
+    
     let data = this.medicoForm.value;
-
-   // console.log("Datos que estoy enviando al backend:", data);
-
-  if (data.codigoColegiatura && !data.codigoColegiatura.startsWith('CMP-')) {
-       data.codigoColegiatura = 'CMP-' + data.codigoColegiatura;
+    // Añadimos el CMP generado al objeto de datos
+    data.codigoColegiatura = this.cmpActual;
+    
+    // Si no enviaron correo, aseguramos enviar un texto único
+    if (!data.correo) {
+       data.correo = `${this.cmpActual.toLowerCase()}@clinica.com`; 
     }
-    console.log("JSON final enviado al servidor:", JSON.stringify(data));
 
     if (this.isEditing && data.idMedico) {
       this.medicoService.actualizar(data.idMedico, data).subscribe({
@@ -172,12 +201,13 @@ export class MedicosComponent implements OnInit {
         },
         error: (err) => {
           console.error("Error del servidor:", err);
-          this.errorMsg = err.error?.message || 'El correo o colegiatura ya existe.';
+          this.errorMsg = err.error?.message || 'Hubo un error al registrar al médico.';
           this.cdr.detectChanges();
         }
       });
     }
   }
+  
   eliminarMedico(id: number): void {
     if (confirm('¿Estás seguro de dar de baja a este médico?')) {
       this.medicoService.eliminar(id).subscribe({
@@ -228,7 +258,6 @@ export class MedicosComponent implements OnInit {
     }
     this.errorScheduleMsg = '';
 
-    // Enviar DTO mapeado al Backend (formato HH:mm:ss que requiere LocalTime)
     const nuevoHorario: HorarioMedico = {
       idMedico: this.medicoSeleccionado!.idMedico!,
       diaSemana: this.horarioForm.diaSemana,
@@ -263,12 +292,5 @@ export class MedicosComponent implements OnInit {
       this.globalMsg = '';
       this.cdr.detectChanges();
     }, 4000);
-  }
-
-  private resetForm(): Medico {
-    return {
-      codigoColegiatura: '', nombres: '', apellidoPaterno: '', apellidoMaterno: '',
-      telefono: '', correo: '', estadoDisponibilidad: 'DISPONIBLE', idEspecialidad: 0
-    };
   }
 }
