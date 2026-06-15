@@ -19,15 +19,13 @@ public class ConsultaMedicaServiceImpl implements ConsultaMedicaService {
     @Override
     @Transactional
     public ConsultaMedica registrarAtencionMedica(Long idCita, String sintomas, String diagnostico, String observaciones , String tratamiento) {
-        // 1. Validar que la cita exista
         CitaMedica cita = citaRepository.findById(idCita)
                 .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada con ID: " + idCita));
-//MODIFIQUE ACA PARA QUE NO SE PUEDA ATENDER UNA CITA CANCELADA O YA ATENDIDA
-            if (cita.getEstado().equalsIgnoreCase("CANCELADA") || cita.getEstado().equalsIgnoreCase("ATENDIDA")) {
+                
+        if (cita.getEstado().equalsIgnoreCase("CANCELADA") || cita.getEstado().equalsIgnoreCase("ATENDIDA")) {
             throw new IllegalStateException("No se puede atender una cita en estado: " + cita.getEstado());
         }
 
-        // 2. Obtener u optimizar la creación de la Historia Clínica del Paciente
         HistoriaClinica historia = historiaRepository.findByPacienteIdPaciente(cita.getPaciente().getIdPaciente())
                 .orElseGet(() -> {
                     HistoriaClinica nuevaHistoria = new HistoriaClinica();
@@ -35,20 +33,29 @@ public class ConsultaMedicaServiceImpl implements ConsultaMedicaService {
                     return historiaRepository.save(nuevaHistoria);
                 });
 
-        // 3. Modificar el estado de la Cita Médica (Flujo de control de estados)
         cita.setEstado("ATENDIDA");
         citaRepository.save(cita);
 
-        // 4. Instanciar y rellenar la Consulta Médica
         ConsultaMedica consulta = new ConsultaMedica();
         consulta.setFechaConsulta(LocalDate.now());
-        consulta.setMotivoConsulta(cita.getMotivoConsulta());
+        
+        // --- SOLUCIÓN ERROR 500 (BASE DE DATOS) ---
+        // Si la cita original no tenía motivo, le asignamos uno para que el @NotBlank no explote.
+        String motivo = cita.getMotivoConsulta();
+        if (motivo == null || motivo.trim().isEmpty()) {
+            motivo = "Atención médica en consultorio";
+        }
+        consulta.setMotivoConsulta(motivo);
+        
         consulta.setSintomas(sintomas);
         consulta.setDiagnosticoGeneral(diagnostico);
         consulta.setObservaciones(observaciones);
         consulta.setHistoriaClinica(historia);
         consulta.setCitaMedica(cita);
         consulta.setMedico(cita.getMedico());
+        
+        // --- ASIGNACIÓN VITAL QUE FALTABA ---
+        consulta.setTratamiento(tratamiento);
 
         return consultaRepository.save(consulta);
     }

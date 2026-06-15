@@ -15,19 +15,30 @@ public class ConsultaMedicaController {
 
     @Autowired private ConsultaMedicaService consultaService;
 
-    // Registrar la atención (Flujo 12, 13, 14, 15 del Médico)
     @PostMapping("/atender-cita/{idCita}")
     public ResponseEntity<ConsultaMedica> registrarAtencion(@PathVariable Long idCita, @RequestBody Map<String, String> body) {
         String sintomas = body.get("sintomas");
-        String diagnostico = body.get("diagnostico");
+        
+        // Buscamos el diagnóstico como lo envía Angular
+        String diagnostico = body.get("diagnosticoGeneral");
+        if (diagnostico == null) {
+            diagnostico = body.get("diagnostico");
+        }
+        
         String tratamiento = body.get("tratamiento");
         String observaciones = body.get("observaciones");
 
         ConsultaMedica nuevaConsulta = consultaService.registrarAtencionMedica(idCita, sintomas, diagnostico, observaciones , tratamiento);
+        
+        // --- SOLUCIÓN AL ERROR 500 (BUCLE INFINITO) ---
+        // Desvinculamos los objetos pesados solo en la respuesta para que Java no explote al crear el JSON.
+        nuevaConsulta.setHistoriaClinica(null);
+        nuevaConsulta.setCitaMedica(null);
+        nuevaConsulta.setMedico(null);
+
         return new ResponseEntity<>(nuevaConsulta, HttpStatus.CREATED);
     }
 
-    // Ver el historial de consultas de un paciente
     @GetMapping("/paciente/{idPaciente}")
     public ResponseEntity<List<ConsultaMedica>> listarPorPaciente(@PathVariable Long idPaciente) {
         return ResponseEntity.ok(consultaService.listarPorPaciente(idPaciente));
