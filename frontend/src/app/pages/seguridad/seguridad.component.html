@@ -41,10 +41,16 @@
           } @else {
             @for (u of usuariosFiltrados; track u.idUsuario) {
               <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.01]">
+                
                 <td class="px-6 py-4">
-                  <span class="block text-base font-bold text-gray-900 dark:text-white">{{ u.username }}</span>
-                  <span class="block text-sm text-gray-500">{{ u.email }}</span>
+                  <span class="block text-base font-bold text-black dark:text-white">
+                    {{ u.nombreCompleto || 'Usuario del Sistema' }}
+                  </span>
+                  <span class="block text-sm font-medium text-gray-500 dark:text-gray-400 mt-0.5">
+                    {{ u.username }}
+                  </span>
                 </td>
+
                 <td class="px-6 py-4">
                   <select [ngModel]="u.rol" (change)="cambiarRolLocal(u, $event)" class="rounded-md border border-gray-300 bg-white p-1.5 text-xs font-bold uppercase tracking-wider text-gray-700 outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
                     <option value="ADMINISTRADOR">Administrador</option>
@@ -82,7 +88,7 @@
   </div>
 
   @if (isUserModalOpen) {
-    <div class="fixed inset-0 z-99999 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+    <div class="fixed inset-0 z-[999999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
       <div class="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
         
         <div class="mb-5 border-b pb-3 dark:border-gray-800">
@@ -95,6 +101,17 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+          <div class="md:col-span-2">
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Nombre Completo del Colaborador</label>
+            <input type="text" [(ngModel)]="usuarioForm.nombreCompleto" placeholder="Ej: Dr. Juan Pérez" 
+                   [readonly]="bloquearNombreEnEdicion"
+                   [ngClass]="bloquearNombreEnEdicion ? 'bg-gray-100 text-gray-500 cursor-not-allowed dark:bg-gray-800/50 dark:text-gray-400' : 'bg-gray-50 text-gray-900 focus:border-brand-500 dark:bg-gray-800 dark:text-white'"
+                   class="w-full rounded-lg border border-gray-300 p-2 text-sm outline-none dark:border-gray-700 transition-colors" />
+            @if (bloquearNombreEnEdicion) {
+              <p class="mt-1 text-xs text-brand-500 font-medium">El nombre no puede modificarse por seguridad. Está vinculado a la ficha médica.</p>
+            }
+          </div>
+
           <div>
             <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Username</label>
             <input type="text" [(ngModel)]="usuarioForm.username" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
@@ -143,7 +160,7 @@
   }
 
   @if (isPasswordModalOpen) {
-    <div class="fixed inset-0 z-99999 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+    <div class="fixed inset-0 z-[999999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
       <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
         
         <div class="mb-5 border-b pb-3 dark:border-gray-800">

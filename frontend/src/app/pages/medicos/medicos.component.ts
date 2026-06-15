@@ -13,7 +13,6 @@ import { HorarioMedico } from '../../shared/models/horario-medico.model';
   standalone: true,
   imports: [CommonModule, FormsModule,ReactiveFormsModule],
   templateUrl: './medicos.component.html'
-  
 })
 export class MedicosComponent implements OnInit {
   private medicoService = inject(MedicoService);
@@ -56,7 +55,6 @@ export class MedicosComponent implements OnInit {
     diaSemana: 'LUNES',
     horaInicio: '',
     horaFin: ''
-
   };
 
   diasSemana: string[] = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
@@ -67,9 +65,7 @@ export class MedicosComponent implements OnInit {
       nombres: ['', Validators.required],
       apellidoPaterno: ['', Validators.required],
       apellidoMaterno: ['', Validators.required],
-      // Validación: 9 dígitos exactos numéricos
       telefono: ['', [Validators.required, Validators.pattern('^[0-9]{9}$')]], 
-      // Correo opcional
       correo: ['', [Validators.email]],
       idEspecialidad: [0, Validators.required],
       estadoDisponibilidad: ['DISPONIBLE']
@@ -116,13 +112,12 @@ export class MedicosComponent implements OnInit {
     );
   }
 
-  // --- GENERADOR DE CMP ALEATORIO ---
   generarCMPAleatorio(): string {
     const numeroAleatorio = Math.floor(10000 + Math.random() * 90000); // 5 dígitos
     return `CMP-${numeroAleatorio}`;
   }
 
-  // Métodos del Modal de Médico
+  // --- AQUÍ ESTÁ LA MAGIA PARA QUE SE LLENE SOLO ---
   openModal(medico?: Medico): void {
     this.errorMsg = '';
     if (medico) {
@@ -131,12 +126,13 @@ export class MedicosComponent implements OnInit {
       this.cmpActual = medico.codigoColegiatura; // Muestra el actual
     } else {
       this.isEditing = false;
+      this.cmpActual = this.generarCMPAleatorio(); // 1. Crea el CMP primero
+      
       this.medicoForm.reset({
         estadoDisponibilidad: 'DISPONIBLE',
-        idEspecialidad: 0
+        idEspecialidad: 0,
+        correo: `${this.cmpActual.toLowerCase()}@clinica.com` // 2. Se lo asigna al correo automáticamente
       });
-      // Generar CMP automáticamente para nuevos médicos
-      this.cmpActual = this.generarCMPAleatorio();
     }
     this.isModalOpen = true;
   }
@@ -145,21 +141,13 @@ export class MedicosComponent implements OnInit {
     this.isModalOpen = false;
   }
 
-  // Limitar ingreso de teléfono a 9 números y bloquear letras
   validarTelefono(event: any) {
     const input = event.target;
-    // Forzamos a que solo queden números
     let valorFiltrado = input.value.replace(/[^0-9]/g, '');
-    
-    // Si excede 9 caracteres, lo cortamos
     if (valorFiltrado.length > 9) {
         valorFiltrado = valorFiltrado.substring(0, 9);
     }
-    
-    // Actualizamos el campo visible
     input.value = valorFiltrado;
-    
-    // Actualizamos el controlador de Angular para que la validación funcione
     this.medicoForm.controls['telefono'].setValue(valorFiltrado);
   }
 
@@ -171,10 +159,8 @@ export class MedicosComponent implements OnInit {
     }
     
     let data = this.medicoForm.value;
-    // Añadimos el CMP generado al objeto de datos
     data.codigoColegiatura = this.cmpActual;
     
-    // Si no enviaron correo, aseguramos enviar un texto único
     if (!data.correo) {
        data.correo = `${this.cmpActual.toLowerCase()}@clinica.com`; 
     }
@@ -220,7 +206,6 @@ export class MedicosComponent implements OnInit {
     }
   }
 
-  // Métodos del Modal de Horarios específicos
   openScheduleModal(medico: Medico): void {
     this.medicoSeleccionado = medico;
     this.errorScheduleMsg = '';

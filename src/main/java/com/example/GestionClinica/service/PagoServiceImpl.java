@@ -110,6 +110,8 @@ public class PagoServiceImpl implements PagoService {
         dto.setMetodoPago(pago.getMetodoPago());
         dto.setEstadoPago(pago.getEstadoPago());
         dto.setConcepto(pago.getConcepto());
+        dto.setDniPaciente(pago.getCita().getPaciente().getDni());
+        dto.setHoraPago(pago.getHoraPago());
 
         if (pago.getComprobante() != null) {
             dto.setTipoComprobante(pago.getComprobante().getTipoComprobante());

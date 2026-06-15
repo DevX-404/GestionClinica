@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Data
 @NoArgsConstructor
@@ -42,4 +43,15 @@ public class Pago {
 
     @Column(length = 30, nullable = false)
     private String concepto;
+
+    @Column(name = "hora_pago")
+    private LocalTime horaPago;
+    
+    @PrePersist
+    protected void onCreate() {
+        if (this.fechaPago == null)
+            this.fechaPago = java.time.LocalDate.now();
+        if (this.horaPago == null)
+            this.horaPago = LocalTime.now();
+    }
 }

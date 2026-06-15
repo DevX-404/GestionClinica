@@ -18,6 +18,14 @@ export class CitasComponent implements OnInit {
   private especialidadService = inject(EspecialidadService);
   private medicoService = inject(MedicoService);
   private cdr = inject(ChangeDetectorRef);
+  
+  // ==========================================
+  // ESTADO DE LA TABLA Y FILTROS
+  // ==========================================
+  citas: any[] = [];
+  citasFiltradas: any[] = []; // Nueva lista para el buscador
+  searchTermCitas: string = ''; // Lo que el usuario escribe en el buscador
+  cargandoCitas: boolean = false; // Control para el "Cargando..."
 
   // Catálogos cargados del sistema
   pacientes: any[] = [];
@@ -59,12 +67,56 @@ export class CitasComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarCatalogos();
+    this.cargarCitas();
+  }
+
+  // --- TRAER CITAS DE LA BD ---
+  cargarCitas(): void {
+    this.cargandoCitas = true;
+    this.cdr.detectChanges();
+
+    this.citaService.listarTodas().subscribe({
+      next: (data) => {
+        this.citas = data;
+        this.citasFiltradas = data; // Al inicio, muestra todas
+        this.cargandoCitas = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error("Error cargando citas:", err);
+        this.cargandoCitas = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   cargarCatalogos(): void {
     this.pacienteService.listarTodos().subscribe(data => this.pacientes = data);
     this.especialidadService.listarTodas().subscribe(data => this.especialidades = data);
     this.medicoService.listarTodos().subscribe(data => this.medicos = data);
+  }
+
+  // --- NUEVO: BUSCADOR INTELIGENTE (FILTRA HASTA POR DNI) ---
+  filtrarCitas(): void {
+    const term = this.searchTermCitas.toLowerCase().trim();
+    
+    if (!term) {
+      this.citasFiltradas = [...this.citas];
+      return;
+    }
+
+    // Buscamos si lo que escribió coincide con algún DNI en la lista de pacientes
+    const pacientesEncontrados = this.pacientes.filter(p => p.dni && p.dni.includes(term));
+    const idsPacientes = pacientesEncontrados.map(p => p.idPaciente);
+
+    this.citasFiltradas = this.citas.filter(c => 
+      (c.nombreCompletoPaciente && c.nombreCompletoPaciente.toLowerCase().includes(term)) ||
+      (c.nombreCompletoMedico && c.nombreCompletoMedico.toLowerCase().includes(term)) ||
+      (c.nombreEspecialidad && c.nombreEspecialidad.toLowerCase().includes(term)) ||
+      (c.estado && c.estado.toLowerCase().includes(term)) ||
+      (c.fecha && c.fecha.includes(term)) ||
+      (idsPacientes.includes(c.idPaciente)) // <-- ¡Aquí busca por DNI cruzado!
+    );
   }
 
   // ==========================================
@@ -175,7 +227,6 @@ export class CitasComponent implements OnInit {
   // NAVEGACIÓN Y PAGO
   // ==========================================
   irAPagar(): void {
-    // Verificamos que no falte nada, incluyendo el motivo de consulta
     if (!this.citaForm.idPaciente || !this.citaForm.idEspecialidad || !this.citaForm.idMedico || !this.citaForm.fecha || !this.citaForm.hora || !this.citaForm.motivoConsulta) {
       alert('Por favor complete todos los datos obligatorios (*) antes de proceder al pago.');
       return;
@@ -188,32 +239,29 @@ export class CitasComponent implements OnInit {
     this.pasoActual = 1;
     this.cdr.detectChanges();
   }
- // --- FUNCIÓN DE PAGO MEJORADA PARA MOSTRAR ERRORES EXACTOS ---
+
   confirmarPagoYape(): void {
-    this.citaForm.estado = 'CONFIRMADA';
+    const citaParaEnviar = {
+      idPaciente: Number(this.citaForm.idPaciente),
+      idMedico: Number(this.citaForm.idMedico),
+      idEspecialidad: Number(this.citaForm.idEspecialidad),
+      fecha: this.citaForm.fecha, 
+      hora: this.citaForm.hora && this.citaForm.hora.length === 5 ? `${this.citaForm.hora}:00` : this.citaForm.hora,
+      motivoConsulta: this.citaForm.motivoConsulta,
+      montoPagadoAdelanto: this.montoAdelanto30,
+      estado: 'CONFIRMADA'
+    };
 
-    if (this.citaForm.hora && this.citaForm.hora.length === 5) {
-      this.citaForm.hora = `${this.citaForm.hora}:00`;
-    }
-
-    this.citaService.programarCita(this.citaForm as any).subscribe({
-      next: () => {
-        alert('¡Cita separada con éxito! El pago del 30% fue validado.');
+    this.citaService.programarCita(citaParaEnviar as any).subscribe({
+      next: (res) => {
+        alert('¡Cita registrada con éxito!');
         this.closeModal();
-        this.cargarCatalogos(); 
+        this.cargarCatalogos();
+        this.cargarCitas(); // Refrescamos la lista
       },
       error: (err) => {
-        console.error("Error del servidor:", err);
-        let mensajeError = 'Error desconocido al registrar la cita.';
-        
-        // Atrapamos los errores de tu GlobalExceptionHandler (Ej: "Fecha pasada", "Médico ocupado")
-        if (err.error && typeof err.error === 'object') {
-          mensajeError = Object.values(err.error).join('\n - ');
-        } else if (err.error) {
-          mensajeError = err.error;
-        }
-        
-        alert('⚠️ El servidor rechazó los datos por el siguiente motivo:\n\n - ' + mensajeError);
+        console.error("Detalle del error:", err.error);
+        alert('Error: ' + (err.error.message || 'No se pudo agendar la cita. Verifica los datos.'));
       }
     });
   }

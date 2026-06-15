@@ -79,7 +79,7 @@
   </div>
 
   @if (isModalOpen) {
-    <div class="fixed inset-0 z-99999 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+    <div class="fixed inset-0 z-[999999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
       <div class="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900">
         <div class="mb-5 flex items-center justify-between border-b pb-3 dark:border-gray-800">
           <h3 class="text-xl font-bold text-gray-900 dark:text-white">{{ isEditing ? 'Editar Ficha Médica' : 'Registrar Personal Médico' }}</h3>
@@ -123,9 +123,10 @@
             </div>
 
             <div class="md:col-span-2">
-              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Correo Electrónico (Opcional)</label>
-              <input type="email" formControlName="correo" placeholder="correo@ejemplo.com"
-                     class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+              <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Correo Electrónico (Credencial de Acceso)</label>
+              <input type="email" formControlName="correo" readonly
+                     class="w-full rounded-lg border border-gray-200 bg-gray-100 p-2.5 text-gray-500 cursor-not-allowed outline-none dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-400" />
+              <p class="text-xs text-brand-500 mt-1 font-medium">Este correo se genera automáticamente y no puede modificarse.</p>
             </div>
 
             <div>
@@ -163,7 +164,7 @@
   }
 
   @if (isScheduleModalOpen) {
-    <div class="fixed inset-0 z-99999 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+    <div class="fixed inset-0 z-[999999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
       <div class="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900">
         
         <div class="mb-5 flex items-center justify-between border-b pb-3 dark:border-gray-800">

@@ -216,7 +216,7 @@
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo de Documento</label>
-              <select name="tipoDoc" [(ngModel)]="pacienteForm.tipoDocumento" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm outline-none transition focus:border-brand-500 dark:border-gray-700 dark:bg-gray-900">
+              <select name="tipoDoc" [(ngModel)]="pacienteForm.tipoDocumento" (change)="cambioTipoDocumento()" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm outline-none transition focus:border-brand-500 dark:border-gray-700 dark:bg-gray-900">
                 <option value="DNI">DNI (Perú)</option>
                 <option value="PASAPORTE">Pasaporte</option>
                 <option value="CEX">Carnet de Extranjería</option>
@@ -224,7 +224,15 @@
             </div>
             <div>
               <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Número de Documento</label>
-              <input type="text" name="dni" [(ngModel)]="pacienteForm.dni" [disabled]="isEditing" placeholder="Ej: 74635241" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm outline-none transition focus:border-brand-500 dark:border-gray-700 dark:bg-gray-900 disabled:opacity-50" />
+              <input type="text" name="dni" [(ngModel)]="pacienteForm.dni" [disabled]="isEditing"
+                     [maxLength]="pacienteForm.tipoDocumento === 'DNI' ? 8 : 15"
+                     (input)="validarDocumento($event)"
+                     [ngClass]="dniInvalido ? 'border-red-500 focus:border-red-500 dark:border-red-500' : 'border-gray-300 focus:border-brand-500 dark:border-gray-700'"
+                     placeholder="Ej: 74635241" 
+                     class="w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm outline-none transition dark:bg-gray-900 disabled:opacity-50" />
+              @if (dniInvalido) {
+                <p class="mt-1 text-xs text-red-500 font-medium">El DNI debe tener exactamente 8 números.</p>
+              }
             </div>
           </div>
 
@@ -260,7 +268,15 @@
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Teléfono</label>
-              <input type="text" name="telefono" [(ngModel)]="pacienteForm.telefono" placeholder="Ej: 987654321" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm outline-none transition focus:border-brand-500 dark:border-gray-700 dark:bg-gray-900" />
+              <input type="text" name="telefono" [(ngModel)]="pacienteForm.telefono" 
+                     maxlength="9"
+                     (input)="validarTelefono($event)"
+                     [ngClass]="telefonoInvalido ? 'border-red-500 focus:border-red-500 dark:border-red-500' : 'border-gray-300 focus:border-brand-500 dark:border-gray-700'"
+                     placeholder="Ej: 987654321" 
+                     class="w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm outline-none transition dark:bg-gray-900" />
+              @if (telefonoInvalido) {
+                <p class="mt-1 text-xs text-red-500 font-medium">El teléfono debe tener exactamente 9 números.</p>
+              }
             </div>
             <div>
               <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Correo Electrónico</label>

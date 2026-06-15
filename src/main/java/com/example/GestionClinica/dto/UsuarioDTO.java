@@ -12,4 +12,5 @@ public class UsuarioDTO {
     private String rol; // ADMINISTRADOR, MEDICO, RECEPCIONISTA
     private boolean activo;
     private List<String> modulosAcceso;
+    private String nombreCompleto;
 }

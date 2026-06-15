@@ -14,6 +14,8 @@ public class CitaMedicaDTO {
     @NotNull(message = "ID de Paciente obligatorio")
     private Long idPaciente;
     private String nombreCompletoPaciente;
+    // --- NUEVO: Agregamos el DNI aquí ---
+    private String dniPaciente;
 
     @NotNull(message = "ID de Médico obligatorio")
     private Long idMedico;
@@ -33,6 +35,6 @@ public class CitaMedicaDTO {
 
     private String estado;
     private String motivoConsulta;
-    // --- NUEVO CAMPO DE DINERO ---
+    // --- CAMPO DE DINERO ---
     private BigDecimal montoPagadoAdelanto;
 }

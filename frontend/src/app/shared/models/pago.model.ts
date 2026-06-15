@@ -6,6 +6,8 @@ export interface Pago {
   monto: number;
   metodoPago: string;
   estadoPago: string;
+  horaPago?: string;
+  dniPaciente?: string;
   
   // Datos del Comprobante (opcionales hasta que se pague)
   tipoComprobante?: string;

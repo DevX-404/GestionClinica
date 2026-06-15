@@ -22,14 +22,18 @@ export class PacientesComponent implements OnInit {
   isModalOpen: boolean = false;
   isEditing: boolean = false;
 
+  // Variables de validación estrictas
+  dniInvalido: boolean = false;
+  telefonoInvalido: boolean = false;
+
   // Objeto espejo para el formulario
   pacienteForm: Paciente = this.resetForm();
 
   errorMsg: string = '';
   successMsg: string = '';
 
-  isLoading: boolean = false; // <-- Control de carga
-  globalMsg: string = ''; // <-- Mensaje para la vista principal
+  isLoading: boolean = false; 
+  globalMsg: string = ''; 
   globalMsgType: 'success' | 'error' = 'success';
 
   constructor(private pacienteService: PacienteService, private cdr: ChangeDetectorRef) {}
@@ -39,14 +43,14 @@ export class PacientesComponent implements OnInit {
   }
 
   cargarPacientes(): void {
-    this.isLoading = true; // Inicia la carga
+    this.isLoading = true; 
     this.cdr.detectChanges();
 
     this.pacienteService.listarTodos().subscribe({
       next: (data) => {
         this.pacientes = data;
         this.pacientesFiltrados = data;
-        this.isLoading = false; // Termina la carga
+        this.isLoading = false; 
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -74,6 +78,8 @@ export class PacientesComponent implements OnInit {
   openModal(paciente?: Paciente): void {
     this.errorMsg = '';
     this.successMsg = '';
+    this.dniInvalido = false;
+    this.telefonoInvalido = false;
     this.isModalOpen = true;
 
     if (paciente) {
@@ -89,11 +95,54 @@ export class PacientesComponent implements OnInit {
     this.isModalOpen = false;
   }
 
+  // --- LÓGICA DE VALIDACIÓN EN TIEMPO REAL ---
+  cambioTipoDocumento(): void {
+    if (!this.isEditing) {
+      this.pacienteForm.dni = '';
+      this.dniInvalido = false;
+    }
+  }
+
+  validarDocumento(event: any): void {
+    const input = event.target;
+    if (this.pacienteForm.tipoDocumento === 'DNI') {
+      let valor = input.value.replace(/[^0-9]/g, ''); // Fuerza solo números
+      if (valor.length > 8) valor = valor.substring(0, 8); // Bloquea si intentan pegar más de 8
+      input.value = valor;
+      this.pacienteForm.dni = valor;
+      this.dniInvalido = valor.length > 0 && valor.length < 8; // Pinta rojo si no llega a 8
+    } else {
+      this.dniInvalido = false;
+    }
+  }
+
+  validarTelefono(event: any): void {
+    const input = event.target;
+    let valor = input.value.replace(/[^0-9]/g, ''); // Fuerza solo números
+    if (valor.length > 9) valor = valor.substring(0, 9); // Bloquea si intentan pegar más de 9
+    input.value = valor;
+    this.pacienteForm.telefono = valor;
+    this.telefonoInvalido = valor.length > 0 && valor.length < 9; // Pinta rojo si no llega a 9
+  }
+  // ---------------------------------------------
+
   guardarPaciente(): void {
+    // Escudo final antes de enviar al servidor
+    if (this.pacienteForm.tipoDocumento === 'DNI' && (!this.pacienteForm.dni || this.pacienteForm.dni.length !== 8)) {
+      this.dniInvalido = true;
+      this.errorMsg = 'Revisa los campos en rojo. El DNI debe tener exactamente 8 números.';
+      return;
+    }
+    if (!this.pacienteForm.telefono || this.pacienteForm.telefono.length !== 9) {
+      this.telefonoInvalido = true;
+      this.errorMsg = 'Revisa los campos en rojo. El teléfono debe tener exactamente 9 números.';
+      return;
+    }
+
     if (this.isEditing && this.pacienteForm.idPaciente) {
       this.pacienteService.actualizar(this.pacienteForm.idPaciente, this.pacienteForm).subscribe({
         next: () => {
-          this.closeModal(); // Cierra al instante
+          this.closeModal(); 
           this.mostrarMensajeGlobal('¡Paciente actualizado con éxito!', 'success');
           this.cargarPacientes();
         },
@@ -105,7 +154,7 @@ export class PacientesComponent implements OnInit {
     } else {
       this.pacienteService.registrar(this.pacienteForm).subscribe({
         next: () => {
-          this.closeModal(); // Cierra al instante
+          this.closeModal(); 
           this.mostrarMensajeGlobal('¡Paciente registrado e Historia Clínica inicializada!', 'success');
           this.cargarPacientes();
         },
@@ -124,11 +173,11 @@ export class PacientesComponent implements OnInit {
   mostrarMensajeGlobal(msg: string, type: 'success' | 'error'): void {
     this.globalMsg = msg;
     this.globalMsgType = type;
-    this.cdr.detectChanges(); // <-- Forzar que la alerta aparezca INMEDIATAMENTE
+    this.cdr.detectChanges(); 
 
     setTimeout(() => {
       this.globalMsg = '';
-      this.cdr.detectChanges(); // <-- Forzar que la alerta desaparezca
+      this.cdr.detectChanges(); 
     }, 4000); 
   }
 

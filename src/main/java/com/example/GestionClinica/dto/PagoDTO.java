@@ -3,6 +3,7 @@ package com.example.GestionClinica.dto;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Data
 public class PagoDTO {
@@ -13,6 +14,8 @@ public class PagoDTO {
     private BigDecimal monto;
     private String metodoPago;
     private String estadoPago;
+    private String dniPaciente;
+    private LocalTime horaPago;
     
     // Datos del comprobante si existe
     private String tipoComprobante;

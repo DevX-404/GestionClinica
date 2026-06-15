@@ -12,9 +12,15 @@ import java.util.List;
 @Repository
 public interface CitaMedicaRepository extends JpaRepository<CitaMedica, Long> {
 
-    // CONSULTA JPQL: Verificar si el médico ya tiene una cita activa en ese bloque horario
-    @Query("SELECT COUNT(c) > 0 FROM CitaMedica c WHERE c.medico.idMedico = :idMedico AND c.fecha = :fecha AND c.hora = :hora AND c.estado <> 'CANCELADA'")
-    boolean existeCitaMismoHorario(@Param("idMedico") Long idMedico, @Param("fecha") LocalDate fecha, @Param("hora") LocalTime hora);
+   // CONSULTA JPQL CORREGIDA: Usando CASE WHEN EXISTS para mayor precisión
+    @Query("SELECT CASE WHEN (COUNT(c) > 0) THEN true ELSE false END FROM CitaMedica c " +
+           "WHERE c.medico.idMedico = :idMedico " +
+           "AND c.fecha = :fecha " +
+           "AND c.hora = :hora " +
+           "AND c.estado NOT IN ('CANCELADA', 'ATENDIDA')")
+    boolean existeCitaMismoHorario(@Param("idMedico") Long idMedico, 
+                                   @Param("fecha") LocalDate fecha, 
+                                   @Param("hora") LocalTime hora);
 
     // Listar citas de un paciente
     List<CitaMedica> findByPacienteIdPaciente(Long idPaciente);

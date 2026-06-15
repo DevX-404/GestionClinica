@@ -91,6 +91,7 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
         dto.setIdCita(cita.getIdCita());
         dto.setIdPaciente(cita.getPaciente().getIdPaciente());
         dto.setNombreCompletoPaciente(cita.getPaciente().getNombres() + " " + cita.getPaciente().getApellidoPaterno());
+        dto.setDniPaciente(cita.getPaciente().getDni()); // --- NUEVO: DNI del paciente ---
         dto.setIdMedico(cita.getMedico().getIdMedico());
         dto.setNombreCompletoMedico(cita.getMedico().getNombres() + " " + cita.getMedico().getApellidoPaterno());
         dto.setIdEspecialidad(cita.getEspecialidad().getIdEspecialidad());

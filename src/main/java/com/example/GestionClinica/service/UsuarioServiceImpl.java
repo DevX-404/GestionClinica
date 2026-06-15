@@ -71,6 +71,8 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Transactional
     public UsuarioDTO registrarUsuario(UsuarioDTO dto) {
         Usuario usuario = new Usuario();
+        // --- GUARDAR NOMBRE ---
+        usuario.setNombreCompleto(dto.getNombreCompleto());
         usuario.setUsername(dto.getUsername());
         usuario.setEmail(dto.getEmail());
         usuario.setPassword(passwordEncoder.encode(dto.getPassword()));
@@ -85,7 +87,9 @@ public class UsuarioServiceImpl implements UsuarioService {
     public UsuarioDTO actualizarUsuario(Long idUsuario, UsuarioDTO dto) {
         Usuario usuario = usuarioRepository.findById(idUsuario)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
-        
+
+        // --- ACTUALIZAR NOMBRE ---
+        usuario.setNombreCompleto(dto.getNombreCompleto());
         usuario.setUsername(dto.getUsername());
         usuario.setEmail(dto.getEmail());
         usuario.setRol(Rol.valueOf(dto.getRol().toUpperCase()));
@@ -97,6 +101,8 @@ public class UsuarioServiceImpl implements UsuarioService {
     private UsuarioDTO convertirADto(Usuario usuario) {
         UsuarioDTO dto = new UsuarioDTO();
         dto.setIdUsuario(usuario.getIdUsuario());
+        // --- ENVIAR NOMBRE ---
+        dto.setNombreCompleto(usuario.getNombreCompleto());
         dto.setUsername(usuario.getUsername());
         dto.setEmail(usuario.getEmail());
         dto.setRol(usuario.getRol() != null ? usuario.getRol().toString() : "SIN_ROL");

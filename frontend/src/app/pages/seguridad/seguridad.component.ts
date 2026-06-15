@@ -32,6 +32,8 @@ export class SeguridadComponent implements OnInit {
   // Modal CRUD Usuarios
   isUserModalOpen: boolean = false;
   isEditMode: boolean = false;
+  // --- AÑADIMOS UNA VARIABLE PARA SABER SI DEBEMOS BLOQUEAR EL NOMBRE ---
+  bloquearNombreEnEdicion: boolean = false;
   usuarioForm: any = { username: '', email: '', password: '', rol: 'RECEPCIONISTA', modulosAcceso: [] };
 
   // Lista de módulos para los Checkboxes
@@ -69,7 +71,8 @@ export class SeguridadComponent implements OnInit {
     this.usuariosFiltrados = this.usuarios.filter(u => 
       u.username.toLowerCase().includes(term) ||
       u.email.toLowerCase().includes(term) ||
-      u.rol.toLowerCase().includes(term)
+      u.rol.toLowerCase().includes(term) ||
+      (u.nombreCompleto && u.nombreCompleto.toLowerCase().includes(term)) // Búsqueda extra por nombre
     );
   }
 
@@ -79,9 +82,15 @@ export class SeguridadComponent implements OnInit {
       this.isEditMode = true;
       this.usuarioForm = { ...usuario };
       if (!this.usuarioForm.modulosAcceso) this.usuarioForm.modulosAcceso = [];
+      
+      // LA LÓGICA DEL CANDADO: Si el usuario ya tiene nombre registrado, se bloquea la edición.
+      // Si el nombre viene nulo, indefinido o en blanco, se permite editar (para corregir los viejos).
+      this.bloquearNombreEnEdicion = !!this.usuarioForm.nombreCompleto && this.usuarioForm.nombreCompleto.trim().length > 0;
+      
     } else {
       this.isEditMode = false;
-      this.usuarioForm = { username: '', email: '', password: '', rol: 'RECEPCIONISTA', modulosAcceso: [] };
+      this.bloquearNombreEnEdicion = false; // Al crear uno nuevo, obviamente se puede escribir
+      this.usuarioForm = { nombreCompleto: '', username: '', email: '', password: '', rol: 'RECEPCIONISTA', modulosAcceso: [] };
     }
     this.isUserModalOpen = true;
   }

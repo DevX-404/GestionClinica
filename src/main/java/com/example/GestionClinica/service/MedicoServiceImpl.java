@@ -51,7 +51,7 @@ public class MedicoServiceImpl implements MedicoService {
         return convertirADto(medico);
     }
 
-    @Override
+   @Override
     @Transactional // Si falla la creación del usuario, se hace un rollback y no se crea el médico
     public MedicoDTO registrar(MedicoDTO dto) {
         if (medicoRepository.existsByCodigoColegiatura(dto.getCodigoColegiatura())) {
@@ -73,11 +73,18 @@ public class MedicoServiceImpl implements MedicoService {
         
         // Lógica automática de creación de Usuario
         Usuario nuevoUsuario = new Usuario();
+        
+        // --- LÍNEA NUEVA: Guardamos el nombre real para el módulo de Seguridad ---
+        nuevoUsuario.setNombreCompleto(dto.getNombres() + " " + dto.getApellidoPaterno());
+        
         nuevoUsuario.setUsername(dto.getCorreo()); // Usamos el correo como username
         nuevoUsuario.setEmail(dto.getCorreo());
         nuevoUsuario.setPassword(passwordEncoder.encode(dto.getCodigoColegiatura())); // Contraseña por defecto
         nuevoUsuario.setRol(Rol.MEDICO);
         nuevoUsuario.setActivo(true);
+        
+        // --- LÍNEA NUEVA: Le damos acceso por defecto a sus módulos de trabajo ---
+        nuevoUsuario.setModulosAcceso(java.util.List.of("Citas Médicas", "Pacientes"));
         
         medico.setUsuario(nuevoUsuario); // Vinculamos ambas entidades
 

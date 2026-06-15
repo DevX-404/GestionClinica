@@ -15,6 +15,8 @@ public class Usuario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idUsuario;
+    @Column(length = 100)
+    private String nombreCompleto;
 
     @NotBlank(message = "El username es obligatorio")
     @Column(unique = true, nullable = false, length = 50)
