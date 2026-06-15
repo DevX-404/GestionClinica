@@ -14,4 +14,9 @@ export interface Pago {
   numeroComprobante?: string;
   subtotal?: number;
   igv?: number;
+
+  // Nuevos campos mapeados desde el backend
+  nombreMedico?: string;
+  nombreEspecialidad?: string;
+  estadoCita?: string;
 }

@@ -9,7 +9,7 @@ import { Pago } from '../../shared/models/pago.model';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './pagos.component.html',
-  providers: [CurrencyPipe] // Para formatear los precios a "S/ 150.00"
+  providers: [CurrencyPipe]
 })
 export class PagosComponent implements OnInit {
   private pagoService = inject(PagoService);
@@ -18,14 +18,13 @@ export class PagosComponent implements OnInit {
   pagos: Pago[] = [];
   pagosFiltrados: Pago[] = [];
   
-  // Variables generales de la tabla y busqueda
   searchTerm: string = '';
   isLoading: boolean = false;
   globalMsg: string = '';
   globalMsgType: 'success' | 'error' = 'success';
 
-  // Nuevas variables para los filtros de la interfaz
-  filtroEstado: string = 'TODOS'; 
+  // Filtros de visualización
+  filtroEstado: string = 'TODOS'; // Opciones: 'TODOS', 'PENDIENTE', 'ATENDIDA', 'PAGADO'
   orden: string = 'LLEGADA_DESC'; 
 
   // Modal para Procesar Pago
@@ -33,13 +32,11 @@ export class PagosComponent implements OnInit {
   pagoSeleccionado?: Pago;
   errorMsg: string = '';
   
-  // Formulario temporal para procesar el cobro
   cobroForm = {
     metodoPago: 'EFECTIVO',
     tipoComprobante: 'BOLETA'
   };
 
-  // Modal para Ver Recibo (Factura/Boleta)
   isReceiptModalOpen: boolean = false;
 
   ngOnInit(): void {
@@ -53,8 +50,6 @@ export class PagosComponent implements OnInit {
     this.pagoService.listarTodos().subscribe({
       next: (data) => {
         this.pagos = data;
-        // Ahora, en lugar de solo copiar los datos, llamamos a aplicarFiltros
-        // para que ordene automaticamente los datos apenas llegan del backend.
         this.aplicarFiltros(); 
         this.isLoading = false;
         this.cdr.detectChanges();
@@ -67,50 +62,50 @@ export class PagosComponent implements OnInit {
     });
   }
 
-  // Se reemplaza la antigua funcion filtrar() por esta funcion centralizada
-  // que maneja la busqueda por texto, el filtro por estado y el ordenamiento por fecha/hora.
   aplicarFiltros(): void {
     let temp = [...this.pagos];
 
-    // 1. Busqueda por texto (Nombre paciente, Numero de comprobante o DNI)
+    // 1. Filtro por término de búsqueda (Nombre, Comprobante, DNI o Especialidad)
     if (this.searchTerm.trim()) {
       const term = this.searchTerm.toLowerCase().trim();
       temp = temp.filter(p => 
         (p.nombrePaciente && p.nombrePaciente.toLowerCase().includes(term)) ||
         (p.numeroComprobante && p.numeroComprobante.toLowerCase().includes(term)) ||
-        (p.estadoPago && p.estadoPago.toLowerCase().includes(term)) ||
-        // Usamos (p as any) por si tu archivo pago.model.ts aun no tiene declarado dniPaciente
-        ((p as any).dniPaciente && (p as any).dniPaciente.includes(term))
+        (p.dniPaciente && p.dniPaciente.includes(term)) ||
+        (p.nombreEspecialidad && p.nombreEspecialidad.toLowerCase().includes(term)) ||
+        (p.nombreMedico && p.nombreMedico.toLowerCase().includes(term))
       );
     }
 
-    // 2. Filtro por Estado (Pendientes vs Pagados)
+    // 2. Filtro avanzado por Estados combinados (Pago + Consulta Médica)
     if (this.filtroEstado !== 'TODOS') {
       if (this.filtroEstado === 'PENDIENTE') {
-        temp = temp.filter(p => p.estadoPago === 'PENDIENTE' || p.estadoPago === 'Por Cobrar');
+        // Por Cobrar que aún no entran a consulta médica
+        temp = temp.filter(p => (p.estadoPago === 'PENDIENTE' || p.estadoPago === 'Por Cobrar') && p.estadoCita !== 'ATENDIDA');
+      } else if (this.filtroEstado === 'ATENDIDA') {
+        // Citas ya atendidas por el doctor que están pendientes de pago en caja
+        temp = temp.filter(p => p.estadoCita === 'ATENDIDA' && (p.estadoPago === 'PENDIENTE' || p.estadoPago === 'Por Cobrar'));
       } else if (this.filtroEstado === 'PAGADO') {
+        // Comprobantes finalizados
         temp = temp.filter(p => p.estadoPago === 'PAGADO' || p.estadoPago === 'COMPLETADO');
       }
     }
 
-    // 3. Orden de Llegada (Combinando Fecha y Hora)
+    // 3. Ordenamiento cronológico por fecha y hora de registro
     temp.sort((a, b) => {
-      // Se concatena la fecha y la hora para crear un objeto Date valido. 
-      // Si la hora es nula, se usa 00:00:00 por defecto.
-      const dateA = new Date(`${a.fechaPago || '1970-01-01'}T${(a as any).horaPago || '00:00:00'}`).getTime();
-      const dateB = new Date(`${b.fechaPago || '1970-01-01'}T${(b as any).horaPago || '00:00:00'}`).getTime();
+      const dateA = new Date(`${a.fechaPago || '1970-01-01'}T${a.horaPago || '00:00:00'}`).getTime();
+      const dateB = new Date(`${b.fechaPago || '1970-01-01'}T${b.horaPago || '00:00:00'}`).getTime();
       
       if (this.orden === 'LLEGADA_DESC') {
-        return dateB - dateA; // Orden descendente: mas recientes arriba
+        return dateB - dateA;
       } else {
-        return dateA - dateB; // Orden ascendente: mas antiguos arriba
+        return dateA - dateB;
       }
     });
 
     this.pagosFiltrados = temp;
   }
 
-  // --- FLUJO: PROCESAR PAGO (Tus funciones originales intactas) ---
   openPaymentModal(pago: Pago): void {
     this.pagoSeleccionado = pago;
     this.errorMsg = '';
@@ -134,17 +129,16 @@ export class PagosComponent implements OnInit {
     this.pagoService.procesarPago(this.pagoSeleccionado.idPago, payload).subscribe({
       next: () => {
         this.closePaymentModal();
-        this.mostrarMensajeGlobal('Pago procesado y comprobante generado con exito.', 'success');
-        this.cargarPagos(); // Recarga la tabla con los datos actualizados
+        this.mostrarMensajeGlobal('Pago procesado y comprobante generado con éxito.', 'success');
+        this.cargarPagos(); 
       },
       error: (err) => {
-        this.errorMsg = err.error?.message || 'Ocurrio un error al procesar la transaccion.';
+        this.errorMsg = err.error?.message || 'Ocurrió un error al procesar la transacción.';
         this.cdr.detectChanges();
       }
     });
   }
 
-  // --- FLUJO: VER COMPROBANTE (Tus funciones originales intactas) ---
   openReceiptModal(pago: Pago): void {
     this.pagoSeleccionado = pago;
     this.isReceiptModalOpen = true;
@@ -156,7 +150,7 @@ export class PagosComponent implements OnInit {
   }
 
   imprimirRecibo(): void {
-    window.print(); // Solucion rapida nativa del navegador para imprimir el area visible
+    window.print();
   }
 
   mostrarMensajeGlobal(msg: string, type: 'success' | 'error'): void {

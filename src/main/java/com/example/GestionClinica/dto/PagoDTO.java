@@ -1,7 +1,6 @@
 package com.example.GestionClinica.dto;
 
 import lombok.Data;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -9,18 +8,23 @@ import java.time.LocalTime;
 public class PagoDTO {
     private Long idPago;
     private Long idCita;
-    private String nombrePaciente;
     private LocalDate fechaPago;
-    private BigDecimal monto;
+    private LocalTime horaPago;
+    private Double monto;
     private String metodoPago;
     private String estadoPago;
-    private String dniPaciente;
-    private LocalTime horaPago;
-    
-    // Datos del comprobante si existe
-    private String tipoComprobante;
+    private String concepto;
     private String numeroComprobante;
-    private BigDecimal subtotal;
-    private BigDecimal igv;
-    private String concepto; // ADELANTO_30, PAGO_FINAL, etc.
+    
+    // Datos del Paciente
+    private String nombrePaciente;
+    private String dniPaciente;
+    
+    // Datos de la Consulta (Lo que te salía en blanco)
+    private String nombreMedico;
+    private String nombreEspecialidad;
+    private String estadoCita;
+    
+    // --- ESTE ES EL CAMPO VITAL QUE CAUSABA EL ERROR 500 ---
+    private String tipoComprobante; 
 }

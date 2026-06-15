@@ -2,8 +2,8 @@
   
   <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div>
-      <h2 class="text-2xl font-bold text-black dark:text-white">Caja y Facturacion</h2>
-      <p class="text-sm text-gray-500">Gestion de ingresos, metodos de pago y emision de comprobantes.</p>
+      <h2 class="text-2xl font-bold text-black dark:text-white">Caja y Facturación</h2>
+      <p class="text-sm text-gray-500">Gestión de ingresos, métodos de pago y emisión de comprobantes.</p>
     </div>
   </div>
 
@@ -16,9 +16,9 @@
   <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center bg-white p-4 rounded-2xl shadow-sm border border-gray-200 dark:bg-gray-900 dark:border-gray-800">
     
     <div class="flex-1">
-      <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Buscar Paciente / DNI</label>
+      <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Buscar Paciente / DNI / Especialidad</label>
       <div class="relative">
-        <input type="text" [(ngModel)]="searchTerm" (input)="aplicarFiltros()" placeholder="Buscar por paciente o N° de DNI..."
+        <input type="text" [(ngModel)]="searchTerm" (input)="aplicarFiltros()" placeholder="Buscar por paciente, N° de DNI o especialidad..."
                class="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 dark:border-gray-700 dark:bg-gray-800 dark:text-white transition-all" />
       </div>
     </div>
@@ -27,16 +27,17 @@
       <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Estado de Pago</label>
       <select [(ngModel)]="filtroEstado" (change)="aplicarFiltros()" class="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 dark:border-gray-700 dark:bg-gray-800 dark:text-white transition-all">
         <option value="TODOS">Todos los estados</option>
-        <option value="PENDIENTE">Por Cobrar</option>
-        <option value="PAGADO">Pagados</option>
+        <option value="PENDIENTE">Por Cobrar (Antes de Cita)</option>
+        <option value="ATENDIDA">Atendidos por Cobrar (Consultorio)</option>
+        <option value="PAGADO">Pagados / Completados</option>
       </select>
     </div>
 
     <div class="sm:w-56">
       <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Orden de Llegada</label>
       <select [(ngModel)]="orden" (change)="aplicarFiltros()" class="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 dark:border-gray-700 dark:bg-gray-800 dark:text-white transition-all">
-        <option value="LLEGADA_DESC">Mas recientes primero</option>
-        <option value="LLEGADA_ASC">Mas antiguos primero</option>
+        <option value="LLEGADA_DESC">Más recientes primero</option>
+        <option value="LLEGADA_ASC">Más antiguos primero</option>
       </select>
     </div>
   </div>
@@ -47,7 +48,7 @@
         <thead>
           <tr class="border-b border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.02]">
             <th class="px-6 py-4 text-base font-semibold text-gray-500">Fecha y Hora</th>
-            <th class="px-6 py-4 text-base font-semibold text-gray-500">Paciente</th>
+            <th class="px-6 py-4 text-base font-semibold text-gray-500">Paciente / Detalles de Cita</th>
             <th class="px-6 py-4 text-base font-semibold text-gray-500">Monto</th>
             <th class="px-6 py-4 text-base font-semibold text-gray-500">Estado / Comprobante</th>
             <th class="px-6 py-4 text-base font-semibold text-gray-500 text-center">Acciones</th>
@@ -70,14 +71,21 @@
                 <td class="px-6 py-4">
                   <span class="block text-base font-bold text-gray-900 dark:text-white capitalize">{{ p.nombrePaciente }}</span>
                   <span class="block text-sm font-medium text-gray-400 mt-0.5">DNI: {{ p.dniPaciente || 'No registrado' }}</span>
+                  <span class="block text-xs font-semibold text-brand-600 dark:text-brand-400 mt-1 uppercase tracking-wider">
+                    {{ p.nombreMedico || 'Médico no asignado' }} — {{ p.nombreEspecialidad || 'General' }}
+                  </span>
                 </td>
 
                 <td class="px-6 py-4 text-base font-bold text-green-600">S/ {{ p.monto | number:'1.2-2' }}</td>
                 
                 <td class="px-6 py-4">
-                  @if (p.estadoPago === 'PENDIENTE') {
-                    <span class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">Por Cobrar</span>
-                  } @else if (p.estadoPago === 'PAGADO') {
+                  @if (p.estadoPago === 'PENDIENTE' || p.estadoPago === 'Por Cobrar') {
+                    @if (p.estadoCita === 'ATENDIDA') {
+                      <span class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-bold text-purple-700 ring-1 ring-inset ring-purple-600/20 animate-pulse">Atendido - Por Cobrar</span>
+                    } @else {
+                      <span class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">Por Cobrar</span>
+                    }
+                  } @else if (p.estadoPago === 'PAGADO' || p.estadoPago === 'COMPLETADO') {
                     <div class="flex flex-col">
                       <span class="inline-flex w-fit items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 mb-1">Pagado - {{ p.metodoPago }}</span>
                       <span class="text-xs font-semibold text-gray-500">{{ p.numeroComprobante }}</span>
@@ -89,12 +97,12 @@
                 
                 <td class="px-6 py-4">
                   <div class="flex items-center justify-center gap-2">
-                    @if (p.estadoPago === 'PENDIENTE') {
+                    @if (p.estadoPago === 'PENDIENTE' || p.estadoPago === 'Por Cobrar') {
                       <button (click)="openPaymentModal(p)" class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 shadow-sm transition-colors">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         Cobrar
                       </button>
-                    } @else if (p.estadoPago === 'PAGADO') {
+                    } @else if (p.estadoPago === 'PAGADO' || p.estadoPago === 'COMPLETADO') {
                       <button (click)="openReceiptModal(p)" class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 transition-colors">
                         <svg class="h-4 w-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         Ver Recibo
@@ -104,7 +112,7 @@
                 </td>
               </tr>
             } @empty {
-              <tr><td colspan="5" class="px-6 py-10 text-center text-base text-gray-400">No hay transacciones registradas.</td></tr>
+              <tr><td colspan="5" class="px-6 py-10 text-center text-base text-gray-400">No se encontraron registros de caja financieros.</td></tr>
             }
           }
         </tbody>
@@ -133,10 +141,10 @@
 
         <div class="space-y-4">
           <div>
-            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Metodo de Pago</label>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Método de Pago</label>
             <select [(ngModel)]="cobroForm.metodoPago" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-3 text-gray-900 outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
               <option value="EFECTIVO">Efectivo</option>
-              <option value="TARJETA">Tarjeta (Debito/Credito)</option>
+              <option value="TARJETA">Tarjeta (Débito/Crédito)</option>
               <option value="YAPE">Yape</option>
               <option value="PLIN">Plin</option>
             </select>
@@ -144,8 +152,8 @@
           <div>
             <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Comprobante a Emitir</label>
             <select [(ngModel)]="cobroForm.tipoComprobante" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-3 text-gray-900 outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
-              <option value="BOLETA">Boleta de Venta Electronica</option>
-              <option value="FACTURA">Factura Electronica</option>
+              <option value="BOLETA">Boleta de Venta Electrónica</option>
+              <option value="FACTURA">Factura Electrónica</option>
             </select>
           </div>
         </div>
@@ -160,7 +168,6 @@
 
   @if (isReceiptModalOpen) {
     <div class="fixed inset-0 z-99999 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs print:bg-white print:p-0">
-      
       <div class="w-full max-w-sm rounded-lg bg-white shadow-2xl print:shadow-none print:max-w-full">
         
         <div class="flex justify-end p-2 print:hidden border-b border-dashed">
@@ -169,27 +176,31 @@
 
         <div class="p-8 font-mono text-gray-800" id="ticket-impresion">
           <div class="text-center mb-6">
-            <h2 class="text-2xl font-black uppercase tracking-widest text-brand-600">CLINICA UTP</h2>
+            <h2 class="text-2xl font-black uppercase tracking-widest text-brand-600">CLÍNICA UTP</h2>
             <p class="text-xs text-gray-500">RUC: 20123456789</p>
             <p class="text-xs text-gray-500">Chiclayo, Lambayeque</p>
           </div>
 
           <div class="border-y-2 border-dashed border-gray-300 py-4 mb-4">
-            <p class="text-center font-bold text-lg uppercase">{{ pagoSeleccionado?.tipoComprobante }} ELECTRONICA</p>
+            <p class="text-center font-bold text-lg uppercase">{{ pagoSeleccionado?.tipoComprobante }} ELECTRÓNICA</p>
             <p class="text-center text-sm tracking-widest font-semibold mt-1">{{ pagoSeleccionado?.numeroComprobante }}</p>
           </div>
 
           <div class="space-y-2 text-sm mb-6">
             <div class="flex justify-between">
               <span class="font-bold">Fecha:</span>
-              <span>{{ pagoSeleccionado?.fechaPago }}</span>
+              <span>{{ pagoSeleccionado?.fechaPago }} {{ pagoSeleccionado?.horaPago?.substring(0,5) }}</span>
             </div>
             <div class="flex justify-between">
               <span class="font-bold">Cliente:</span>
               <span class="capitalize text-right">{{ pagoSeleccionado?.nombrePaciente }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="font-bold">Metodo:</span>
+              <span class="font-bold">Médico:</span>
+              <span class="text-right">{{ pagoSeleccionado?.nombreMedico }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="font-bold">Método:</span>
               <span>{{ pagoSeleccionado?.metodoPago }}</span>
             </div>
           </div>
@@ -197,13 +208,13 @@
           <table class="w-full text-sm mb-6">
             <thead class="border-b border-gray-300">
               <tr>
-                <th class="text-left pb-2">Descripcion</th>
+                <th class="text-left pb-2">Descripción</th>
                 <th class="text-right pb-2">Importe</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td class="py-3">Atencion Medica (Consulta)</td>
+                <td class="py-3">Atención Médica — {{ pagoSeleccionado?.nombreEspecialidad }}</td>
                 <td class="text-right py-3">S/ {{ pagoSeleccionado?.monto | number:'1.2-2' }}</td>
               </tr>
             </tbody>
@@ -225,7 +236,7 @@
           </div>
 
           <div class="mt-8 text-center text-xs text-gray-500">
-            <p>Representacion impresa de la {{ pagoSeleccionado?.tipoComprobante }} Electronica.</p>
+            <p>Representación impresa del Comprobante Electrónico.</p>
             <p class="mt-2 font-bold">¡Gracias por confiar en nosotros!</p>
           </div>
         </div>
