@@ -19,4 +19,9 @@ export class RecetaMedicaService {
   obtenerPorConsulta(idConsulta: number): Observable<RecetaMedicaDTO> {
     return this.http.get<RecetaMedicaDTO>(`${this.apiUrl}/consulta/${idConsulta}`);
   }
+
+  // EL NUEVO MÉTODO PARA ANGULAR
+  listarTodas(): Observable<RecetaMedicaDTO[]> {
+    return this.http.get<RecetaMedicaDTO[]>(this.apiUrl);
+  }
 }

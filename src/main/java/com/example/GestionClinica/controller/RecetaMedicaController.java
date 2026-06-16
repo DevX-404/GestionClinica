@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/recetas")
@@ -24,5 +25,11 @@ public class RecetaMedicaController {
     @GetMapping("/consulta/{idConsulta}")
     public ResponseEntity<RecetaMedicaDTO> obtenerPorConsulta(@PathVariable Long idConsulta) {
         return ResponseEntity.ok(recetaService.obtenerPorConsulta(idConsulta));
+    }
+
+    // EL NUEVO MÉTODO PARA LISTAR TODAS LAS RECETAS
+    @GetMapping
+    public ResponseEntity<List<RecetaMedicaDTO>> listarTodas() {
+        return ResponseEntity.ok(recetaService.listarTodas());
     }
 }

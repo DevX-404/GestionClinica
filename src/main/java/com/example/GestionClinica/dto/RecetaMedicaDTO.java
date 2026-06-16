@@ -11,4 +11,8 @@ public class RecetaMedicaDTO {
     private String observaciones;
     private Long idConsulta;
     private List<DetalleRecetaDTO> detalles;
+
+    private String nombrePaciente;
+    private String nombreMedico;
+    private String dniPaciente;
 }

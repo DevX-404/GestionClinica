@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { AppLayoutComponent } from './shared/layout/app-layout/app-layout.component';
 import { authGuard } from './core/guards/auth.guard';
+import { RecetasComponent } from './pages/recetas/recetas.component';
 
 export const routes: Routes = [
   // 1. Ruta pública e independiente (A pantalla completa, sin Sidebar ni Header)
@@ -61,10 +62,16 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/auditoria/auditoria.component').then(m => m.AuditoriaComponent),
         title: 'Registro de Auditoría'
       },
+      
       {
         path: 'seguridad',
         loadComponent: () => import('./pages/seguridad/seguridad.component').then(m => m.SeguridadComponent),
         title: 'Seguridad y Usuarios'
+      },
+      {
+        path: 'recetas',
+        component: RecetasComponent,
+        title: 'Recetas Médicas'
       },
       // Aquí agregaremos en los siguientes pasos los hijos de 'pacientes' y 'medicos'
       {
