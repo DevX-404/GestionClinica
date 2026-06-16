@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -43,14 +45,14 @@ public class PagoServiceImpl implements PagoService {
         Pago pago = pagoRepository.findById(idPago)
                 .orElseThrow(() -> new ResourceNotFoundException("Pago no encontrado"));
 
-        // 1. Actualizamos los datos del pago
-        pago.setMetodoPago(dto.getMetodoPago());
+        // 1. Actualizamos los datos principales del pago
+        pago.setMetodoPago(dto != null && dto.getMetodoPago() != null ? dto.getMetodoPago() : "EFECTIVO");
         pago.setEstadoPago("PAGADO");
         pago.setFechaPago(LocalDate.now());
         pago.setHoraPago(LocalTime.now());
 
-        // 2. Instanciamos el Comprobante respetando tu modelo
-        String tipoComp = dto.getTipoComprobante() != null ? dto.getTipoComprobante() : "BOLETA";
+        // 2. Llenamos TODOS los campos de Comprobante (Total, Subtotal e IGV)
+        String tipoComp = (dto != null && dto.getTipoComprobante() != null) ? dto.getTipoComprobante() : "BOLETA";
         String prefix = tipoComp.equalsIgnoreCase("FACTURA") ? "F001-" : "B001-";
         
         Comprobante comprobante = new Comprobante();
@@ -58,17 +60,28 @@ public class PagoServiceImpl implements PagoService {
         comprobante.setNumeroComprobante(prefix + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         comprobante.setFechaEmision(LocalDate.now());
         
-        comprobante.setTotal(pago.getMonto()); 
+        // --- AQUÍ ESTÁ LA MAGIA PARA QUE LA BASE DE DATOS NO EXPLOTE ---
+        BigDecimal total = pago.getMonto() != null ? pago.getMonto() : BigDecimal.ZERO;
+        // Calculamos Subtotal dividiendo entre 1.18
+        BigDecimal subtotal = total.divide(new BigDecimal("1.18"), 2, RoundingMode.HALF_UP);
+        // Calculamos IGV restando el subtotal al total
+        BigDecimal igv = total.subtract(subtotal);
+
+        // Asignamos los 3 valores obligatorios
+        comprobante.setTotal(total);
+        comprobante.setSubtotal(subtotal);
+        comprobante.setIgv(igv);
         
+        // Enlazamos
         comprobante.setPago(pago);
         pago.setComprobante(comprobante);
 
-        // 3. Guardamos y retornamos
+        // 3. Guardamos en la base de datos
         Pago pagoGuardado = pagoRepository.save(pago);
         return convertirADto(pagoGuardado);
     }
 
-    // --- EL TRADUCTOR CORREGIDO AL ESPAÑOL ---
+    // --- TRADUCCIÓN HACIA ANGULAR ---
     private PagoDTO convertirADto(Pago pago) {
         PagoDTO dto = new PagoDTO();
         dto.setIdPago(pago.getIdPago());
@@ -76,13 +89,15 @@ public class PagoServiceImpl implements PagoService {
         dto.setHoraPago(pago.getHoraPago());
         
         dto.setMonto(pago.getMonto() != null ? pago.getMonto().doubleValue() : 0.0);
-        
         dto.setMetodoPago(pago.getMetodoPago());
         dto.setEstadoPago(pago.getEstadoPago());
         dto.setConcepto(pago.getConcepto());
         
         if (pago.getComprobante() != null) {
             dto.setNumeroComprobante(pago.getComprobante().getNumeroComprobante());
+            if (pago.getComprobante().getTipoComprobante() != null) {
+                dto.setTipoComprobante(pago.getComprobante().getTipoComprobante());
+            }
         } else {
             dto.setNumeroComprobante("Por Emitir");
         }
@@ -103,9 +118,8 @@ public class PagoServiceImpl implements PagoService {
                 String apellidoMed = pago.getCita().getMedico().getApellidoPaterno() != null ? pago.getCita().getMedico().getApellidoPaterno() : "";
                 dto.setNombreMedico("Dr/Dra. " + (nombresMed + " " + apellidoMed).trim());
                 
-                // CORRECCIÓN VITAL: getEspecialidad() en lugar del error en inglés
-                if (pago.getCita().getMedico().getEspecialidad() != null) {
-                    dto.setNombreEspecialidad(pago.getCita().getMedico().getEspecialidad().getNombre());
+                if (pago.getCita().getMedico().getSpecialty() != null) {
+                    dto.setNombreEspecialidad(pago.getCita().getMedico().getSpecialty().getNombre());
                 } else {
                     dto.setNombreEspecialidad("General");
                 }
