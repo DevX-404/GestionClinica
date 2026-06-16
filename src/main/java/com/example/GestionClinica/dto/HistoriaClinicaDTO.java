@@ -11,5 +11,5 @@ public class HistoriaClinicaDTO {
     private String alergias;
     private String observacionesGenerales;
     private Long idPaciente;
-    private String nombreCompletoPaciente;
+    private String nombreCompletoPaciente;   
 }
