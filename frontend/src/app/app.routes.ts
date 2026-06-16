@@ -62,7 +62,7 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/auditoria/auditoria.component').then(m => m.AuditoriaComponent),
         title: 'Registro de Auditoría'
       },
-      
+
       {
         path: 'seguridad',
         loadComponent: () => import('./pages/seguridad/seguridad.component').then(m => m.SeguridadComponent),
@@ -72,6 +72,11 @@ export const routes: Routes = [
         path: 'recetas',
         component: RecetasComponent,
         title: 'Recetas Médicas'
+      },
+      {
+        path: 'historia-clinica',
+        loadComponent: () => import('./pages/historia-clinica/historia-clinica.component').then(m => m.HistoriaClinicaComponent),
+        title: 'Historia Clínica'
       },
       // Aquí agregaremos en los siguientes pasos los hijos de 'pacientes' y 'medicos'
       {
