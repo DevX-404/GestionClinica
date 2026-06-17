@@ -10,12 +10,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
+import java.util.stream.Collectors;
+import java.util.List;
 
 @Service
 public class HistoriaClinicaServiceImpl implements HistoriaClinicaService {
 
     @Autowired private HistoriaClinicaRepository historiaRepository;
     @Autowired private PacienteRepository pacienteRepository;
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<HistoriaClinicaDTO> obtenerTodas() {
+        return historiaRepository.findAll().stream()
+                .map(this::convertirADto)
+                .collect(Collectors.toList());
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -60,15 +70,39 @@ public class HistoriaClinicaServiceImpl implements HistoriaClinicaService {
         return convertirADto(historiaRepository.save(historia));
     }
 
-    private HistoriaClinicaDTO convertirADto(HistoriaClinica historia) {
+   private HistoriaClinicaDTO convertirADto(HistoriaClinica historia) {
         HistoriaClinicaDTO dto = new HistoriaClinicaDTO();
         dto.setIdHistoriaClinica(historia.getIdHistoriaClinica());
         dto.setFechaRegistro(historia.getFechaRegistro());
         dto.setAntecedentes(historia.getAntecedentes());
         dto.setAlergias(historia.getAlergias());
         dto.setObservacionesGenerales(historia.getObservacionesGenerales());
-        dto.setIdPaciente(historia.getPaciente().getIdPaciente());
-        dto.setNombreCompletoPaciente(historia.getPaciente().getNombres() + " " + historia.getPaciente().getApellidoPaterno());
+        
+        Paciente p = historia.getPaciente();
+        dto.setIdPaciente(p.getIdPaciente());
+        dto.setNombreCompletoPaciente(p.getNombres() + " " + p.getApellidoPaterno());
+        
+        // --- AQUÍ ESTÁ TU LÓGICA NIVEL DIOS PARA EL EXPEDIENTE ---
+        dto.setDni(p.getDni());
+        
+        String inicialNombre = p.getNombres() != null && !p.getNombres().isEmpty() ? p.getNombres().substring(0, 1).toUpperCase() : "X";
+        String inicialApellido = p.getApellidoPaterno() != null && !p.getApellidoPaterno().isEmpty() ? p.getApellidoPaterno().substring(0, 1).toUpperCase() : "X";
+        
+        dto.setNumeroExpediente("EXP-" + inicialNombre + inicialApellido + p.getDni());
+
+        if (historia.getConsultasMedicas() != null) {
+            List<HistoriaClinicaDTO.ConsultaResumen> resumenConsultas = historia.getConsultasMedicas().stream()
+                .map(consulta -> {
+                    HistoriaClinicaDTO.ConsultaResumen resumen = new HistoriaClinicaDTO.ConsultaResumen();
+                    resumen.setFechaConsulta(consulta.getFechaConsulta());
+                    resumen.setMotivoConsulta(consulta.getMotivoConsulta());
+                    resumen.setDiagnosticoGeneral(consulta.getDiagnosticoGeneral());
+                    resumen.setTratamiento(consulta.getTratamiento());
+                    return resumen;
+                }).collect(Collectors.toList());
+            dto.setConsultasMedicas(resumenConsultas);
+        }
+
         return dto;
     }
 }

@@ -5,6 +5,7 @@ import com.example.GestionClinica.service.HistoriaClinicaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/historias")
@@ -28,5 +29,10 @@ public class HistoriaClinicaController {
     @PutMapping("/{idHistoria}")
     public ResponseEntity<HistoriaClinicaDTO> actualizarFicha(@PathVariable Long idHistoria, @RequestBody HistoriaClinicaDTO dto) {
         return ResponseEntity.ok(historiaService.actualizarFichaGeneral(idHistoria, dto));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<HistoriaClinicaDTO>> obtenerTodas() {
+        return ResponseEntity.ok(historiaService.obtenerTodas());
     }
 }

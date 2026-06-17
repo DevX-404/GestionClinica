@@ -1,25 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
-export interface Atencion {
-  idAtencion: string;
-  fecha: string;
-  medico: string;
-  especialidad: string;
-  motivo: string;
-  sintomas: string;
-  diagnosticos: string;
-  tratamiento: string;
-}
-
-export interface ExpedienteClinico {
-  dni: string;
-  nombres: string;
-  numeroExpediente: string;
-  ultimaAtencion: string;
-  atenciones: Atencion[];
-}
+import { HistoriaClinicaService } from '../../shared/services/historia-clinica.service';
 
 @Component({
   selector: 'app-historia-clinica',
@@ -29,13 +11,15 @@ export interface ExpedienteClinico {
 })
 export class HistoriaClinicaComponent implements OnInit {
   
-  expedientes: ExpedienteClinico[] = [];
-  expedientesFiltrados: ExpedienteClinico[] = [];
+  private historiaService = inject(HistoriaClinicaService);
+
+  expedientes: any[] = [];
+  expedientesFiltrados: any[] = [];
   searchTerm: string = '';
   
   isLoading = false;
   isModalOpen = false;
-  expedienteSeleccionado: ExpedienteClinico | null = null;
+  expedienteSeleccionado: any = null;
 
   ngOnInit() {
     this.cargarDatos();
@@ -44,74 +28,32 @@ export class HistoriaClinicaComponent implements OnInit {
   cargarDatos() {
     this.isLoading = true;
     
-    // Aquí luego conectaremos tu Backend. Por ahora usamos estos datos 
-    // para que le muestres a tu enamorado cómo se ven los códigos.
-    const mockData: ExpedienteClinico[] = [
-      {
-        dni: '74635241',
-        nombres: 'Ximena Burga Pérez',
-        numeroExpediente: 'EXP-74635241',
-        ultimaAtencion: '2026-06-15',
-        atenciones: [
-          {
-            idAtencion: 'AT-0045',
-            fecha: '2026-06-15',
-            medico: 'Dr. Roberto Mendoza',
-            especialidad: 'Medicina General',
-            motivo: 'Dolor de cabeza intenso y fiebre',
-            sintomas: 'Temperatura de 39°C, escalofríos, mareos leves.',
-            diagnosticos: 'Faringitis Aguda',
-            tratamiento: 'Amoxicilina 500mg cada 8 horas, reposo absoluto.'
-          },
-          {
-            idAtencion: 'AT-0012',
-            fecha: '2026-01-10',
-            medico: 'Dra. Carla Ruiz',
-            especialidad: 'Cardiología',
-            motivo: 'Chequeo de rutina',
-            sintomas: 'Ninguno, paciente asintomático.',
-            diagnosticos: 'Paciente Sano, presión arterial estable.',
-            tratamiento: 'Mantener dieta balanceada y ejercicio regular.'
-          }
-        ]
+    // LLAMADA REAL A TU BASE DE DATOS
+    this.historiaService.obtenerTodosLosExpedientes().subscribe({
+      next: (data: any[]) => {
+        this.expedientes = data;
+        this.expedientesFiltrados = data;
+        this.isLoading = false;
       },
-      {
-        dni: '45678912',
-        nombres: 'Luis Bances',
-        numeroExpediente: 'EXP-45678912',
-        ultimaAtencion: '2026-05-20',
-        atenciones: [
-          {
-            idAtencion: 'AT-0033',
-            fecha: '2026-05-20',
-            medico: 'Dr. Roberto Mendoza',
-            especialidad: 'Medicina General',
-            motivo: 'Dolor estomacal',
-            sintomas: 'Náuseas, pesadez después de comer.',
-            diagnosticos: 'Gastritis Leve',
-            tratamiento: 'Omeprazol 20mg en ayunas por 14 días.'
-          }
-        ]
+      error: () => {
+        console.error("Error al cargar las Historias Clínicas");
+        this.isLoading = false;
       }
-    ];
-
-    setTimeout(() => {
-      this.expedientes = mockData;
-      this.expedientesFiltrados = mockData;
-      this.isLoading = false;
-    }, 800); // Simulamos que está cargando del servidor
+    });
   }
 
   buscar() {
     const term = this.searchTerm.toLowerCase();
-    this.expedientesFiltrados = this.expedientes.filter(e => 
-      e.nombres.toLowerCase().includes(term) ||
-      e.dni.includes(term) ||
-      e.numeroExpediente.toLowerCase().includes(term)
-    );
+    this.expedientesFiltrados = this.expedientes.filter(e => {
+      const nombre = (e.nombreCompletoPaciente || e.paciente?.nombres || '').toLowerCase();
+      const dni = e.paciente?.dni || e.dniPaciente || '';
+      const id = e.idHistoriaClinica ? e.idHistoriaClinica.toString() : '';
+      
+      return nombre.includes(term) || dni.includes(term) || id.includes(term);
+    });
   }
 
-  verHistorial(exp: ExpedienteClinico) {
+  verHistorial(exp: any) {
     this.expedienteSeleccionado = exp;
     this.isModalOpen = true;
   }
@@ -122,6 +64,6 @@ export class HistoriaClinicaComponent implements OnInit {
   }
 
   imprimirHistoria() {
-    alert('¡Botón configurado! Listo para generar el PDF de la Historia Clínica completa.');
+    alert('¡Listo para generar el PDF de la Historia Clínica!');
   }
 }

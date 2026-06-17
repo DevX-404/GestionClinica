@@ -1,7 +1,6 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
 import { FullCalendarModule } from '@fullcalendar/angular';
 import { CalendarOptions, EventInput } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -12,6 +11,7 @@ import esLocale from '@fullcalendar/core/locales/es';
 import { CitaMedicaService } from '../../shared/services/cita-medica.service';
 import { ConsultaMedicaService } from '../../shared/services/consulta-medica.service';
 import { RecetaMedicaService } from '../../shared/services/receta-medica.service';
+import { HistoriaClinicaService } from '../../shared/services/historia-clinica.service';
 import { RecetaMedicaDTO, DetalleRecetaDTO } from '../../shared/models/receta-medica.model';
 
 @Component({
@@ -23,23 +23,14 @@ import { RecetaMedicaDTO, DetalleRecetaDTO } from '../../shared/models/receta-me
     ::ng-deep .fc { --fc-border-color: #e5e7eb; --fc-button-text-color: #4b5563; --fc-button-bg-color: #ffffff; --fc-button-border-color: #e5e7eb; --fc-button-hover-bg-color: #f9fafb; --fc-button-hover-border-color: #d1d5db; --fc-button-active-bg-color: #3b82f6; --fc-button-active-border-color: #3b82f6; --fc-button-active-text-color: #ffffff; --fc-today-bg-color: #f3f4f6; font-family: inherit; }
     ::ng-deep .fc .fc-toolbar-title { font-size: 1.25rem !important; font-weight: 700 !important; color: #111827; text-transform: capitalize; }
     ::ng-deep .fc .fc-button { padding: 0.4rem 1rem !important; font-weight: 600 !important; text-transform: capitalize !important; border-radius: 0.5rem !important; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important; transition: all 0.2s ease !important; }
-    ::ng-deep .fc .fc-button-primary:not(:disabled):active, ::ng-deep .fc .fc-button-primary:not(:disabled).fc-button-active { box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06) !important; }
-    ::ng-deep .fc .fc-toolbar-chunk .fc-button-group { margin-left: 0.5rem; border-radius: 0.5rem; }
-    ::ng-deep .fc-col-header-cell-cushion, ::ng-deep .fc-timegrid-axis-cushion, ::ng-deep .fc-timegrid-slot-label-cushion { color: #6b7280 !important; font-weight: 600 !important; font-size: 0.8rem; padding: 10px !important; }
-    ::ng-deep .fc-timegrid-event { border-radius: 8px !important; border: none !important; padding: 4px 6px !important; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important; transition: transform 0.15s ease, box-shadow 0.15s ease; cursor: pointer; }
-    ::ng-deep .fc-timegrid-event:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important; }
-    ::ng-deep .fc-event-main { font-weight: 700; font-size: 0.75rem; color: white; letter-spacing: 0.025em; }
-    ::ng-deep .fc-timegrid-now-indicator-line { border-color: #ef4444 !important; border-width: 2px !important; }
-    ::ng-deep .fc-timegrid-now-indicator-arrow { border-color: #ef4444 !important; border-width: 5px !important; margin-top: -4px !important; }
-    .dark ::ng-deep .fc { --fc-border-color: #374151; --fc-button-text-color: #d1d5db; --fc-button-bg-color: #1f2937; --fc-button-border-color: #4b5563; --fc-button-hover-bg-color: #374151; --fc-button-hover-border-color: #6b7280; --fc-today-bg-color: rgba(55, 65, 81, 0.3); }
-    .dark ::ng-deep .fc .fc-toolbar-title { color: #f9fafb; }
-    .dark ::ng-deep .fc-col-header-cell-cushion, .dark ::ng-deep .fc-timegrid-axis-cushion, .dark ::ng-deep .fc-timegrid-slot-label-cushion { color: #9ca3af !important; }
+    .dark ::ng-deep .fc { --fc-border-color: #374151; --fc-button-text-color: #d1d5db; --fc-button-bg-color: #1f2937; }
   `]
 })
 export class AgendaComponent implements OnInit {
   private citaService = inject(CitaMedicaService);
   private consultaService = inject(ConsultaMedicaService);
   private recetaService = inject(RecetaMedicaService);
+  private historiaService = inject(HistoriaClinicaService);
   private cdr = inject(ChangeDetectorRef);
 
   todasLasCitas: any[] = [];
@@ -51,12 +42,22 @@ export class AgendaComponent implements OnInit {
   citaSeleccionadaId: number | null = null;
   consultaCreadaId: number | null = null;
   
-  isLoading: boolean = false;
-  isSaving: boolean = false; 
+  historiaClinicaActual: any = null; 
+  historialConsultas: any[] = []; 
+  isLoadingHistoria: boolean = false;
 
+  // --- VARIABLES PARA EDITAR HISTORIAL ---
+  editandoAlergias = false;
+  editandoAntecedentes = false;
+  nuevaAlergiaTexto = '';
+  nuevoAntecedenteTexto = '';
+  guardandoHistoria = false;
+  
+  isLoading: boolean = false;
+  isSaving: boolean = false;
   mostrarCitasLaterales: boolean = false;
-  mostrarHistorial: boolean = false; 
-  verHistorialDelDia: boolean = false; 
+  mostrarHistorial: boolean = false;
+  verHistorialDelDia: boolean = false;
 
   vistaActual: 'AGENDA' | 'ATENCION' = 'AGENDA';
   pestanaActiva: 'CONSULTA' | 'RECETA' = 'CONSULTA';
@@ -67,19 +68,14 @@ export class AgendaComponent implements OnInit {
 
   calendarOptions: CalendarOptions = {
     plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
-    initialView: 'dayGridMonth', 
+    initialView: 'dayGridMonth',
     locale: esLocale,
-    nowIndicator: true, 
-    headerToolbar: {
-      left: 'title', 
-      center: '',
-      right: 'prev,next dayGridMonth,timeGridWeek,timeGridDay' 
-    },
+    headerToolbar: { left: 'title', center: '', right: 'prev,next dayGridMonth,timeGridWeek,timeGridDay' },
     buttonText: { month: 'Mes', week: 'Semana', day: 'Día' },
     allDaySlot: false,
     events: [],
     eventClick: this.handleEventClick.bind(this),
-    dateClick: this.handleDateClick.bind(this) 
+    dateClick: this.handleDateClick.bind(this)
   };
 
   consultaForm = { motivo: '', sintomas: '', observaciones: '' };
@@ -94,36 +90,20 @@ export class AgendaComponent implements OnInit {
 
   cargarCitasDelDia(): void {
     this.isLoading = true;
-    this.citaService.listarTodas().subscribe({
-      next: (data: any[]) => {
-        this.todasLasCitas = data;
-        const eventosCalendario: EventInput[] = data.map(cita => {
-          const startDateTime = `${cita.fecha}T${cita.hora}`;
-          const startDate = new Date(startDateTime);
-          const endDate = new Date(startDate.getTime() + 30 * 60000); 
-
-          return {
-            id: cita.idCita?.toString(),
-            title: cita.paciente?.nombres || cita.nombreCompletoPaciente || 'Paciente',
-            start: startDate,
-            end: endDate,
-            backgroundColor: this.getColorPorEstado(cita.estado),
-            borderColor: 'transparent',
-            extendedProps: { citaCompleta: cita } 
-          };
-        });
-
-        this.calendarOptions.events = eventosCalendario;
-        const hoy = new Date().toISOString().split('T')[0];
-        this.citasDelDia = this.todasLasCitas.filter(cita => cita.fecha === hoy);
-        this.filtrarListasDelDia();
-        this.isLoading = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error al cargar las citas:', err);
-        this.isLoading = false;
-      }
+    this.citaService.listarTodas().subscribe((data: any[]) => {
+      this.todasLasCitas = data;
+      this.calendarOptions.events = data.map((cita: any) => ({
+        id: cita.idCita?.toString(),
+        title: cita.paciente?.nombres || cita.nombreCompletoPaciente || 'Paciente',
+        start: `${cita.fecha}T${cita.hora}`,
+        backgroundColor: this.getColorPorEstado(cita.estado),
+        extendedProps: { citaCompleta: cita }
+      }));
+      const hoy = new Date().toISOString().split('T')[0];
+      this.citasDelDia = data.filter(c => c.fecha === hoy);
+      this.filtrarListasDelDia();
+      this.isLoading = false;
+      this.cdr.detectChanges();
     });
   }
 
@@ -133,98 +113,177 @@ export class AgendaComponent implements OnInit {
   }
 
   handleDateClick(arg: any): void {
-    const fechaSeleccionada = arg.dateStr.split('T')[0];
-    this.citasDelDia = this.todasLasCitas.filter(cita => cita.fecha === fechaSeleccionada);
+    this.citasDelDia = this.todasLasCitas.filter(c => c.fecha === arg.dateStr.split('T')[0]);
     this.filtrarListasDelDia();
     this.mostrarCitasLaterales = true;
-    this.verHistorialDelDia = false; 
+    this.verHistorialDelDia = false;
     this.citaSeleccionada = null;
     this.citaSeleccionadaId = null;
     this.cdr.detectChanges();
   }
 
-  handleEventClick(clickInfo: any): void {
-    const cita = clickInfo.event.extendedProps['citaCompleta'];
+  handleEventClick(arg: any): void {
+    const cita = arg.event.extendedProps['citaCompleta'];
     this.citasDelDia = this.todasLasCitas.filter(c => c.fecha === cita.fecha);
     this.filtrarListasDelDia();
-    
     this.verHistorialDelDia = (cita.estado === 'ATENDIDA' || cita.estado === 'CANCELADA');
     this.citaSeleccionadaId = cita.idCita;
     this.mostrarCitasLaterales = true;
     this.cdr.detectChanges();
-
-    setTimeout(() => {
-      const element = document.getElementById('cita-card-' + cita.idCita);
-      if (element) { element.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-    }, 100);
   }
 
   getColorPorEstado(estado: string): string {
     switch(estado) {
-      case 'EN_ESPERA': return '#8b5cf6'; 
-      case 'CONFIRMADA': return '#3b82f6'; 
-      case 'ATENDIDA': return '#10b981'; 
-      case 'CANCELADA': return '#ef4444'; 
-      case 'PENDIENTE_PAGO':
-      case 'PENDIENTE': return '#facc15'; 
-      default: return '#f59e0b'; 
+      case 'EN_ESPERA': return '#8b5cf6';
+      case 'CONFIRMADA': return '#3b82f6';
+      case 'ATENDIDA': return '#10b981';
+      case 'CANCELADA': return '#ef4444';
+      default: return '#facc15';
     }
   }
 
-  // --- BOTÓN LIBERADO: PLUM EXPEDIENTE ---
   seleccionarCita(cita: any): void {
     this.citaSeleccionada = cita;
     this.consultaForm.motivo = cita.motivoConsulta || '';
     this.vistaActual = 'ATENCION';
-    this.mostrarHistorial = true; // Plum: Sale el expediente
+    this.mostrarHistorial = true;
     this.pestanaActiva = 'CONSULTA';
-    this.cdr.detectChanges();
+    this.historiaClinicaActual = null;
+    this.historialConsultas = []; 
+    this.editandoAlergias = false;
+    this.editandoAntecedentes = false;
+    this.nuevaAlergiaTexto = '';
+    this.nuevoAntecedenteTexto = '';
+
+    const idPaciente = cita.paciente?.idPaciente || cita.idPaciente; 
+    
+    if (idPaciente) {
+      this.isLoadingHistoria = true;
+      this.historiaService.obtenerPorPaciente(idPaciente).subscribe({
+        next: (historia: any) => {
+          this.historiaClinicaActual = historia;
+          if (historia.consultasMedicas) {
+            this.historialConsultas = historia.consultasMedicas;
+          } else if (historia.consultas) {
+            this.historialConsultas = historia.consultas;
+          }
+          this.isLoadingHistoria = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          this.historiaClinicaActual = { 
+            alergias: "El paciente aún no registra alergias.", 
+            antecedentes: "El paciente aún no registra antecedentes médicos." 
+          };
+          this.historialConsultas = [];
+          this.isLoadingHistoria = false;
+          this.cdr.detectChanges();
+        }
+      });
+    } else {
+      this.cdr.detectChanges();
+    }
   }
 
-  comenzarConsultaReal() {
-    this.mostrarHistorial = false; // Plum: Sale el formulario de recetas y consulta
-    this.cdr.detectChanges();
+  // --- NUEVA LÓGICA DE GUARDADO AUTOMÁTICO DE FECHAS ---
+  guardarDatosFicha(tipo: 'ALERGIAS' | 'ANTECEDENTES') {
+    if (this.guardandoHistoria) return;
+    
+    // Si el paciente es nuevecito, primero lo creamos en la base de datos
+    if (!this.historiaClinicaActual.idHistoriaClinica) {
+      this.guardandoHistoria = true;
+      const idPaciente = this.citaSeleccionada.paciente?.idPaciente || this.citaSeleccionada.idPaciente;
+      this.historiaService.inicializarHistoria(idPaciente).subscribe({
+        next: (nuevaHistoria: any) => {
+          this.historiaClinicaActual = nuevaHistoria;
+          this.aplicarYGuardarActualizacion(tipo);
+        },
+        error: () => {
+          alert('Error al inicializar la carpeta médica del paciente.');
+          this.guardandoHistoria = false;
+        }
+      });
+    } else {
+      this.aplicarYGuardarActualizacion(tipo);
+    }
   }
 
-  cambiarPestana(pestana: 'CONSULTA' | 'RECETA'): void {
-    this.pestanaActiva = pestana;
-    this.cdr.detectChanges();
+  private aplicarYGuardarActualizacion(tipo: 'ALERGIAS' | 'ANTECEDENTES') {
+    this.guardandoHistoria = true;
+    const fechaActual = new Date().toLocaleDateString('es-PE');
+    
+    // SOLUCIÓN AL ERROR NULL: Convertimos a string vacío si viene null de la BD
+    let alergiasActuales = this.historiaClinicaActual?.alergias || '';
+    let antecedentesActuales = this.historiaClinicaActual?.antecedentes || '';
+
+    let payload = {
+      antecedentes: antecedentesActuales,
+      alergias: alergiasActuales,
+      observacionesGenerales: this.historiaClinicaActual?.observacionesGenerales || ''
+    };
+
+    if (tipo === 'ALERGIAS' && this.nuevaAlergiaTexto.trim()) {
+      let textoPrevio = payload.alergias;
+      // Usamos ?.includes por si textoPrevio es nulo
+      if (textoPrevio === 'Ninguna conocida.' || textoPrevio?.includes('aún no registra')) textoPrevio = '';
+      payload.alergias = textoPrevio 
+        ? `${textoPrevio}\n[Agregado el ${fechaActual}]: ${this.nuevaAlergiaTexto}` 
+        : `[Agregado el ${fechaActual}]: ${this.nuevaAlergiaTexto}`;
+    }
+
+    if (tipo === 'ANTECEDENTES' && this.nuevoAntecedenteTexto.trim()) {
+      let textoPrevio = payload.antecedentes;
+      // Usamos ?.includes por si textoPrevio es nulo
+      if (textoPrevio === 'Ninguno registrado.' || textoPrevio?.includes('aún no registra')) textoPrevio = '';
+      payload.antecedentes = textoPrevio 
+        ? `${textoPrevio}\n[Agregado el ${fechaActual}]: ${this.nuevoAntecedenteTexto}` 
+        : `[Agregado el ${fechaActual}]: ${this.nuevoAntecedenteTexto}`;
+    }
+
+    this.historiaService.actualizarFichaGeneral(this.historiaClinicaActual.idHistoriaClinica, payload).subscribe({
+      next: (actualizada: any) => {
+        this.historiaClinicaActual = actualizada;
+        this.editandoAlergias = false;
+        this.editandoAntecedentes = false;
+        this.nuevaAlergiaTexto = '';
+        this.nuevoAntecedenteTexto = '';
+        this.guardandoHistoria = false; // Se apaga el loader
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error("Error del backend:", err);
+        alert('Ocurrió un error en el servidor. Revisa si Java está corriendo.');
+        this.guardandoHistoria = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
-  // ... (Tus métodos de agregar Diagnostico y Medicamentos)
+  comenzarConsultaReal() { this.mostrarHistorial = false; this.cdr.detectChanges(); }
+  cambiarPestana(p: 'CONSULTA' | 'RECETA') { this.pestanaActiva = p; this.cdr.detectChanges(); }
+  volverAgenda() { this.vistaActual = 'AGENDA'; this.citaSeleccionada = null; this.cargarCitasDelDia(); }
+  
   agregarDiagnostico(): void {
     if (this.nuevoDiagnostico.nombre.trim()) {
       this.diagnosticos.push({ ...this.nuevoDiagnostico });
       this.nuevoDiagnostico = { nombre: '', descripcion: '' };
     }
   }
-
-  quitarDiagnostico(index: number): void {
-    this.diagnosticos.splice(index, 1);
-  }
+  quitarDiagnostico(index: number): void { this.diagnosticos.splice(index, 1); }
 
   agregarMedicamento(): void {
     if (this.nuevoMedicamento.medicamento.trim()) {
-      this.detallesReceta.push({
-        medicamento: this.nuevoMedicamento.medicamento,
-        dosis: this.nuevoMedicamento.dosis,
-        frecuencia: this.nuevoMedicamento.frecuencia,
-        duracion: this.nuevoMedicamento.duracion
-      });
+      this.detallesReceta.push({ ...this.nuevoMedicamento });
       this.nuevoMedicamento = { medicamento: '', dosis: '', frecuencia: '', duracion: '' };
     }
   }
-
-  quitarMedicamento(index: number): void {
-    this.detallesReceta.splice(index, 1);
-  }
+  quitarMedicamento(index: number): void { this.detallesReceta.splice(index, 1); }
 
   guardarTodo(): void {
     if (!this.consultaForm.sintomas || this.diagnosticos.length === 0 || !this.tratamiento.descripcion) {
       alert('Por favor, ingresa los síntomas, al menos un diagnóstico y la descripción del tratamiento.');
       return;
     }
-
     if (this.isSaving) return;
     this.isSaving = true;
 
@@ -237,23 +296,19 @@ export class AgendaComponent implements OnInit {
 
     this.consultaService.atenderCita(this.citaSeleccionada.idCita, payloadConsulta).subscribe({
       next: (consultaGuardada: any) => {
-        this.consultaCreadaId = consultaGuardada.idConsulta;
-
-        if (this.detallesReceta.length > 0 && this.consultaCreadaId) {
+        if (this.detallesReceta.length > 0) {
           const payloadReceta: RecetaMedicaDTO = {
             observaciones: this.observacionesReceta,
-            idConsulta: this.consultaCreadaId,
+            idConsulta: consultaGuardada.idConsulta,
             detalles: this.detallesReceta
           };
-          
           this.recetaService.generarReceta(payloadReceta).subscribe({
             next: () => {
               this.isSaving = false;
               alert('¡Atención y receta médica guardadas con éxito!');
               this.volverAgenda();
             },
-            error: (err) => {
-              console.error('Error al generar la receta:', err);
+            error: () => {
               this.isSaving = false;
               alert('Se guardó la consulta, pero ocurrió un problema con la receta.');
               this.volverAgenda();
@@ -265,29 +320,11 @@ export class AgendaComponent implements OnInit {
           this.volverAgenda();
         }
       },
-      error: (err) => {
-        console.error('Error al guardar la consulta:', err);
+      error: () => {
         this.isSaving = false;
         alert('Ocurrió un error al registrar la atención médica.');
       }
     });
   }
-
-  exportarPDF(): void {
-    alert('Botón PDF configurado.');
-  }
-
-  volverAgenda(): void {
-    this.citaSeleccionada = null;
-    this.citaSeleccionadaId = null;
-    this.consultaCreadaId = null;
-    this.vistaActual = 'AGENDA';
-    this.mostrarCitasLaterales = false;
-    this.diagnosticos = [];
-    this.detallesReceta = [];
-    this.observacionesReceta = '';
-    this.consultaForm = { motivo: '', sintomas: '', observaciones: '' };
-    this.tratamiento = { descripcion: '', fechaInicio: '', fechaFin: '' };
-    this.cargarCitasDelDia(); 
-  }
+  exportarPDF(): void { alert('Botón PDF configurado.'); }
 }
