@@ -66,4 +66,20 @@ export class HistoriaClinicaComponent implements OnInit {
   imprimirHistoria() {
     alert('¡Listo para generar el PDF de la Historia Clínica!');
   }
+  parseJSON(jsonString: string) {
+  try {
+    return JSON.parse(jsonString);
+  } catch (e) {
+    return [{ nombre: 'Diagnóstico', descripcion: jsonString }];
+  }
+}
+
+parseTratamiento(tratamiento: string) {
+  try {
+    const obj = JSON.parse(tratamiento);
+    return obj.descripcion || tratamiento; // Si es JSON, saca la descripción; si no, muestra el texto.
+  } catch (e) {
+    return tratamiento;
+  }
+}
 }
