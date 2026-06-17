@@ -2,8 +2,10 @@ package com.example.GestionClinica.service;
 
 import com.example.GestionClinica.dto.PagoDTO;
 import com.example.GestionClinica.exception.ResourceNotFoundException;
+import com.example.GestionClinica.model.CitaMedica;
 import com.example.GestionClinica.model.Comprobante;
 import com.example.GestionClinica.model.Pago;
+import com.example.GestionClinica.repository.CitaMedicaRepository;
 import com.example.GestionClinica.repository.PagoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,9 @@ public class PagoServiceImpl implements PagoService {
 
     @Autowired
     private PagoRepository pagoRepository;
+    
+    @Autowired
+    private CitaMedicaRepository citaRepository; // Necesario para cambiar el estado de la cita
 
     @Override
     @Transactional(readOnly = true)
@@ -45,13 +50,13 @@ public class PagoServiceImpl implements PagoService {
         Pago pago = pagoRepository.findById(idPago)
                 .orElseThrow(() -> new ResourceNotFoundException("Pago no encontrado"));
 
-        // 1. Actualizamos los datos principales del pago
+        // 1. Actualizamos el pago actual a PAGADO
         pago.setMetodoPago(dto != null && dto.getMetodoPago() != null ? dto.getMetodoPago() : "EFECTIVO");
         pago.setEstadoPago("PAGADO");
         pago.setFechaPago(LocalDate.now());
         pago.setHoraPago(LocalTime.now());
 
-        // 2. Llenamos TODOS los campos de Comprobante (Total, Subtotal e IGV)
+        // 2. Generamos el Comprobante (Boleta o Factura)
         String tipoComp = (dto != null && dto.getTipoComprobante() != null) ? dto.getTipoComprobante() : "BOLETA";
         String prefix = tipoComp.equalsIgnoreCase("FACTURA") ? "F001-" : "B001-";
         
@@ -60,24 +65,51 @@ public class PagoServiceImpl implements PagoService {
         comprobante.setNumeroComprobante(prefix + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         comprobante.setFechaEmision(LocalDate.now());
         
-        // --- AQUÍ ESTÁ LA MAGIA PARA QUE LA BASE DE DATOS NO EXPLOTE ---
         BigDecimal total = pago.getMonto() != null ? pago.getMonto() : BigDecimal.ZERO;
-        // Calculamos Subtotal dividiendo entre 1.18
         BigDecimal subtotal = total.divide(new BigDecimal("1.18"), 2, RoundingMode.HALF_UP);
-        // Calculamos IGV restando el subtotal al total
         BigDecimal igv = total.subtract(subtotal);
 
-        // Asignamos los 3 valores obligatorios
         comprobante.setTotal(total);
         comprobante.setSubtotal(subtotal);
         comprobante.setIgv(igv);
         
-        // Enlazamos
         comprobante.setPago(pago);
         pago.setComprobante(comprobante);
 
-        // 3. Guardamos en la base de datos
+        // Guardamos este pago específico para que quede asentado en caja
         Pago pagoGuardado = pagoRepository.save(pago);
+
+        // 3. LA MAGIA DE LOS 2 PAGOS (30% y 70%)
+        if (pagoGuardado.getCita() != null && pagoGuardado.getCita().getIdCita() != null) {
+            CitaMedica citaAActualizar = citaRepository.findById(pagoGuardado.getCita().getIdCita())
+                    .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada"));
+            
+            // Buscamos cuántos recibos de pago tiene esta cita en total
+            List<Pago> pagosDeLaCita = pagoRepository.findAll().stream()
+                    .filter(p -> p.getCita() != null && p.getCita().getIdCita().equals(citaAActualizar.getIdCita()))
+                    .collect(Collectors.toList());
+            
+            long totalPagosGenerados = pagosDeLaCita.size();
+            long pagosPagados = pagosDeLaCita.stream()
+                    .filter(p -> "PAGADO".equals(p.getEstadoPago()))
+                    .count();
+
+            // Evaluamos si ya canceló todo o solo la reserva
+            if (totalPagosGenerados > 0 && totalPagosGenerados == pagosPagados) {
+                // Pagó el 100% de la cita -> ¡Directo con el doctor!
+                citaAActualizar.setEstado("EN_ESPERA");
+            } else if (pagosPagados > 0) {
+                // Solo pagó la primera parte -> Cita apartada, pero no pasa al consultorio aún
+                citaAActualizar.setEstado("CONFIRMADA");
+            } else {
+                // No ha pagado nada
+                citaAActualizar.setEstado("PENDIENTE_PAGO");
+            }
+
+            citaRepository.save(citaAActualizar);
+            pagoGuardado.setCita(citaAActualizar);
+        }
+
         return convertirADto(pagoGuardado);
     }
 

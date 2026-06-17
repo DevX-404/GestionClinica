@@ -44,30 +44,38 @@ export class AgendaComponent implements OnInit {
 
   todasLasCitas: any[] = [];
   citasDelDia: any[] = [];
+  citasPendientes: any[] = [];
+  citasAtendidas: any[] = [];
+  
   citaSeleccionada: any = null;
+  citaSeleccionadaId: number | null = null;
   consultaCreadaId: number | null = null;
   
   isLoading: boolean = false;
   isSaving: boolean = false; 
 
   mostrarCitasLaterales: boolean = false;
+  mostrarHistorial: boolean = false; 
+  verHistorialDelDia: boolean = false; 
 
   vistaActual: 'AGENDA' | 'ATENCION' = 'AGENDA';
   pestanaActiva: 'CONSULTA' | 'RECETA' = 'CONSULTA';
 
+  get listaCitasMostrar(): any[] {
+    return this.verHistorialDelDia ? this.citasAtendidas : this.citasPendientes;
+  }
+
   calendarOptions: CalendarOptions = {
     plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
-    initialView: 'timeGridDay', 
+    initialView: 'dayGridMonth', 
     locale: esLocale,
     nowIndicator: true, 
     headerToolbar: {
       left: 'title', 
       center: '',
-      right: 'prev,next today timeGridDay,timeGridWeek' 
+      right: 'prev,next dayGridMonth,timeGridWeek,timeGridDay' 
     },
-    buttonText: { today: 'Hoy', day: 'Día', week: 'Semana' },
-    slotMinTime: '07:00:00', 
-    slotMaxTime: '21:00:00', 
+    buttonText: { month: 'Mes', week: 'Semana', day: 'Día' },
     allDaySlot: false,
     events: [],
     eventClick: this.handleEventClick.bind(this),
@@ -78,21 +86,17 @@ export class AgendaComponent implements OnInit {
   diagnosticos: { nombre: string, descripcion: string }[] = [];
   nuevoDiagnostico = { nombre: '', descripcion: '' };
   tratamiento = { descripcion: '', fechaInicio: '', fechaFin: '' };
-
   detallesReceta: DetalleRecetaDTO[] = [];
   nuevoMedicamento = { medicamento: '', dosis: '', frecuencia: '', duracion: '' };
   observacionesReceta: string = '';
 
-  ngOnInit(): void {
-    this.cargarCitasDelDia();
-  }
+  ngOnInit(): void { this.cargarCitasDelDia(); }
 
   cargarCitasDelDia(): void {
     this.isLoading = true;
     this.citaService.listarTodas().subscribe({
       next: (data: any[]) => {
         this.todasLasCitas = data;
-
         const eventosCalendario: EventInput[] = data.map(cita => {
           const startDateTime = `${cita.fecha}T${cita.hora}`;
           const startDate = new Date(startDateTime);
@@ -110,6 +114,9 @@ export class AgendaComponent implements OnInit {
         });
 
         this.calendarOptions.events = eventosCalendario;
+        const hoy = new Date().toISOString().split('T')[0];
+        this.citasDelDia = this.todasLasCitas.filter(cita => cita.fecha === hoy);
+        this.filtrarListasDelDia();
         this.isLoading = false;
         this.cdr.detectChanges();
       },
@@ -120,28 +127,36 @@ export class AgendaComponent implements OnInit {
     });
   }
 
+  filtrarListasDelDia(): void {
+    this.citasAtendidas = this.citasDelDia.filter(c => c.estado === 'ATENDIDA' || c.estado === 'CANCELADA');
+    this.citasPendientes = this.citasDelDia.filter(c => c.estado !== 'ATENDIDA' && c.estado !== 'CANCELADA');
+  }
+
   handleDateClick(arg: any): void {
     const fechaSeleccionada = arg.dateStr.split('T')[0];
-    this.citasDelDia = this.todasLasCitas.filter(cita =>
-      (cita.estado === 'EN_ESPERA' || cita.estado === 'CONFIRMADA') && cita.fecha === fechaSeleccionada
-    );
+    this.citasDelDia = this.todasLasCitas.filter(cita => cita.fecha === fechaSeleccionada);
+    this.filtrarListasDelDia();
     this.mostrarCitasLaterales = true;
+    this.verHistorialDelDia = false; 
     this.citaSeleccionada = null;
+    this.citaSeleccionadaId = null;
     this.cdr.detectChanges();
   }
 
   handleEventClick(clickInfo: any): void {
     const cita = clickInfo.event.extendedProps['citaCompleta'];
-    this.citasDelDia = this.todasLasCitas.filter(c =>
-      (c.estado === 'EN_ESPERA' || c.estado === 'CONFIRMADA') && c.fecha === cita.fecha
-    );
-    this.citaSeleccionada = cita;
+    this.citasDelDia = this.todasLasCitas.filter(c => c.fecha === cita.fecha);
+    this.filtrarListasDelDia();
+    
+    this.verHistorialDelDia = (cita.estado === 'ATENDIDA' || cita.estado === 'CANCELADA');
+    this.citaSeleccionadaId = cita.idCita;
     this.mostrarCitasLaterales = true;
     this.cdr.detectChanges();
-  }
 
-  verTablaCitas(): void {
-    this.citaSeleccionada = null;
+    setTimeout(() => {
+      const element = document.getElementById('cita-card-' + cita.idCita);
+      if (element) { element.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    }, 100);
   }
 
   getColorPorEstado(estado: string): string {
@@ -150,15 +165,25 @@ export class AgendaComponent implements OnInit {
       case 'CONFIRMADA': return '#3b82f6'; 
       case 'ATENDIDA': return '#10b981'; 
       case 'CANCELADA': return '#ef4444'; 
+      case 'PENDIENTE_PAGO':
+      case 'PENDIENTE': return '#facc15'; 
       default: return '#f59e0b'; 
     }
   }
 
+  // --- BOTÓN LIBERADO: PLUM EXPEDIENTE ---
   seleccionarCita(cita: any): void {
     this.citaSeleccionada = cita;
     this.consultaForm.motivo = cita.motivoConsulta || '';
     this.vistaActual = 'ATENCION';
+    this.mostrarHistorial = true; // Plum: Sale el expediente
     this.pestanaActiva = 'CONSULTA';
+    this.cdr.detectChanges();
+  }
+
+  comenzarConsultaReal() {
+    this.mostrarHistorial = false; // Plum: Sale el formulario de recetas y consulta
+    this.cdr.detectChanges();
   }
 
   cambiarPestana(pestana: 'CONSULTA' | 'RECETA'): void {
@@ -166,6 +191,7 @@ export class AgendaComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  // ... (Tus métodos de agregar Diagnostico y Medicamentos)
   agregarDiagnostico(): void {
     if (this.nuevoDiagnostico.nombre.trim()) {
       this.diagnosticos.push({ ...this.nuevoDiagnostico });
@@ -202,7 +228,6 @@ export class AgendaComponent implements OnInit {
     if (this.isSaving) return;
     this.isSaving = true;
 
-    // Payload de textos para que Java (Map<String, String>) no sufra un Error 400
     const payloadConsulta = {
       sintomas: this.consultaForm.sintomas,
       diagnosticoGeneral: JSON.stringify(this.diagnosticos),
@@ -254,6 +279,7 @@ export class AgendaComponent implements OnInit {
 
   volverAgenda(): void {
     this.citaSeleccionada = null;
+    this.citaSeleccionadaId = null;
     this.consultaCreadaId = null;
     this.vistaActual = 'AGENDA';
     this.mostrarCitasLaterales = false;
