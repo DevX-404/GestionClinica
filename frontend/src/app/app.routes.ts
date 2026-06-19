@@ -83,6 +83,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/historia-clinica/historia-clinica.component').then(m => m.HistoriaClinicaComponent),
         title: 'Historia Clínica'
       },
+      {
+        path: 'reportes',
+        loadComponent: () => import('./pages/reportes/reportes.component').then(m => m.ReportesComponent),
+        title: 'Reportes y Estadísticas'
+      },
       // Aquí agregaremos en los siguientes pasos los hijos de 'pacientes' y 'medicos'
       {
         path: 'ejemplo',

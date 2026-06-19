@@ -1,0 +1,94 @@
+<div class="mx-auto max-w-7xl p-4 md:p-6 2xl:p-10">
+  
+  <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-2xl font-bold text-black dark:text-white">Reportes y Estadísticas</h2>
+      <p class="text-sm text-gray-500">Análisis gerencial, ingresos y eficacia operativa de la clínica.</p>
+    </div>
+    
+    <div class="flex flex-wrap items-center gap-3">
+      <select [(ngModel)]="rangoFechas" (change)="aplicarFiltro()" class="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white transition-all shadow-sm">
+        <option value="HOY">Hoy</option>
+        <option value="SEMANA_ACTUAL">Esta Semana</option>
+        <option value="MES_ACTUAL">Este Mes</option>
+        <option value="ANIO_ACTUAL">Este Año</option>
+      </select>
+
+      <button (click)="exportarExcel()" class="flex items-center gap-2 rounded-lg border border-green-500 bg-green-50 px-4 py-2 text-sm font-bold text-green-600 hover:bg-green-100 transition-colors shadow-sm">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        Excel
+      </button>
+
+      <button (click)="exportarPDF()" class="flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-sm font-bold text-white hover:bg-red-600 transition-colors shadow-sm">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        PDF
+      </button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+    
+    <div class="col-span-1 md:col-span-2 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 transition-all hover:shadow-md">
+      <div class="mb-4">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Flujo de Ingresos Recaudados</h3>
+        <p class="text-sm text-gray-500">Métricas de caja (Adelantos y Saldos completados) durante el período seleccionado.</p>
+      </div>
+      <apx-chart 
+        [series]="chartIngresos.series" 
+        [chart]="chartIngresos.chart" 
+        [xaxis]="chartIngresos.xaxis" 
+        [yaxis]="chartIngresos.yaxis" 
+        [dataLabels]="chartIngresos.dataLabels" 
+        [stroke]="chartIngresos.stroke" 
+        [colors]="chartIngresos.colors" 
+        [fill]="chartIngresos.fill">
+      </apx-chart>
+    </div>
+
+    <div class="col-span-1 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 transition-all hover:shadow-md flex flex-col">
+      <div class="mb-4">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Demanda por Especialidad</h3>
+        <p class="text-sm text-gray-500">Distribución de citas generadas.</p>
+      </div>
+      <div class="flex-1 flex items-center justify-center">
+        <apx-chart 
+          [series]="chartEspecialidades.series" 
+          [chart]="chartEspecialidades.chart" 
+          [labels]="chartEspecialidades.labels" 
+          [colors]="chartEspecialidades.colors" 
+          [plotOptions]="chartEspecialidades.plotOptions" 
+          [legend]="chartEspecialidades.legend" 
+          [dataLabels]="chartEspecialidades.dataLabels">
+        </apx-chart>
+      </div>
+    </div>
+
+    <div class="col-span-1 md:col-span-2 xl:col-span-3 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 transition-all hover:shadow-md">
+      <div class="mb-4">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Eficacia Operativa de Citas</h3>
+        <p class="text-sm text-gray-500">Relación directa entre los pacientes atendidos con éxito frente a las inasistencias o cancelaciones.</p>
+      </div>
+      <apx-chart 
+        [series]="chartCitas.series" 
+        [chart]="chartCitas.chart" 
+        [xaxis]="chartCitas.xaxis" 
+        [colors]="chartCitas.colors" 
+        [plotOptions]="chartCitas.plotOptions" 
+        [dataLabels]="chartCitas.dataLabels" 
+        [legend]="chartCitas.legend"
+        [tooltip]="chartCitas.tooltip">
+      </apx-chart>
+    </div>
+
+  </div>
+
+  <div class="mt-6 rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-white/[0.02]">
+      <h3 class="text-base font-bold text-gray-900 dark:text-white">Lista de Pacientes Frecuentes</h3>
+    </div>
+    <div class="p-10 text-center text-gray-400 font-medium">
+      Esta sección se llenará de vida en cuanto conectemos la tabla con la base de datos PostgreSQL.
+    </div>
+  </div>
+
+</div>
