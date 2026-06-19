@@ -90,17 +90,33 @@ export class AgendaComponent implements OnInit {
 
   cargarCitasDelDia(): void {
     this.isLoading = true;
+    
+    // 1. Obtenemos el usuario del médico actual para filtrar
+    const usernameLogueado = localStorage.getItem('username')?.toLowerCase();
+
     this.citaService.listarTodas().subscribe((data: any[]) => {
-      this.todasLasCitas = data;
-      this.calendarOptions.events = data.map((cita: any) => ({
+      // 2. FILTRO: Solo citas del médico logueado Y en estados válidos
+      const citasDelMedico = data.filter((c: any) => {
+        const esMismoMedico = c.medico?.usuario?.username?.toLowerCase() === usernameLogueado;
+        const estadoValido = c.estado === 'EN_ESPERA' || c.estado === 'CONFIRMADA' || c.estado === 'ATENDIDA';
+        return esMismoMedico && estadoValido;
+      });
+
+      this.todasLasCitas = citasDelMedico;
+
+      // 3. Renderizamos en FullCalendar
+      this.calendarOptions.events = citasDelMedico.map((cita: any) => ({
         id: cita.idCita?.toString(),
-        title: cita.paciente?.nombres || cita.nombreCompletoPaciente || 'Paciente',
+        // Mostramos el estado al lado del nombre para que el doctor sepa si ya llegó (En espera) o no (Confirmada)
+        title: `${cita.paciente?.nombres || cita.nombreCompletoPaciente || 'Paciente'} - ${cita.estado}`,
         start: `${cita.fecha}T${cita.hora}`,
         backgroundColor: this.getColorPorEstado(cita.estado),
+        borderColor: this.getColorPorEstado(cita.estado),
         extendedProps: { citaCompleta: cita }
       }));
+      
       const hoy = new Date().toISOString().split('T')[0];
-      this.citasDelDia = data.filter(c => c.fecha === hoy);
+      this.citasDelDia = citasDelMedico.filter(c => c.fecha === hoy);
       this.filtrarListasDelDia();
       this.isLoading = false;
       this.cdr.detectChanges();
@@ -108,8 +124,9 @@ export class AgendaComponent implements OnInit {
   }
 
   filtrarListasDelDia(): void {
-    this.citasAtendidas = this.citasDelDia.filter(c => c.estado === 'ATENDIDA' || c.estado === 'CANCELADA');
-    this.citasPendientes = this.citasDelDia.filter(c => c.estado !== 'ATENDIDA' && c.estado !== 'CANCELADA');
+    this.citasAtendidas = this.citasDelDia.filter(c => c.estado === 'ATENDIDA');
+    // En las pendientes mostramos las que están EN ESPERA (ya pagaron todo) y CONFIRMADAS (falta el 70%)
+    this.citasPendientes = this.citasDelDia.filter(c => c.estado === 'EN_ESPERA' || c.estado === 'CONFIRMADA');
   }
 
   handleDateClick(arg: any): void {
@@ -124,9 +141,16 @@ export class AgendaComponent implements OnInit {
 
   handleEventClick(arg: any): void {
     const cita = arg.event.extendedProps['citaCompleta'];
+    
+    // Candado rápido desde el calendario
+    if (cita.estado === 'CONFIRMADA') {
+       alert(`⚠️ El paciente ${cita.paciente?.nombres} ya separó la cita, pero aún no ha pagado su saldo en recepción.`);
+       // No bloqueamos el return para que pueda ver el panel lateral, pero estará advertido.
+    }
+
     this.citasDelDia = this.todasLasCitas.filter(c => c.fecha === cita.fecha);
     this.filtrarListasDelDia();
-    this.verHistorialDelDia = (cita.estado === 'ATENDIDA' || cita.estado === 'CANCELADA');
+    this.verHistorialDelDia = (cita.estado === 'ATENDIDA');
     this.citaSeleccionadaId = cita.idCita;
     this.mostrarCitasLaterales = true;
     this.cdr.detectChanges();
@@ -134,15 +158,21 @@ export class AgendaComponent implements OnInit {
 
   getColorPorEstado(estado: string): string {
     switch(estado) {
-      case 'EN_ESPERA': return '#8b5cf6';
-      case 'CONFIRMADA': return '#3b82f6';
-      case 'ATENDIDA': return '#10b981';
-      case 'CANCELADA': return '#ef4444';
+      case 'EN_ESPERA': return '#10b981';  // Verde (Listo para atender)
+      case 'CONFIRMADA': return '#3b82f6'; // Azul (Reservó, pero no llega)
+      case 'ATENDIDA': return '#8b5cf6';   // Morado (Ya atendido)
+      case 'CANCELADA': return '#ef4444';  // Rojo
       default: return '#facc15';
     }
   }
 
   seleccionarCita(cita: any): void {
+    // CANDADO DE SEGURIDAD PARA INICIAR LA ATENCIÓN
+    if (cita.estado === 'CONFIRMADA') {
+      alert(`⚠️ No puedes iniciar la atención médica. El paciente ${cita.paciente?.nombres} aún no ha pagado el saldo restante en recepción.`);
+      return;
+    }
+
     this.citaSeleccionada = cita;
     this.consultaForm.motivo = cita.motivoConsulta || '';
     this.vistaActual = 'ATENCION';
@@ -224,7 +254,6 @@ export class AgendaComponent implements OnInit {
 
     if (tipo === 'ALERGIAS' && this.nuevaAlergiaTexto.trim()) {
       let textoPrevio = payload.alergias;
-      // Usamos ?.includes por si textoPrevio es nulo
       if (textoPrevio === 'Ninguna conocida.' || textoPrevio?.includes('aún no registra')) textoPrevio = '';
       payload.alergias = textoPrevio 
         ? `${textoPrevio}\n[Agregado el ${fechaActual}]: ${this.nuevaAlergiaTexto}` 
@@ -233,7 +262,6 @@ export class AgendaComponent implements OnInit {
 
     if (tipo === 'ANTECEDENTES' && this.nuevoAntecedenteTexto.trim()) {
       let textoPrevio = payload.antecedentes;
-      // Usamos ?.includes por si textoPrevio es nulo
       if (textoPrevio === 'Ninguno registrado.' || textoPrevio?.includes('aún no registra')) textoPrevio = '';
       payload.antecedentes = textoPrevio 
         ? `${textoPrevio}\n[Agregado el ${fechaActual}]: ${this.nuevoAntecedenteTexto}` 

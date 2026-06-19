@@ -85,9 +85,7 @@ public class PagoServiceImpl implements PagoService {
                     .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada"));
             
             // Buscamos cuántos recibos de pago tiene esta cita en total
-            List<Pago> pagosDeLaCita = pagoRepository.findAll().stream()
-                    .filter(p -> p.getCita() != null && p.getCita().getIdCita().equals(citaAActualizar.getIdCita()))
-                    .collect(Collectors.toList());
+            List<Pago> pagosDeLaCita = pagoRepository.findByCita_IdCita(citaAActualizar.getIdCita());
             
             long totalPagosGenerados = pagosDeLaCita.size();
             long pagosPagados = pagosDeLaCita.stream()

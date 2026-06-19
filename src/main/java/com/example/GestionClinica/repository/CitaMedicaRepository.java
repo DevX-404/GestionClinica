@@ -31,4 +31,9 @@ public interface CitaMedicaRepository extends JpaRepository<CitaMedica, Long> {
     // Métricas para el Dashboard
     long countByFecha(LocalDate fecha);
     long countByFechaAndEstado(LocalDate fecha, String estado);
+
+    // Método para que la agenda del médico solo vea pacientes que ya pagaron el 30% o el 100%
+    @Query("SELECT c FROM CitaMedica c WHERE c.medico.idMedico = :idMedico AND c.fecha = :fecha " +
+           "AND c.estado IN ('CONFIRMADA', 'EN_ESPERA')")
+    List<CitaMedica> findCitasValidasParaAgenda(@Param("idMedico") Long idMedico, @Param("fecha") LocalDate fecha);
 }

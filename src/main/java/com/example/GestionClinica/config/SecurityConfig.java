@@ -61,6 +61,22 @@ public class SecurityConfig {
                         // 3. Citas: RECEPCIONISTA (programa), MEDICO (ve su agenda), ADMIN (todo)
                         .requestMatchers("/api/citas/**").hasAnyRole("ADMINISTRADOR", "MEDICO", "RECEPCIONISTA")
 
+                        // 4. Consultas y Recetas son estrictamente del Médico
+                        .requestMatchers(HttpMethod.GET, "/api/consultas/**").hasAnyRole("MEDICO", "ADMINISTRADOR")
+                        .requestMatchers("/api/consultas/**").hasRole("MEDICO")
+
+                        .requestMatchers(HttpMethod.GET, "/api/recetas/**").hasAnyRole("MEDICO", "ADMINISTRADOR")
+                        .requestMatchers("/api/recetas/**").hasRole("MEDICO")
+
+                        // 5. Historia Clínica: El Médico escribe y lee, pero el Administrador podría
+                        // necesitar consultarla (GET)
+                        .requestMatchers(HttpMethod.GET, "/api/historia-clinica/**")
+                        .hasAnyRole("MEDICO", "ADMINISTRADOR")
+                        .requestMatchers("/api/historia-clinica/**").hasRole("MEDICO")
+
+                        // 6. Asegurarnos de que los Horarios estén libres para agendar
+                        .requestMatchers("/api/horarios/**").hasAnyRole("ADMINISTRADOR", "MEDICO", "RECEPCIONISTA")
+
                         // Cualquier otra petición requiere estar logueado
                         .anyRequest().authenticated());
 

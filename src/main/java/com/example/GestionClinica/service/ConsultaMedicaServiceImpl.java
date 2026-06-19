@@ -22,8 +22,8 @@ public class ConsultaMedicaServiceImpl implements ConsultaMedicaService {
         CitaMedica cita = citaRepository.findById(idCita)
                 .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada con ID: " + idCita));
                 
-        if (cita.getEstado().equalsIgnoreCase("CANCELADA") || cita.getEstado().equalsIgnoreCase("ATENDIDA")) {
-            throw new IllegalStateException("No se puede atender una cita en estado: " + cita.getEstado());
+        if (!"EN_ESPERA".equals(cita.getEstado()) && !"CONFIRMADA".equals(cita.getEstado())) {
+            throw new IllegalArgumentException("No se puede atender. El paciente no ha confirmado su asistencia o pago en recepción.");
         }
 
         HistoriaClinica historia = historiaRepository.findByPacienteIdPaciente(cita.getPaciente().getIdPaciente())
@@ -53,8 +53,6 @@ public class ConsultaMedicaServiceImpl implements ConsultaMedicaService {
         consulta.setHistoriaClinica(historia);
         consulta.setCitaMedica(cita);
         consulta.setMedico(cita.getMedico());
-        
-        // --- ASIGNACIÓN VITAL QUE FALTABA ---
         consulta.setTratamiento(tratamiento);
 
         return consultaRepository.save(consulta);

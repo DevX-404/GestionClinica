@@ -16,22 +16,27 @@ import java.time.LocalDate;
 @Service
 public class CitaMedicaServiceImpl implements CitaMedicaService {
 
-    @Autowired private CitaMedicaRepository citaRepository;
-    @Autowired private PacienteRepository pacienteRepository;
-    @Autowired private MedicoRepository medicoRepository;
-    @Autowired private EspecialidadRepository especialidadRepository;
-    @Autowired private PagoRepository pagoRepository;
+    @Autowired
+    private CitaMedicaRepository citaRepository;
+    @Autowired
+    private PacienteRepository pacienteRepository;
+    @Autowired
+    private MedicoRepository medicoRepository;
+    @Autowired
+    private EspecialidadRepository especialidadRepository;
+    @Autowired
+    private PagoRepository pagoRepository;
 
     @Override
     @Transactional
     public CitaMedicaDTO programarCita(CitaMedicaDTO dto) {
         // 1. Validar que existan los componentes de la cita
         Paciente pac = pacienteRepository.findById(dto.getIdPaciente())
-            .orElseThrow(() -> new ResourceNotFoundException("Paciente no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Paciente no encontrado"));
         Medico med = medicoRepository.findById(dto.getIdMedico())
-            .orElseThrow(() -> new ResourceNotFoundException("Médico no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Médico no encontrado"));
         Especialidad esp = especialidadRepository.findById(dto.getIdEspecialidad())
-            .orElseThrow(() -> new ResourceNotFoundException("Especialidad no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Especialidad no encontrada"));
 
         // 2. Controlar la regla de negocio: Disponibilidad horaria (JPQL)
         if (citaRepository.existeCitaMismoHorario(dto.getIdMedico(), dto.getFecha(), dto.getHora())) {
@@ -49,10 +54,12 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
 
         CitaMedica citaGuardada = citaRepository.save(cita);
 
-        // --- LÓGICA DE NEGOCIO: GENERAR ADELANTO (30%) ---
+        // --- LÓGICA DE NEGOCIO: GENERAR ADELANTO (30%) Y SALDO (70%) AL INSTANTE ---
         BigDecimal precioTotal = esp.getPrecioConsulta() != null ? esp.getPrecioConsulta() : new BigDecimal("150.00");
         BigDecimal adelanto = precioTotal.multiply(new BigDecimal("0.30")).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal saldo = precioTotal.subtract(adelanto);
 
+        // 1. Guardar la deuda del Adelanto (30%)
         Pago pagoAdelanto = new Pago();
         pagoAdelanto.setCita(citaGuardada);
         pagoAdelanto.setFechaPago(LocalDate.now());
@@ -61,6 +68,16 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
         pagoAdelanto.setEstadoPago("PENDIENTE");
         pagoAdelanto.setConcepto("ADELANTO_30");
         pagoRepository.save(pagoAdelanto);
+
+        // 2. Guardar la deuda del Saldo restante (70%)
+        Pago pagoSaldo = new Pago();
+        pagoSaldo.setCita(citaGuardada);
+        pagoSaldo.setFechaPago(dto.getFecha());
+        pagoSaldo.setMonto(saldo);
+        pagoSaldo.setMetodoPago("POR DEFINIR");
+        pagoSaldo.setEstadoPago("PENDIENTE");
+        pagoSaldo.setConcepto("SALDO_70");
+        pagoRepository.save(pagoSaldo);
 
         return convertirADto(citaGuardada);
     }
@@ -75,15 +92,24 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
     @Transactional
     public CitaMedicaDTO actualizarEstado(Long idCita, String nuevoEstado) {
         CitaMedica cita = citaRepository.findById(idCita)
-            .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada"));
-        cita.setEstado(nuevoEstado.toUpperCase());
+                .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada"));
+        if ("ATENDIDA".equalsIgnoreCase(nuevoEstado)
+            && !"EN_ESPERA".equals(cita.getEstado())) {
+
+        throw new IllegalArgumentException(
+                "La cita debe estar EN_ESPERA antes de ser atendida");
+    }
+    cita.setEstado(nuevoEstado.toUpperCase());
         return convertirADto(citaRepository.save(cita));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<CitaMedicaDTO> listarPorMedico(Long idMedico) {
-        return citaRepository.findByMedicoIdMedico(idMedico).stream().map(this::convertirADto).collect(Collectors.toList());
+    public List<CitaMedicaDTO> listarPorMedico(Long idMedico, LocalDate fecha) {
+        return citaRepository.findCitasValidasParaAgenda(idMedico, fecha)
+                .stream()
+                .map(this::convertirADto)
+                .collect(Collectors.toList());
     }
 
     private CitaMedicaDTO convertirADto(CitaMedica cita) {

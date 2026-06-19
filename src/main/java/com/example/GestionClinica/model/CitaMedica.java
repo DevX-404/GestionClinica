@@ -9,7 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -50,7 +50,7 @@ public class CitaMedica {
 
     @Column(length = 255)
     private String motivoConsulta;
-    // --- NUEVO CAMPO DE DINERO ---
-    @Column(precision = 10, scale = 2)
-    private BigDecimal montoPagadoAdelanto;
+
+    @OneToMany(mappedBy = "cita", cascade = CascadeType.ALL)
+    private List<Pago> pagos;
 }
