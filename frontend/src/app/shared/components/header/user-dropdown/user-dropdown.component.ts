@@ -20,32 +20,35 @@ export class UserDropdownComponent implements OnInit {
   constructor(private router: Router) {}
 
   ngOnInit(): void {
-    // Jalamos los datos reales de la sesión
+    const sessionNombreReal = localStorage.getItem('nombreReal');
     const sessionUser = localStorage.getItem('username');
     const sessionRol = localStorage.getItem('rol');
 
-    if (sessionUser) {
-      this.nombreUsuario = sessionUser;
-    }
+    const nombreParaMostrar = sessionNombreReal || sessionUser || 'Usuario';
+    this.nombreUsuario = nombreParaMostrar;
+    this.extraerDatosUsuario(nombreParaMostrar);
     
     if (sessionRol) {
-      // Formateamos el rol para que no se vea en mayúsculas secas (opcional)
       this.rolUsuario = sessionRol.toLowerCase();
     }
   }
 
   // Función para procesar el nombre dinámicamente
   extraerDatosUsuario(nombreCompleto: string): void {
-    const partes = nombreCompleto.trim().split(' ');
+    // Limpiamos caracteres raros por si usamos el username (Ej: luis_bances -> luis bances)
+    const nombreLimpio = nombreCompleto.replace(/[._-]/g, ' ').trim();
+    const partes = nombreLimpio.split(' ').filter(p => p.length > 0);
     
-    // Obtenemos el primer nombre para el saludo
-    this.primerNombre = partes[0];
+    if (partes.length > 0) {
+      this.primerNombre = partes[0];
+    }
 
-    // Lógica para las iniciales (Ej: Luis Bances -> LB)
     if (partes.length > 1) {
+      // Tiene nombre y apellido (Ej: Luis Bances -> LB)
       this.iniciales = (partes[0].charAt(0) + partes[1].charAt(0)).toUpperCase();
-    } else {
-      this.iniciales = partes[0].charAt(0).toUpperCase();
+    } else if (partes.length === 1) {
+      // Es una sola palabra (Ej: Admin -> AD)
+      this.iniciales = partes[0].substring(0, 2).toUpperCase(); 
     }
   }
 

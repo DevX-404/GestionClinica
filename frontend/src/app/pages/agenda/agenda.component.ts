@@ -91,23 +91,33 @@ export class AgendaComponent implements OnInit {
   cargarCitasDelDia(): void {
     this.isLoading = true;
     
-    // 1. Obtenemos el usuario del médico actual para filtrar
-    const usernameLogueado = localStorage.getItem('username')?.toLowerCase();
+    // Obtenemos el username de la sesión actual
+    const usernameLogueado = localStorage.getItem('username')?.toLowerCase() || '';
 
     this.citaService.listarTodas().subscribe((data: any[]) => {
-      // 2. FILTRO: Solo citas del médico logueado Y en estados válidos
+      
+      // 1. FILTRAR CITAS DEL MÉDICO:
+      // Buscamos que el nombre completo de la cita contenga el username (o viceversa)
+      // Como a veces el username es "admin" y el nombre es distinto, aquí permitiremos 
+      // ver las citas temporalmente si eres ADMIN, para no bloquear el sistema.
+      const rolActual = localStorage.getItem('rol') || 'RECEPCIONISTA';
+      
+      // 1.2. FILTRO: Solo citas del médico logueado Y en estados válidos
       const citasDelMedico = data.filter((c: any) => {
-        const esMismoMedico = c.medico?.usuario?.username?.toLowerCase() === usernameLogueado;
-        const estadoValido = c.estado === 'EN_ESPERA' || c.estado === 'CONFIRMADA' || c.estado === 'ATENDIDA';
+        if (rolActual === 'ADMINISTRADOR') return true; // El admin ve todo
+        
+        // AHORA SÍ: Comparamos el username exacto que nos manda Java con el del navegador
+        const esMismoMedico = c.usernameMedico && c.usernameMedico.toLowerCase() === usernameLogueado;
+        const estadoValido = c.estado === 'EN_ESPERA' || c.estado === 'CONFIRMADA' || c.estado === 'ATENDIDA' || c.estado === 'PENDIENTE_PAGO';
+        
         return esMismoMedico && estadoValido;
       });
 
       this.todasLasCitas = citasDelMedico;
 
-      // 3. Renderizamos en FullCalendar
+      // 2. LLENAR EL CALENDARIO GRANDE: Mostramos TODOS los estados
       this.calendarOptions.events = citasDelMedico.map((cita: any) => ({
         id: cita.idCita?.toString(),
-        // Mostramos el estado al lado del nombre para que el doctor sepa si ya llegó (En espera) o no (Confirmada)
         title: `${cita.paciente?.nombres || cita.nombreCompletoPaciente || 'Paciente'} - ${cita.estado}`,
         start: `${cita.fecha}T${cita.hora}`,
         backgroundColor: this.getColorPorEstado(cita.estado),
@@ -124,9 +134,13 @@ export class AgendaComponent implements OnInit {
   }
 
   filtrarListasDelDia(): void {
+    // Pestaña "Atendidas"
     this.citasAtendidas = this.citasDelDia.filter(c => c.estado === 'ATENDIDA');
-    // En las pendientes mostramos las que están EN ESPERA (ya pagaron todo) y CONFIRMADAS (falta el 70%)
-    this.citasPendientes = this.citasDelDia.filter(c => c.estado === 'EN_ESPERA' || c.estado === 'CONFIRMADA');
+    
+    // Pestaña "Pendientes": La verdadera Sala de Espera del Médico
+    this.citasPendientes = this.citasDelDia.filter(c => 
+      c.estado === 'EN_ESPERA' || c.estado === 'CONFIRMADA'
+    );
   }
 
   handleDateClick(arg: any): void {
@@ -142,10 +156,9 @@ export class AgendaComponent implements OnInit {
   handleEventClick(arg: any): void {
     const cita = arg.event.extendedProps['citaCompleta'];
     
-    // Candado rápido desde el calendario
-    if (cita.estado === 'CONFIRMADA') {
-       alert(`⚠️ El paciente ${cita.paciente?.nombres} ya separó la cita, pero aún no ha pagado su saldo en recepción.`);
-       // No bloqueamos el return para que pueda ver el panel lateral, pero estará advertido.
+    // Alerta visual si la cita no está lista para atender
+    if (cita.estado === 'CONFIRMADA' || cita.estado === 'PENDIENTE_PAGO') {
+       alert(`⚠️ Estado: ${cita.estado}\nEl paciente aún no cancela su recibo pendiente en ventanilla.`);
     }
 
     this.citasDelDia = this.todasLasCitas.filter(c => c.fecha === cita.fecha);
@@ -158,18 +171,19 @@ export class AgendaComponent implements OnInit {
 
   getColorPorEstado(estado: string): string {
     switch(estado) {
-      case 'EN_ESPERA': return '#10b981';  // Verde (Listo para atender)
-      case 'CONFIRMADA': return '#3b82f6'; // Azul (Reservó, pero no llega)
-      case 'ATENDIDA': return '#8b5cf6';   // Morado (Ya atendido)
-      case 'CANCELADA': return '#ef4444';  // Rojo
-      default: return '#facc15';
+      case 'EN_ESPERA': return '#10b981';      // Verde: Pagado 100%, listo.
+      case 'CONFIRMADA': return '#3b82f6';     // Azul: Yapeado, falta 70%.
+      case 'PENDIENTE_PAGO': return '#facc15'; // Amarillo: Cita nueva, sin pagar.
+      case 'ATENDIDA': return '#8b5cf6';       // Morado: Ya pasó consulta.
+      case 'CANCELADA': return '#ef4444';      // Rojo
+      default: return '#9ca3af';
     }
   }
 
   seleccionarCita(cita: any): void {
-    // CANDADO DE SEGURIDAD PARA INICIAR LA ATENCIÓN
-    if (cita.estado === 'CONFIRMADA') {
-      alert(`⚠️ No puedes iniciar la atención médica. El paciente ${cita.paciente?.nombres} aún no ha pagado el saldo restante en recepción.`);
+    // CANDADO DE SEGURIDAD ESTRICTO PARA INICIAR LA ATENCIÓN
+    if (cita.estado !== 'EN_ESPERA') {
+      alert(`⚠️ No puedes iniciar la atención médica.\nEl paciente ${cita.nombreCompletoPaciente || 'seleccionado'} debe estar en estado EN_ESPERA.`);
       return;
     }
 

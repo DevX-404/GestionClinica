@@ -24,7 +24,7 @@ export class PagosComponent implements OnInit {
   globalMsgType: 'success' | 'error' = 'success';
 
   // Filtros de visualización
-  filtroEstado: string = 'TODOS'; // Opciones: 'TODOS', 'PENDIENTE', 'ATENDIDA', 'PAGADO'
+  filtroEstado: string = 'TODOS'; // Opciones: 'TODOS', 'PENDIENTE', 'ATENDIDA'
   orden: string = 'LLEGADA_DESC'; 
 
   // Modal para Procesar Pago
@@ -65,6 +65,9 @@ export class PagosComponent implements OnInit {
   aplicarFiltros(): void {
     let temp = [...this.pagos];
 
+    // --- MAGIA AQUÍ: Filtramos para que NUNCA muestre los pagos ya cancelados ---
+    temp = temp.filter(p => p.estadoPago === 'PENDIENTE' || p.estadoPago === 'Por Cobrar');
+
     // 1. Filtro por término de búsqueda (Nombre, Comprobante, DNI o Especialidad)
     if (this.searchTerm.trim()) {
       const term = this.searchTerm.toLowerCase().trim();
@@ -81,13 +84,10 @@ export class PagosComponent implements OnInit {
     if (this.filtroEstado !== 'TODOS') {
       if (this.filtroEstado === 'PENDIENTE') {
         // Por Cobrar que aún no entran a consulta médica
-        temp = temp.filter(p => (p.estadoPago === 'PENDIENTE' || p.estadoPago === 'Por Cobrar') && p.estadoCita !== 'ATENDIDA');
+        temp = temp.filter(p => p.estadoCita !== 'ATENDIDA');
       } else if (this.filtroEstado === 'ATENDIDA') {
         // Citas ya atendidas por el doctor que están pendientes de pago en caja
-        temp = temp.filter(p => p.estadoCita === 'ATENDIDA' && (p.estadoPago === 'PENDIENTE' || p.estadoPago === 'Por Cobrar'));
-      } else if (this.filtroEstado === 'PAGADO') {
-        // Comprobantes finalizados
-        temp = temp.filter(p => p.estadoPago === 'PAGADO' || p.estadoPago === 'COMPLETADO');
+        temp = temp.filter(p => p.estadoCita === 'ATENDIDA');
       }
     }
 

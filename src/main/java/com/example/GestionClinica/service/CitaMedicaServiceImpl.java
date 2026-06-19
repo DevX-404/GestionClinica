@@ -30,17 +30,12 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
     @Override
     @Transactional
     public CitaMedicaDTO programarCita(CitaMedicaDTO dto) {
-        // 1. Validar que existan los componentes de la cita
-        Paciente pac = pacienteRepository.findById(dto.getIdPaciente())
-                .orElseThrow(() -> new ResourceNotFoundException("Paciente no encontrado"));
-        Medico med = medicoRepository.findById(dto.getIdMedico())
-                .orElseThrow(() -> new ResourceNotFoundException("Médico no encontrado"));
-        Especialidad esp = especialidadRepository.findById(dto.getIdEspecialidad())
-                .orElseThrow(() -> new ResourceNotFoundException("Especialidad no encontrada"));
+        Paciente pac = pacienteRepository.findById(dto.getIdPaciente()).orElseThrow();
+        Medico med = medicoRepository.findById(dto.getIdMedico()).orElseThrow();
+        Especialidad esp = especialidadRepository.findById(dto.getIdEspecialidad()).orElseThrow();
 
-        // 2. Controlar la regla de negocio: Disponibilidad horaria (JPQL)
         if (citaRepository.existeCitaMismoHorario(dto.getIdMedico(), dto.getFecha(), dto.getHora())) {
-            throw new IllegalArgumentException("El médico no se encuentra disponible en la fecha y hora seleccionada.");
+            throw new IllegalArgumentException("El médico no está disponible en ese horario.");
         }
 
         CitaMedica cita = new CitaMedica();
@@ -50,8 +45,11 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
         cita.setFecha(dto.getFecha());
         cita.setHora(dto.getHora());
         cita.setMotivoConsulta(dto.getMotivoConsulta());
-        cita.setEstado("PENDIENTE_PAGO");
-
+        
+        // CORRECCIÓN 1: Respetamos el estado que Angular nos manda (Ej: CONFIRMADA si pagó el Yape)
+        String estadoInicial = (dto.getEstado() != null && !dto.getEstado().trim().isEmpty()) 
+                                ? dto.getEstado() : "PENDIENTE_PAGO";
+        cita.setEstado(estadoInicial); 
         CitaMedica citaGuardada = citaRepository.save(cita);
 
         // --- LÓGICA DE NEGOCIO: GENERAR ADELANTO (30%) Y SALDO (70%) AL INSTANTE ---
@@ -64,18 +62,25 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
         pagoAdelanto.setCita(citaGuardada);
         pagoAdelanto.setFechaPago(LocalDate.now());
         pagoAdelanto.setMonto(adelanto);
-        pagoAdelanto.setMetodoPago("POR DEFINIR");
-        pagoAdelanto.setEstadoPago("PENDIENTE");
         pagoAdelanto.setConcepto("ADELANTO_30");
+        
+        // CORRECCIÓN 2: Si la cita entró como CONFIRMADA, liquidamos la deuda del 30% automáticamente
+        if ("CONFIRMADA".equals(estadoInicial)) {
+            pagoAdelanto.setEstadoPago("PAGADO");
+            pagoAdelanto.setMetodoPago("YAPE");
+        } else {
+            pagoAdelanto.setEstadoPago("PENDIENTE");
+            pagoAdelanto.setMetodoPago("POR DEFINIR");
+        }
         pagoRepository.save(pagoAdelanto);
 
         // 2. Guardar la deuda del Saldo restante (70%)
         Pago pagoSaldo = new Pago();
         pagoSaldo.setCita(citaGuardada);
-        pagoSaldo.setFechaPago(dto.getFecha());
+        pagoSaldo.setFechaPago(dto.getFecha()); // Se cobrará el día que el paciente asista
         pagoSaldo.setMonto(saldo);
         pagoSaldo.setMetodoPago("POR DEFINIR");
-        pagoSaldo.setEstadoPago("PENDIENTE");
+        pagoSaldo.setEstadoPago("PENDIENTE"); // El 70% SIEMPRE nace pendiente
         pagoSaldo.setConcepto("SALDO_70");
         pagoRepository.save(pagoSaldo);
 
@@ -126,6 +131,9 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
         dto.setHora(cita.getHora());
         dto.setEstado(cita.getEstado());
         dto.setMotivoConsulta(cita.getMotivoConsulta());
+        if (cita.getMedico() != null && cita.getMedico().getUsuario() != null) {
+            dto.setUsernameMedico(cita.getMedico().getUsuario().getUsername());
+        }
         return dto;
     }
 }

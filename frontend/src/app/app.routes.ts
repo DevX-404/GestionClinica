@@ -58,6 +58,11 @@ export const routes: Routes = [
         title: 'Pagos'
       },
       {
+        path: 'historial-caja',
+        loadComponent: () => import('./pages/historial-caja/historial-caja.component').then(m => m.HistorialCajaComponent),
+        title: 'Historial de Caja'
+      },
+      {
         path: 'auditoria',
         loadComponent: () => import('./pages/auditoria/auditoria.component').then(m => m.AuditoriaComponent),
         title: 'Registro de Auditoría'

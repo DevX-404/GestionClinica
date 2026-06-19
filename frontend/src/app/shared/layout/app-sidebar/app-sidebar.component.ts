@@ -100,7 +100,7 @@ export class AppSidebarComponent implements OnInit, AfterViewInit {
       roles: ['ADMINISTRADOR', 'RECEPCIONISTA'],
       subItems: [
         { name: 'Registrar Pago', path: '/pagos' },
-        { name: 'Historial de Caja', path: '/pagos/historial' }
+        { name: 'Historial de Caja', path: '/historial-caja' }
       ]
     },
     {

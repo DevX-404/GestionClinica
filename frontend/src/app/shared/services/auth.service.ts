@@ -13,6 +13,7 @@ export interface AuthResponse {
   username: string;
   rol: string;
   modulos: string[];
+  nombreReal: string;
 }
 
 @Injectable({
@@ -32,6 +33,7 @@ export class AuthService {
         localStorage.setItem('token', response.token);
         localStorage.setItem('username', response.username);
         localStorage.setItem('rol', response.rol.toUpperCase()); // Actualizar componentes que usen estos datos
+        localStorage.setItem('nombreReal', response.nombreReal);
         localStorage.setItem('modulos', JSON.stringify(response.modulos || []));
       })
     );

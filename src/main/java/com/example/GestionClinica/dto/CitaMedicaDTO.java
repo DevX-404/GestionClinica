@@ -21,6 +21,8 @@ public class CitaMedicaDTO {
     private Long idMedico;
     private String nombreCompletoMedico;
 
+    private String usernameMedico;
+
     @NotNull(message = "ID de Especialidad obligatorio")
     private Long idEspecialidad;
     private String nombreEspecialidad;
