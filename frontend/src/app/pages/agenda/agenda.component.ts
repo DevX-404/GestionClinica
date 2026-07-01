@@ -7,7 +7,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import esLocale from '@fullcalendar/core/locales/es';
-
+import { AlertComponent } from '../../shared/components/ui/alert/alert.component';
 import { CitaMedicaService } from '../../shared/services/cita-medica.service';
 import { ConsultaMedicaService } from '../../shared/services/consulta-medica.service';
 import { RecetaMedicaService } from '../../shared/services/receta-medica.service';
@@ -17,7 +17,7 @@ import { RecetaMedicaDTO, DetalleRecetaDTO } from '../../shared/models/receta-me
 @Component({
   selector: 'app-agenda',
   standalone: true,
-  imports: [CommonModule, FormsModule, FullCalendarModule],
+  imports: [CommonModule, FormsModule, FullCalendarModule, AlertComponent],
   templateUrl: './agenda.component.html',
   styles: [`
     ::ng-deep .fc { --fc-border-color: #e5e7eb; --fc-button-text-color: #4b5563; --fc-button-bg-color: #ffffff; --fc-button-border-color: #e5e7eb; --fc-button-hover-bg-color: #f9fafb; --fc-button-hover-border-color: #d1d5db; --fc-button-active-bg-color: #3b82f6; --fc-button-active-border-color: #3b82f6; --fc-button-active-text-color: #ffffff; --fc-today-bg-color: #f3f4f6; font-family: inherit; }
@@ -85,6 +85,21 @@ export class AgendaComponent implements OnInit {
   detallesReceta: DetalleRecetaDTO[] = [];
   nuevoMedicamento = { medicamento: '', dosis: '', frecuencia: '', duracion: '' };
   observacionesReceta: string = '';
+
+  // 3. NUEVO: Variables para controlar la alerta flotante
+  globalMsg: string = '';
+  globalMsgType: 'success' | 'error' | 'warning' | 'info' = 'info';
+
+  // 4. NUEVO: Método para mostrar la alerta
+  mostrarMensajeGlobal(msg: string, type: 'success' | 'error' | 'warning' | 'info'): void {
+    this.globalMsg = msg;
+    this.globalMsgType = type;
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.globalMsg = '';
+      this.cdr.detectChanges();
+    }, 5000);
+  }
 
   ngOnInit(): void { this.cargarCitasDelDia(); }
 
@@ -155,10 +170,8 @@ export class AgendaComponent implements OnInit {
 
   handleEventClick(arg: any): void {
     const cita = arg.event.extendedProps['citaCompleta'];
-    
-    // Alerta visual si la cita no está lista para atender
     if (cita.estado === 'CONFIRMADA' || cita.estado === 'PENDIENTE_PAGO') {
-       alert(`⚠️ Estado: ${cita.estado}\nEl paciente aún no cancela su recibo pendiente en ventanilla.`);
+       this.mostrarMensajeGlobal(`Estado: ${cita.estado}. El paciente aún no cancela su recibo pendiente.`, 'warning');
     }
 
     this.citasDelDia = this.todasLasCitas.filter(c => c.fecha === cita.fecha);
@@ -183,7 +196,7 @@ export class AgendaComponent implements OnInit {
   seleccionarCita(cita: any): void {
     // CANDADO DE SEGURIDAD ESTRICTO PARA INICIAR LA ATENCIÓN
     if (cita.estado !== 'EN_ESPERA') {
-      alert(`⚠️ No puedes iniciar la atención médica.\nEl paciente ${cita.nombreCompletoPaciente || 'seleccionado'} debe estar en estado EN_ESPERA.`);
+      this.mostrarMensajeGlobal(`No puedes iniciar. El paciente ${cita.nombreCompletoPaciente || ''} debe estar EN ESPERA.`, 'error');
       return;
     }
 
@@ -232,8 +245,6 @@ export class AgendaComponent implements OnInit {
   // --- NUEVA LÓGICA DE GUARDADO AUTOMÁTICO DE FECHAS ---
   guardarDatosFicha(tipo: 'ALERGIAS' | 'ANTECEDENTES') {
     if (this.guardandoHistoria) return;
-    
-    // Si el paciente es nuevecito, primero lo creamos en la base de datos
     if (!this.historiaClinicaActual.idHistoriaClinica) {
       this.guardandoHistoria = true;
       const idPaciente = this.citaSeleccionada.paciente?.idPaciente || this.citaSeleccionada.idPaciente;
@@ -243,7 +254,7 @@ export class AgendaComponent implements OnInit {
           this.aplicarYGuardarActualizacion(tipo);
         },
         error: () => {
-          alert('Error al inicializar la carpeta médica del paciente.');
+          this.mostrarMensajeGlobal('Error al inicializar la carpeta médica del paciente.', 'error');
           this.guardandoHistoria = false;
         }
       });
@@ -293,8 +304,7 @@ export class AgendaComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error("Error del backend:", err);
-        alert('Ocurrió un error en el servidor. Revisa si Java está corriendo.');
+        this.mostrarMensajeGlobal('Ocurrió un error en el servidor. Revisa si Java está corriendo.', 'error');
         this.guardandoHistoria = false;
         this.cdr.detectChanges();
       }
@@ -323,7 +333,7 @@ export class AgendaComponent implements OnInit {
 
   guardarTodo(): void {
     if (!this.consultaForm.sintomas || this.diagnosticos.length === 0 || !this.tratamiento.descripcion) {
-      alert('Por favor, ingresa los síntomas, al menos un diagnóstico y la descripción del tratamiento.');
+      this.mostrarMensajeGlobal('Por favor, ingresa los síntomas, al menos un diagnóstico y tratamiento.', 'warning');
       return;
     }
     if (this.isSaving) return;
@@ -347,26 +357,29 @@ export class AgendaComponent implements OnInit {
           this.recetaService.generarReceta(payloadReceta).subscribe({
             next: () => {
               this.isSaving = false;
-              alert('¡Atención y receta médica guardadas con éxito!');
+              this.mostrarMensajeGlobal('¡Atención y receta médica guardadas con éxito!', 'success');
               this.volverAgenda();
             },
             error: () => {
               this.isSaving = false;
-              alert('Se guardó la consulta, pero ocurrió un problema con la receta.');
+              this.mostrarMensajeGlobal('Se guardó la consulta, pero ocurrió un problema con la receta.', 'warning');
               this.volverAgenda();
             }
           });
         } else {
           this.isSaving = false;
-          alert('¡Atención registrada correctamente en la Historia Clínica!');
+          this.mostrarMensajeGlobal('¡Atención registrada correctamente en la Historia Clínica!', 'success');
           this.volverAgenda();
         }
       },
       error: () => {
         this.isSaving = false;
-        alert('Ocurrió un error al registrar la atención médica.');
+        this.mostrarMensajeGlobal('Ocurrió un error al registrar la atención médica.', 'error');
       }
     });
   }
-  exportarPDF(): void { alert('Botón PDF configurado.'); }
+
+  exportarPDF(): void { 
+    this.mostrarMensajeGlobal('Generando PDF en segundo plano...', 'info'); 
+  }
 }

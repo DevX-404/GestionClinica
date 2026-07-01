@@ -1,23 +1,38 @@
 <div class="mx-auto max-w-7xl p-4 md:p-6 2xl:p-10">
-  
+
   <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <h2 class="text-2xl font-bold text-black dark:text-white">Panel de Citas Médicas</h2>
       <p class="text-sm text-gray-500">Gestión de turnos clínicos y validación estricta de horarios médicos.</p>
     </div>
-    
+
+    @if (globalMsg) {
+    <div
+      class="fixed top-24 right-6 z-[999999] w-full max-w-sm drop-shadow-2xl transition-all duration-300 animate-fade-in">
+      <app-alert [variant]="globalMsgType"
+        [title]="globalMsgType === 'success' ? '¡Éxito!' : globalMsgType === 'error' ? 'Error' : globalMsgType === 'warning' ? 'Advertencia' : 'Información'"
+        [message]="globalMsg">
+      </app-alert>
+    </div>
+    }
+
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-      <input type="text" [(ngModel)]="searchTermCitas" (input)="filtrarCitas()" placeholder="Filtrar por DNI, estado, doctor..."
-             class="w-full sm:w-72 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white shadow-sm" />
-      
-      <button (click)="openModal()" class="flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-5 py-2.5 font-medium text-white hover:bg-brand-600 transition-colors shadow-sm">
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+      <input type="text" [(ngModel)]="searchTermCitas" (input)="filtrarCitas()"
+        placeholder="Filtrar por DNI, estado, doctor..."
+        class="w-full sm:w-72 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white shadow-sm" />
+
+      <button (click)="openModal()"
+        class="flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-5 py-2.5 font-medium text-white hover:bg-brand-600 transition-colors shadow-sm">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
         Separar Nueva Cita
       </button>
     </div>
   </div>
 
-  <div class="rounded-2xl border border-gray-200 bg-white shadow-theme-xl dark:border-gray-800 dark:bg-white/[0.02] overflow-hidden mb-6">
+  <div
+    class="rounded-2xl border border-gray-200 bg-white shadow-theme-xl dark:border-gray-800 dark:bg-white/[0.02] overflow-hidden mb-6">
     <div class="max-w-full overflow-x-auto">
       <table class="w-full table-auto text-left">
         <thead>
@@ -30,43 +45,52 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
-          
+
           @if (cargandoCitas) {
-            <tr><td colspan="5" class="px-6 py-10 text-center text-base text-brand-500 font-medium animate-pulse">Cargando citas médicas...</td></tr>
+          <tr>
+            <td colspan="5" class="px-6 py-10 text-center text-base text-brand-500 font-medium animate-pulse">Cargando
+              citas médicas...</td>
+          </tr>
           } @else {
-            
-            @for (cita of citasFiltradas; track cita.idCita) {
-              <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors">
-                
-                <td class="px-6 py-4">
-                  <span class="block text-base font-medium text-black dark:text-white">{{ cita.nombreCompletoPaciente }}</span>
-                  <span class="block text-sm font-medium text-gray-400">DNI: {{ cita.dniPaciente }}</span>
-                </td>
-                
-                <td class="px-6 py-4 text-base text-gray-600 dark:text-gray-300">
-                  <span class="block font-medium">{{ cita.nombreEspecialidad }}</span>
-                  <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">{{ cita.tipoCita || 'CONSULTA' }}</span>
-                </td>
-                <td class="px-6 py-4 text-base text-gray-600 dark:text-gray-300">Dr(a). {{ cita.nombreCompletoMedico }}</td>
-                <td class="px-6 py-4 text-base text-gray-600 dark:text-gray-300">
-                  <span class="block font-medium text-black dark:text-white">{{ cita.fecha }}</span>
-                  <span class="text-sm">{{ cita.hora?.substring(0,5) }}</span>
-                </td>
-                <td class="px-6 py-4">
-                  <span [ngClass]="{
+
+          @for (cita of citasFiltradas; track cita.idCita) {
+          <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors">
+
+            <td class="px-6 py-4">
+              <span class="block text-base font-medium text-black dark:text-white">{{ cita.nombreCompletoPaciente
+                }}</span>
+              <span class="block text-sm font-medium text-gray-400">DNI: {{ cita.dniPaciente }}</span>
+            </td>
+
+            <td class="px-6 py-4 text-base text-gray-600 dark:text-gray-300">
+              <span class="block font-medium">{{ cita.nombreEspecialidad }}</span>
+              <span
+                class="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">{{
+                cita.tipoCita || 'CONSULTA' }}</span>
+            </td>
+            <td class="px-6 py-4 text-base text-gray-600 dark:text-gray-300">Dr(a). {{ cita.nombreCompletoMedico }}</td>
+            <td class="px-6 py-4 text-base text-gray-600 dark:text-gray-300">
+              <span class="block font-medium text-black dark:text-white">{{ cita.fecha }}</span>
+              <span class="text-sm">{{ cita.hora?.substring(0,5) }}</span>
+            </td>
+            <td class="px-6 py-4">
+              <span [ngClass]="{
                       'bg-yellow-500/10 text-yellow-600': cita.estado === 'PENDIENTE_PAGO',
                       'bg-blue-500/10 text-blue-600': cita.estado === 'CONFIRMADA',
                       'bg-brand-500/10 text-brand-600': cita.estado === 'EN_ESPERA',
                       'bg-green-500/10 text-green-600': cita.estado === 'ATENDIDA',
                       'bg-red-500/10 text-red-600': cita.estado === 'CANCELADA'
                     }" class="inline-flex rounded-full px-3 py-1 text-sm font-medium uppercase">
-                    {{ cita.estado }}
-                  </span>
-                </td>
-              </tr>
-            } @empty {
-              <tr><td colspan="5" class="px-6 py-10 text-center text-gray-400">No se encontraron resultados para tu búsqueda.</td></tr>
-            }
+                {{ cita.estado }}
+              </span>
+            </td>
+          </tr>
+          } @empty {
+          <tr>
+            <td colspan="5" class="px-6 py-10 text-center text-gray-400">No se encontraron resultados para tu búsqueda.
+            </td>
+          </tr>
+          }
           }
         </tbody>
       </table>
@@ -74,194 +98,226 @@
   </div>
 
   @if (isModalOpen) {
-    <div class="fixed inset-0 z-99999 flex justify-center overflow-y-auto bg-black/50 p-4 sm:p-6 backdrop-blur-xs">
-      
-      <div class="w-full max-w-4xl my-auto rounded-2xl bg-white p-5 sm:p-6 shadow-2xl dark:bg-gray-900 relative">
-        
-        <div class="mb-4 flex items-center justify-between border-b pb-3 dark:border-gray-800">
-          <div>
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Agendamiento de Turnos</h3>
-            <p class="text-xs text-gray-400">Paso {{ pasoActual }} de 2: {{ pasoActual === 1 ? 'Datos de la Cita' : 'Validación de Abono' }}</p>
-          </div>
-          <button (click)="closeModal()" class="text-gray-400 hover:text-gray-700 dark:hover:text-white text-2xl">&times;</button>
+  <div class="fixed inset-0 z-99999 flex justify-center overflow-y-auto bg-black/50 p-4 sm:p-6 backdrop-blur-xs">
+
+    <div class="w-full max-w-4xl my-auto rounded-2xl bg-white p-5 sm:p-6 shadow-2xl dark:bg-gray-900 relative">
+
+      <div class="mb-4 flex items-center justify-between border-b pb-3 dark:border-gray-800">
+        <div>
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white">Agendamiento de Turnos</h3>
+          <p class="text-xs text-gray-400">Paso {{ pasoActual }} de 2: {{ pasoActual === 1 ? 'Datos de la Cita' :
+            'Validación de Abono' }}</p>
         </div>
+        <button (click)="closeModal()"
+          class="text-gray-400 hover:text-gray-700 dark:hover:text-white text-2xl">&times;</button>
+      </div>
 
-        @if (pasoActual === 1) {
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <div class="lg:col-span-2 space-y-3">
-              
-              @if (mostrarAlertaRegistro) {
-                <div class="flex w-full border-l-4 border-warning bg-warning-50 p-3 shadow-sm dark:bg-warning-500/10 rounded-r-lg">
-                  <div class="w-full">
-                    <h5 class="mb-0.5 text-sm font-bold text-warning-900 dark:text-warning-500">Paciente No Encontrado</h5>
-                    <p class="text-xs text-warning-700 dark:text-warning-400">El DNI no figura en el sistema. Registre al paciente primero.</p>
-                  </div>
-                </div>
-              }
+      @if (pasoActual === 1) {
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                
-                <div class="relative">
-                  <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">DNI *</label>
-                  <input type="text" [(ngModel)]="dniBusqueda" (input)="buscarDniRealTime()" placeholder="Buscar DNI..." maxlength="8"
-                         class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
-                  
-                  @if (sugerenciasDni.length > 0) {
-                    <div class="absolute left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
-                      @for (p of sugerenciasDni; track p.idPaciente) {
-                        <button type="button" (click)="seleccionarPaciente(p)" class="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 font-medium">
-                          {{ p.dni }} - {{ p.nombres }} {{ p.apellidoPaterno }}
-                        </button>
-                      }
-                    </div>
-                  }
-                </div>
+        <div class="lg:col-span-2 space-y-3">
 
-                <div>
-                  <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Nombre Completo</label>
-                  <input type="text" [value]="pacienteSeleccionado ? pacienteSeleccionado.nombres + ' ' + pacienteSeleccionado.apellidoPaterno : ''" disabled placeholder="Autollene"
-                         class="w-full rounded-lg border border-gray-200 bg-gray-100 p-2 text-sm text-gray-500 outline-none dark:border-gray-700 dark:bg-gray-800/50" />
-                </div>
-
-                <div class="relative">
-                  <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Especialidad Clínica *</label>
-                  <input type="text" [(ngModel)]="especialidadBusqueda" (input)="buscarEspecialidadRealTime()" placeholder="Escribe especialidad"
-                         class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
-                  
-                  @if (sugerenciasEspecialidad.length > 0) {
-                    <div class="absolute left-0 right-0 z-50 mt-1 max-h-40 overflow-y-auto rounded-lg border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
-                      @for (e of sugerenciasEspecialidad; track e.idEspecialidad) {
-                        <button type="button" (click)="seleccionarEspecialidad(e)" class="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 font-medium">
-                          {{ e.nombre }}
-                        </button>
-                      }
-                    </div>
-                  }
-                </div>
-
-                <div>
-                  <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Tipo de Reserva *</label>
-                  <select [(ngModel)]="citaForm.tipoCita" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white">
-                    <option value="CONSULTA">Consulta Regular</option>
-                    <option value="OPERACION">Procedimiento / Operación</option>
-                  </select>
-                </div>
-
-                <div class="sm:col-span-2">
-                  <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Médico Disponible</label>
-                  <div class="max-h-32 overflow-y-auto rounded-xl border border-gray-100 bg-gray-50/50 p-2 dark:border-gray-800 dark:bg-white/[0.01]">
-                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                      @for (m of medicosFiltradosPorEspecialidad; track m.idMedico) {
-                        <div [ngClass]="citaForm.idMedico === m.idMedico ? 'border-brand-500 bg-brand-50/50' : 'border-gray-200 bg-white'"
-                             class="flex items-center justify-between rounded-lg border p-1.5 shadow-sm transition-all">
-                          <h5 class="text-xs font-bold text-gray-900 truncate">Dr. {{ m.nombres }}</h5>
-                          <button type="button" (click)="asignarMedico(m.idMedico)"
-                                  [ngClass]="citaForm.idMedico === m.idMedico ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-700'"
-                                  class="rounded-md px-2 py-1 text-[10px] font-semibold">
-                            {{ citaForm.idMedico === m.idMedico ? 'Seleccionado' : 'Elegir' }}
-                          </button>
-                        </div>
-                      } @empty {
-                        <div class="col-span-full py-2 text-center text-xs text-gray-400">Selecciona especialidad primero.</div>
-                      }
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Fecha Deseada *</label>
-                  <input type="date" [(ngModel)]="citaForm.fecha" class="w-full rounded-lg border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
-                </div>
-                <div>
-                  <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Hora *</label>
-                  <input type="time" [(ngModel)]="citaForm.hora" class="w-full rounded-lg border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
-                </div>
-
-                <div class="sm:col-span-2">
-                  <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Motivo de la Consulta *</label>
-                  <textarea [(ngModel)]="citaForm.motivoConsulta" rows="2" placeholder="Síntomas..."
-                            class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm focus:border-brand-500 outline-none"></textarea>
-                </div>
-
-              </div>
+          @if (mostrarAlertaRegistro) {
+          <div
+            class="flex w-full border-l-4 border-warning bg-warning-50 p-3 shadow-sm dark:bg-warning-500/10 rounded-r-lg">
+            <div class="w-full">
+              <h5 class="mb-0.5 text-sm font-bold text-warning-900 dark:text-warning-500">Paciente No Encontrado</h5>
+              <p class="text-xs text-warning-700 dark:text-warning-400">El DNI no figura en el sistema. Registre al
+                paciente primero.</p>
             </div>
+          </div>
+          }
 
-            <div class="lg:col-span-1 border-l border-gray-200 dark:border-gray-800 pl-0 lg:pl-6 flex flex-col pt-4 lg:pt-0">
-              
-              <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-4 mb-4 flex-1">
-                <h4 class="text-sm font-bold text-blue-800 dark:text-blue-400 mb-2 flex items-center gap-2">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                  Agenda del Médico
-                </h4>
-                
-                @if (cargandoHorarios) {
-                  <p class="text-xs text-blue-600 animate-pulse">Consultando fechas...</p>
-                } @else if (!citaForm.idMedico) {
-                  <p class="text-xs text-blue-600/70 italic">Selecciona un médico para ver los días exactos que asiste a la clínica.</p>
-                } @else if (horariosMedicoSeleccionado.length > 0) {
-                  <ul class="space-y-2 max-h-40 overflow-y-auto pr-1">
-                    @for (turno of horariosMedicoSeleccionado; track turno.idHorario) {
-                      <li class="flex flex-col text-xs bg-white dark:bg-gray-800 p-2 rounded shadow-sm border border-blue-50 dark:border-gray-700">
-                        <span class="font-bold text-gray-800 dark:text-gray-100 capitalize">{{ formatearFechaLarga(turno.diaSemana) }}</span>
-                        <span class="text-brand-600 font-medium mt-1">Horario: {{ turno.horaInicio.substring(0,5) }} a {{ turno.horaFin.substring(0,5) }}</span>
-                      </li>
-                    }
-                  </ul>
-                } @else {
-                  <p class="text-xs text-red-500 font-medium">No tiene fechas programadas por el administrador.</p>
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+            <div class="relative">
+              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">DNI *</label>
+              <input type="text" [(ngModel)]="dniBusqueda" (input)="buscarDniRealTime()" placeholder="Buscar DNI..."
+                maxlength="8"
+                class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+
+              @if (sugerenciasDni.length > 0) {
+              <div
+                class="absolute left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                @for (p of sugerenciasDni; track p.idPaciente) {
+                <button type="button" (click)="seleccionarPaciente(p)"
+                  class="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 font-medium">
+                  {{ p.dni }} - {{ p.nombres }} {{ p.apellidoPaterno }}
+                </button>
                 }
               </div>
+              }
+            </div>
 
-              <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.02] border border-dashed border-gray-200 dark:border-gray-800 mb-4">
-                <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
-                  <span>Costo Especialidad:</span>
-                  <span class="font-semibold">S/ {{ precioEspecialidad.toFixed(2) }}</span>
-                </div>
-                <div class="flex justify-between text-sm font-bold text-brand-600 pt-1 border-t border-gray-200">
-                  <span>Adelanto (30%):</span>
-                  <span>S/ {{ montoAdelanto30.toFixed(2) }}</span>
+            <div>
+              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Nombre Completo</label>
+              <input type="text"
+                [value]="pacienteSeleccionado ? pacienteSeleccionado.nombres + ' ' + pacienteSeleccionado.apellidoPaterno : ''"
+                disabled placeholder="Autollene"
+                class="w-full rounded-lg border border-gray-200 bg-gray-100 p-2 text-sm text-gray-500 outline-none dark:border-gray-700 dark:bg-gray-800/50" />
+            </div>
+
+            <div class="relative">
+              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Especialidad Clínica
+                *</label>
+              <input type="text" [(ngModel)]="especialidadBusqueda" (input)="buscarEspecialidadRealTime()"
+                placeholder="Escribe especialidad"
+                class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+
+              @if (sugerenciasEspecialidad.length > 0) {
+              <div
+                class="absolute left-0 right-0 z-50 mt-1 max-h-40 overflow-y-auto rounded-lg border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                @for (e of sugerenciasEspecialidad; track e.idEspecialidad) {
+                <button type="button" (click)="seleccionarEspecialidad(e)"
+                  class="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 font-medium">
+                  {{ e.nombre }}
+                </button>
+                }
+              </div>
+              }
+            </div>
+
+            <div>
+              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Tipo de Reserva *</label>
+              <select [(ngModel)]="citaForm.tipoCita"
+                class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                <option value="CONSULTA">Consulta Regular</option>
+                <option value="OPERACION">Procedimiento / Operación</option>
+              </select>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Médico Disponible</label>
+              <div
+                class="max-h-32 overflow-y-auto rounded-xl border border-gray-100 bg-gray-50/50 p-2 dark:border-gray-800 dark:bg-white/[0.01]">
+                <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  @for (m of medicosFiltradosPorEspecialidad; track m.idMedico) {
+                  <div
+                    [ngClass]="citaForm.idMedico === m.idMedico ? 'border-brand-500 bg-brand-50/50' : 'border-gray-200 bg-white'"
+                    class="flex items-center justify-between rounded-lg border p-1.5 shadow-sm transition-all">
+                    <h5 class="text-xs font-bold text-gray-900 truncate">Dr. {{ m.nombres }}</h5>
+                    <button type="button" (click)="asignarMedico(m.idMedico)"
+                      [ngClass]="citaForm.idMedico === m.idMedico ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-700'"
+                      class="rounded-md px-2 py-1 text-[10px] font-semibold">
+                      {{ citaForm.idMedico === m.idMedico ? 'Seleccionado' : 'Elegir' }}
+                    </button>
+                  </div>
+                  } @empty {
+                  <div class="col-span-full py-2 text-center text-xs text-gray-400">Selecciona especialidad primero.
+                  </div>
+                  }
                 </div>
               </div>
+            </div>
 
-              <button (click)="irAPagar()" [disabled]="validandoHorarioBackend" 
-                      [ngClass]="validandoHorarioBackend ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
-                      class="w-full text-white py-3 rounded-lg text-sm font-bold transition-all shadow-md">
-                {{ validandoHorarioBackend ? 'Verificando ocupación...' : 'Validar Turno y Pagar' }}
-              </button>
+            <div>
+              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Fecha Deseada *</label>
+              <input type="date" [(ngModel)]="citaForm.fecha"
+                class="w-full rounded-lg border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Hora *</label>
+              <input type="time" [(ngModel)]="citaForm.hora"
+                class="w-full rounded-lg border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+            </div>
 
+            <div class="sm:col-span-2">
+              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Motivo de la Consulta
+                *</label>
+              <textarea [(ngModel)]="citaForm.motivoConsulta" rows="2" placeholder="Síntomas..."
+                class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm focus:border-brand-500 outline-none"></textarea>
             </div>
 
           </div>
-        }
+        </div>
 
-        @if (pasoActual === 2) {
-          <div class="space-y-4 animate-fadeIn max-w-sm mx-auto">
-            <div class="text-center bg-brand-50 p-4 rounded-xl border border-brand-100">
-              <p class="text-[10px] font-semibold text-brand-600 uppercase tracking-wider">Monto de Separación</p>
-              <h4 class="text-3xl font-extrabold text-gray-900 mt-1">S/ {{ montoAdelanto30.toFixed(2) }}</h4>
+        <div
+          class="lg:col-span-1 border-l border-gray-200 dark:border-gray-800 pl-0 lg:pl-6 flex flex-col pt-4 lg:pt-0">
+
+          <div
+            class="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-4 mb-4 flex-1">
+            <h4 class="text-sm font-bold text-blue-800 dark:text-blue-400 mb-2 flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Agenda del Médico
+            </h4>
+
+            @if (cargandoHorarios) {
+            <p class="text-xs text-blue-600 animate-pulse">Consultando fechas...</p>
+            } @else if (!citaForm.idMedico) {
+            <p class="text-xs text-blue-600/70 italic">Selecciona un médico para ver los días exactos que asiste a la
+              clínica.</p>
+            } @else if (horariosMedicoSeleccionado.length > 0) {
+            <ul class="space-y-2 max-h-40 overflow-y-auto pr-1">
+              @for (turno of horariosMedicoSeleccionado; track turno.idHorario) {
+              <li
+                class="flex flex-col text-xs bg-white dark:bg-gray-800 p-2 rounded shadow-sm border border-blue-50 dark:border-gray-700">
+                <span class="font-bold text-gray-800 dark:text-gray-100 capitalize">{{
+                  formatearFechaLarga(turno.diaSemana) }}</span>
+                <span class="text-brand-600 font-medium mt-1">Horario: {{ turno.horaInicio.substring(0,5) }} a {{
+                  turno.horaFin.substring(0,5) }}</span>
+              </li>
+              }
+            </ul>
+            } @else {
+            <p class="text-xs text-red-500 font-medium">No tiene fechas programadas por el administrador.</p>
+            }
+          </div>
+
+          <div
+            class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.02] border border-dashed border-gray-200 dark:border-gray-800 mb-4">
+            <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
+              <span>Costo Especialidad:</span>
+              <span class="font-semibold">S/ {{ precioEspecialidad.toFixed(2) }}</span>
             </div>
-
-            <div class="grid grid-cols-2 gap-3">
-              <label class="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 bg-white">
-                <input type="radio" name="payMethod" checked class="text-brand-500">
-                <span class="font-bold text-sm text-gray-800">Yape / Efectivo</span>
-              </label>
-              <label class="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 bg-white">
-                <input type="radio" name="payMethod" class="text-brand-500">
-                <span class="font-bold text-sm text-gray-800">Tarjeta</span>
-              </label>
-            </div>
-
-            <div class="flex justify-between items-center mt-6 pt-4 border-t">
-              <button (click)="regresarAPaso1()" class="text-gray-500 hover:underline font-semibold text-xs">&larr; Atrás</button>
-              <button (click)="confirmarPagoYape()" class="bg-emerald-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-emerald-700 shadow-md">
-                Confirmar Citas
-              </button>
+            <div class="flex justify-between text-sm font-bold text-brand-600 pt-1 border-t border-gray-200">
+              <span>Adelanto (30%):</span>
+              <span>S/ {{ montoAdelanto30.toFixed(2) }}</span>
             </div>
           </div>
-        }
+
+          <button (click)="irAPagar()" [disabled]="validandoHorarioBackend"
+            [ngClass]="validandoHorarioBackend ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
+            class="w-full text-white py-3 rounded-lg text-sm font-bold transition-all shadow-md">
+            {{ validandoHorarioBackend ? 'Verificando ocupación...' : 'Validar Turno y Pagar' }}
+          </button>
+
+        </div>
+
       </div>
+      }
+
+      @if (pasoActual === 2) {
+      <div class="space-y-4 animate-fadeIn max-w-sm mx-auto">
+        <div class="text-center bg-brand-50 p-4 rounded-xl border border-brand-100">
+          <p class="text-[10px] font-semibold text-brand-600 uppercase tracking-wider">Monto de Separación</p>
+          <h4 class="text-3xl font-extrabold text-gray-900 mt-1">S/ {{ montoAdelanto30.toFixed(2) }}</h4>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <label class="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 bg-white">
+            <input type="radio" name="payMethod" checked class="text-brand-500">
+            <span class="font-bold text-sm text-gray-800">Yape / Efectivo</span>
+          </label>
+          <label class="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 bg-white">
+            <input type="radio" name="payMethod" class="text-brand-500">
+            <span class="font-bold text-sm text-gray-800">Tarjeta</span>
+          </label>
+        </div>
+
+        <div class="flex justify-between items-center mt-6 pt-4 border-t">
+          <button (click)="regresarAPaso1()" class="text-gray-500 hover:underline font-semibold text-xs">&larr;
+            Atrás</button>
+          <button (click)="confirmarPagoYape()"
+            class="bg-emerald-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-emerald-700 shadow-md">
+            Confirmar Citas
+          </button>
+        </div>
+      </div>
+      }
     </div>
+  </div>
   }
 </div>

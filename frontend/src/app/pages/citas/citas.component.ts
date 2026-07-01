@@ -6,11 +6,12 @@ import { PacienteService } from '../../shared/services/paciente.service';
 import { EspecialidadService } from '../../shared/services/especialidad.service';
 import { MedicoService } from '../../shared/services/medico.service';
 import { HorarioMedicoService } from '../../shared/services/horario-medico.service';
+import { AlertComponent } from '../../shared/components/ui/alert/alert.component';
 
 @Component({
   selector: 'app-citas',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AlertComponent],
   templateUrl: './citas.component.html'
 })
 export class CitasComponent implements OnInit {
@@ -50,6 +51,19 @@ export class CitasComponent implements OnInit {
 
   horariosMedicoSeleccionado: any[] = [];
   cargandoHorarios: boolean = false;
+
+  globalMsg: string = '';
+  globalMsgType: 'success' | 'error' | 'warning' | 'info' = 'info';
+
+  mostrarMensajeGlobal(msg: string, type: 'success' | 'error' | 'warning' | 'info'): void {
+    this.globalMsg = msg;
+    this.globalMsgType = type;
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.globalMsg = '';
+      this.cdr.detectChanges();
+    }, 5000);
+  }
 
   citaForm = {
     idPaciente: null as number | null,
@@ -211,13 +225,13 @@ export class CitasComponent implements OnInit {
   // --- VALIDACIÓN COMBINADA: Frontend (Rango) + Backend (Choque Operaciones) ---
   irAPagar(): void {
     if (!this.citaForm.idPaciente || !this.citaForm.idEspecialidad || !this.citaForm.idMedico || !this.citaForm.fecha || !this.citaForm.hora || !this.citaForm.motivoConsulta) {
-      alert('Por favor complete todos los datos obligatorios (*) antes de proceder.');
+      this.mostrarMensajeGlobal('Por favor complete todos los datos obligatorios (*) antes de proceder.', 'warning');
       return;
     }
 
     // 1. Validación de Frontend (Verificar que la hora esté dentro del turno del médico)
     if (this.horariosMedicoSeleccionado.length === 0) {
-      alert('Este médico no tiene turnos programados en el sistema.');
+      this.mostrarMensajeGlobal('Este médico no tiene turnos programados en el sistema.', 'warning');
       return;
     }
 
@@ -225,7 +239,7 @@ export class CitasComponent implements OnInit {
     const turnoDelDia = this.horariosMedicoSeleccionado.find(h => h.diaSemana === fechaElegida);
     
     if (!turnoDelDia) {
-      alert(`El médico no tiene turno el día ${this.formatearFechaLarga(fechaElegida)}. Por favor, guíate de su agenda en el panel derecho.`);
+      this.mostrarMensajeGlobal(`El médico no tiene turno el día. Por favor, guíate de su agenda.`, 'error');
       return;
     }
 
@@ -239,7 +253,7 @@ export class CitasComponent implements OnInit {
     const minsFin = parseInt(finArr[0]) * 60 + parseInt(finArr[1]);
 
     if (minsElegidos < minsInicio || minsElegidos > minsFin) {
-      alert(`La hora elegida (${this.citaForm.hora}) está fuera del turno del médico para este día (${turnoDelDia.horaInicio.substring(0,5)} a ${turnoDelDia.horaFin.substring(0,5)}).`);
+      this.mostrarMensajeGlobal(`La hora elegida está fuera del turno del médico para este día.`, 'error');
       return;
     }
 
@@ -247,27 +261,20 @@ export class CitasComponent implements OnInit {
     this.validandoHorarioBackend = true;
     this.cdr.detectChanges();
 
-    this.citaService.validarHorario(
-      this.citaForm.idMedico, 
-      this.citaForm.fecha, 
-      this.citaForm.hora, 
-      this.citaForm.tipoCita
-    ).subscribe({
+    this.citaService.validarHorario(this.citaForm.idMedico, this.citaForm.fecha, this.citaForm.hora, this.citaForm.tipoCita).subscribe({
       next: (response: any) => {
         this.validandoHorarioBackend = false;
-        
         if (response.disponible) {
-           // Todo correcto, avanzamos al paso 2
            this.pasoActual = 2; 
            this.cdr.detectChanges();
         } else {
-           alert('¡ALERTA DE CHOQUE DE HORARIO!\n\nEl médico no está disponible en este horario porque ya tiene programada una OPERACIÓN/PROCEDIMIENTO exclusivo, o estás intentando programar una operación en un horario donde ya tiene pacientes en consulta. \n\nPor favor, elige otra hora.');
+           this.mostrarMensajeGlobal('¡ALERTA DE CHOQUE! El médico no está disponible. Ya tiene programada otra operación o paciente.', 'error');
            this.cdr.detectChanges();
         }
       },
       error: () => {
         this.validandoHorarioBackend = false;
-        alert('Hubo un error de conexión con el servidor al intentar validar la disponibilidad del médico.');
+        this.mostrarMensajeGlobal('Hubo un error de conexión con el servidor.', 'error');
         this.cdr.detectChanges();
       }
     });
@@ -293,18 +300,18 @@ export class CitasComponent implements OnInit {
 
     this.citaService.programarCita(citaParaEnviar as any).subscribe({
       next: (res) => {
-        alert('¡Cita registrada con éxito!');
+        this.mostrarMensajeGlobal('¡Cita registrada con éxito!', 'success');
         this.closeModal();
         this.cargarCitas(); 
       },
       error: (err) => {
-        alert('Error al guardar la cita en la base de datos.');
+        this.mostrarMensajeGlobal('Error al guardar la cita en la base de datos.', 'error');
       }
     });
   }
 
   exportarVoucherPDF(): void {
-    alert('Preparando PDF...');
+    this.mostrarMensajeGlobal('Preparando PDF...', 'info');
   }
 
   openModal(): void {
