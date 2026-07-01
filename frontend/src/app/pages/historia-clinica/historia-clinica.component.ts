@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HistoriaClinicaService } from '../../shared/services/historia-clinica.service';
@@ -12,6 +12,7 @@ import { HistoriaClinicaService } from '../../shared/services/historia-clinica.s
 export class HistoriaClinicaComponent implements OnInit {
   
   private historiaService = inject(HistoriaClinicaService);
+  private cdr = inject(ChangeDetectorRef);
 
   expedientes: any[] = [];
   expedientesFiltrados: any[] = [];
@@ -34,10 +35,12 @@ export class HistoriaClinicaComponent implements OnInit {
         this.expedientes = data;
         this.expedientesFiltrados = data;
         this.isLoading = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         console.error("Error al cargar las Historias Clínicas");
         this.isLoading = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -56,6 +59,7 @@ export class HistoriaClinicaComponent implements OnInit {
   verHistorial(exp: any) {
     this.expedienteSeleccionado = exp;
     this.isModalOpen = true;
+    this.cdr.detectChanges();
   }
 
   cerrarModal() {

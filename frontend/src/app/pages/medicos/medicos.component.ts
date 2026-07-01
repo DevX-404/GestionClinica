@@ -30,35 +30,27 @@ export class MedicosComponent implements OnInit {
   isLoading: boolean = false;
   isLoadingHorarios: boolean = false;
   
-  // Alertas Globales
   globalMsg: string = '';
   globalMsgType: 'success' | 'error' = 'success';
 
-  // Modal Médico
   isModalOpen: boolean = false;
   isEditing: boolean = false;
   errorMsg: string = '';
   
-  // FORMULARIO REACTIVO
   medicoForm: FormGroup;
-  
-  // Variable para guardar el CMP generado o el actual
   cmpActual: string = '';
 
-  // Modal Horarios
   isScheduleModalOpen: boolean = false;
   medicoSeleccionado?: Medico;
   errorScheduleMsg: string = '';
   
-  // Formulario interno de horario
+  // --- AHORA USAMOS FECHA EXACTA EN LUGAR DE DÍA ---
   horarioForm = {
-    diaSemana: 'LUNES',
+    fechaTurno: '', // YYYY-MM-DD
     horaInicio: '',
     horaFin: ''
   };
 
-  diasSemana: string[] = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
-  
   constructor() {
     this.medicoForm = this.fb.group({
       idMedico: [null],
@@ -75,6 +67,15 @@ export class MedicosComponent implements OnInit {
   ngOnInit(): void {
     this.cargarEspecialidades();
     this.cargarMedicos();
+  }
+
+  // --- TRADUCTOR DE FECHAS (Magia de Angular) ---
+  formatearFechaLarga(fechaIso: string): string {
+    if(!fechaIso || !fechaIso.includes('-')) return fechaIso; 
+    const fecha = new Date(fechaIso + 'T00:00:00'); // Evitamos problemas de zona horaria
+    const opciones: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    let texto = fecha.toLocaleDateString('es-PE', opciones);
+    return texto;
   }
 
   cargarEspecialidades(): void {
@@ -113,25 +114,23 @@ export class MedicosComponent implements OnInit {
   }
 
   generarCMPAleatorio(): string {
-    const numeroAleatorio = Math.floor(10000 + Math.random() * 90000); // 5 dígitos
+    const numeroAleatorio = Math.floor(10000 + Math.random() * 90000); 
     return `CMP-${numeroAleatorio}`;
   }
 
-  // --- AQUÍ ESTÁ LA MAGIA PARA QUE SE LLENE SOLO ---
   openModal(medico?: Medico): void {
     this.errorMsg = '';
     if (medico) {
       this.isEditing = true;
       this.medicoForm.patchValue(medico);
-      this.cmpActual = medico.codigoColegiatura; // Muestra el actual
+      this.cmpActual = medico.codigoColegiatura; 
     } else {
       this.isEditing = false;
-      this.cmpActual = this.generarCMPAleatorio(); // 1. Crea el CMP primero
-      
+      this.cmpActual = this.generarCMPAleatorio(); 
       this.medicoForm.reset({
         estadoDisponibilidad: 'DISPONIBLE',
         idEspecialidad: 0,
-        correo: `${this.cmpActual.toLowerCase()}@clinica.com` // 2. Se lo asigna al correo automáticamente
+        correo: `${this.cmpActual.toLowerCase()}@clinica.com` 
       });
     }
     this.isModalOpen = true;
@@ -145,7 +144,7 @@ export class MedicosComponent implements OnInit {
     const input = event.target;
     let valorFiltrado = input.value.replace(/[^0-9]/g, '');
     if (valorFiltrado.length > 9) {
-        valorFiltrado = valorFiltrado.substring(0, 9);
+      valorFiltrado = valorFiltrado.substring(0, 9);
     }
     input.value = valorFiltrado;
     this.medicoForm.controls['telefono'].setValue(valorFiltrado);
@@ -173,7 +172,6 @@ export class MedicosComponent implements OnInit {
           this.cargarMedicos();
         },
         error: (err) => {
-          console.error("Error del servidor:", err);
           this.errorMsg = err.error?.message || 'Error al actualizar.';
           this.cdr.detectChanges();
         }
@@ -186,7 +184,6 @@ export class MedicosComponent implements OnInit {
           this.cargarMedicos();
         },
         error: (err) => {
-          console.error("Error del servidor:", err);
           this.errorMsg = err.error?.message || 'Hubo un error al registrar al médico.';
           this.cdr.detectChanges();
         }
@@ -209,7 +206,7 @@ export class MedicosComponent implements OnInit {
   openScheduleModal(medico: Medico): void {
     this.medicoSeleccionado = medico;
     this.errorScheduleMsg = '';
-    this.horarioForm = { diaSemana: 'LUNES', horaInicio: '', horaFin: '' };
+    this.horarioForm = { fechaTurno: '', horaInicio: '', horaFin: '' };
     this.cargarHorariosDelMedico(medico.idMedico!);
     this.isScheduleModalOpen = true;
   }
@@ -224,7 +221,8 @@ export class MedicosComponent implements OnInit {
 
     this.horarioService.listarPorMedico(idMedico).subscribe({
       next: (data) => {
-        this.horarios = data;
+        // Ordenamos los turnos del más antiguo al más futuro
+        this.horarios = data.sort((a: any, b: any) => a.diaSemana.localeCompare(b.diaSemana));
         this.isLoadingHorarios = false;
         this.cdr.detectChanges();
       },
@@ -237,15 +235,15 @@ export class MedicosComponent implements OnInit {
   }
 
   agregarHorario(): void {
-    if (!this.horarioForm.horaInicio || !this.horarioForm.horaFin) {
-      this.errorScheduleMsg = 'Define las horas de inicio y fin del turno.';
+    if (!this.horarioForm.fechaTurno || !this.horarioForm.horaInicio || !this.horarioForm.horaFin) {
+      this.errorScheduleMsg = 'Define la fecha exacta y las horas de inicio y fin del turno.';
       return;
     }
     this.errorScheduleMsg = '';
 
     const nuevoHorario: HorarioMedico = {
       idMedico: this.medicoSeleccionado!.idMedico!,
-      diaSemana: this.horarioForm.diaSemana,
+      diaSemana: this.horarioForm.fechaTurno, // Inyectamos la fecha real aquí
       horaInicio: this.horarioForm.horaInicio + ':00',
       horaFin: this.horarioForm.horaFin + ':00'
     };
@@ -257,7 +255,7 @@ export class MedicosComponent implements OnInit {
         this.cargarHorariosDelMedico(this.medicoSeleccionado!.idMedico!);
       },
       error: (err) => {
-        this.errorScheduleMsg = err.error?.message || 'Error: El médico ya tiene horario este día o las horas son inválidas.';
+        this.errorScheduleMsg = err.error?.message || 'Error al guardar el turno.';
       }
     });
   }

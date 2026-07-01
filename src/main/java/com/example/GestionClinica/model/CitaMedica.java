@@ -53,4 +53,7 @@ public class CitaMedica {
 
     @OneToMany(mappedBy = "cita", cascade = CascadeType.ALL)
     private List<Pago> pagos;
+
+    @Column(length = 50, nullable = false)
+    private String tipoCita = "CONSULTA"; // CONSULTA o PROCEDIMIENTO
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RecetaMedicaService } from '../../shared/services/receta-medica.service';
@@ -19,6 +19,7 @@ export interface PacienteAgrupado {
 })
 export class RecetasComponent implements OnInit {
   private recetaService = inject(RecetaMedicaService);
+  private cdr = inject(ChangeDetectorRef);
   
   pacientesAgrupados: PacienteAgrupado[] = [];
   pacientesFiltrados: PacienteAgrupado[] = [];
@@ -44,11 +45,13 @@ export class RecetasComponent implements OnInit {
             this.usarDatosDePrueba();
           }
           this.isLoading = false;
+          this.cdr.detectChanges();
         },
         error: (err) => {
           console.error('Error al cargar la BD, usando datos de prueba', err);
           this.usarDatosDePrueba();
           this.isLoading = false;
+          this.cdr.detectChanges();
         }
       });
     } else {
@@ -105,7 +108,7 @@ export class RecetasComponent implements OnInit {
     this.pacientesFiltrados = this.pacientesAgrupados.filter(p => 
       p.nombrePaciente.toLowerCase().includes(term) ||
       p.ultimaEmision.includes(term) ||
-      p.dniPaciente.includes(term) // <--- MAGIA PARA BUSCAR POR DNI
+      p.dniPaciente.includes(term) 
     );
   }
 

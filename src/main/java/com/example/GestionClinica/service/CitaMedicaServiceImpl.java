@@ -16,16 +16,16 @@ import java.time.LocalDate;
 @Service
 public class CitaMedicaServiceImpl implements CitaMedicaService {
 
-    @Autowired
-    private CitaMedicaRepository citaRepository;
-    @Autowired
-    private PacienteRepository pacienteRepository;
-    @Autowired
-    private MedicoRepository medicoRepository;
-    @Autowired
-    private EspecialidadRepository especialidadRepository;
-    @Autowired
-    private PagoRepository pagoRepository;
+    @Autowired private CitaMedicaRepository citaRepository;
+    @Autowired private PacienteRepository pacienteRepository;
+    @Autowired private MedicoRepository medicoRepository;
+    @Autowired private EspecialidadRepository especialidadRepository;
+    @Autowired private PagoRepository pagoRepository;
+
+    @Transactional(readOnly = true)
+    public boolean validarDisponibilidad(Long idMedico, LocalDate fecha, java.time.LocalTime hora, String tipoCita) {
+        return !citaRepository.existeChoqueDeHorario(idMedico, fecha, hora, tipoCita);
+    }
 
     @Override
     @Transactional
@@ -34,8 +34,9 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
         Medico med = medicoRepository.findById(dto.getIdMedico()).orElseThrow();
         Especialidad esp = especialidadRepository.findById(dto.getIdEspecialidad()).orElseThrow();
 
-        if (citaRepository.existeCitaMismoHorario(dto.getIdMedico(), dto.getFecha(), dto.getHora())) {
-            throw new IllegalArgumentException("El médico no está disponible en ese horario.");
+        String tipo = dto.getTipoCita() != null ? dto.getTipoCita() : "CONSULTA";
+        if (citaRepository.existeChoqueDeHorario(dto.getIdMedico(), dto.getFecha(), dto.getHora(), tipo)) {
+            throw new IllegalArgumentException("El médico no está disponible para ese tipo de cita en ese horario.");
         }
 
         CitaMedica cita = new CitaMedica();
@@ -45,26 +46,23 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
         cita.setFecha(dto.getFecha());
         cita.setHora(dto.getHora());
         cita.setMotivoConsulta(dto.getMotivoConsulta());
+        cita.setTipoCita(tipo);
         
-        // CORRECCIÓN 1: Respetamos el estado que Angular nos manda (Ej: CONFIRMADA si pagó el Yape)
         String estadoInicial = (dto.getEstado() != null && !dto.getEstado().trim().isEmpty()) 
                                 ? dto.getEstado() : "PENDIENTE_PAGO";
         cita.setEstado(estadoInicial); 
         CitaMedica citaGuardada = citaRepository.save(cita);
 
-        // --- LÓGICA DE NEGOCIO: GENERAR ADELANTO (30%) Y SALDO (70%) AL INSTANTE ---
         BigDecimal precioTotal = esp.getPrecioConsulta() != null ? esp.getPrecioConsulta() : new BigDecimal("150.00");
         BigDecimal adelanto = precioTotal.multiply(new BigDecimal("0.30")).setScale(2, RoundingMode.HALF_UP);
         BigDecimal saldo = precioTotal.subtract(adelanto);
 
-        // 1. Guardar la deuda del Adelanto (30%)
         Pago pagoAdelanto = new Pago();
         pagoAdelanto.setCita(citaGuardada);
         pagoAdelanto.setFechaPago(LocalDate.now());
         pagoAdelanto.setMonto(adelanto);
         pagoAdelanto.setConcepto("ADELANTO_30");
         
-        // CORRECCIÓN 2: Si la cita entró como CONFIRMADA, liquidamos la deuda del 30% automáticamente
         if ("CONFIRMADA".equals(estadoInicial)) {
             pagoAdelanto.setEstadoPago("PAGADO");
             pagoAdelanto.setMetodoPago("YAPE");
@@ -74,13 +72,12 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
         }
         pagoRepository.save(pagoAdelanto);
 
-        // 2. Guardar la deuda del Saldo restante (70%)
         Pago pagoSaldo = new Pago();
         pagoSaldo.setCita(citaGuardada);
-        pagoSaldo.setFechaPago(dto.getFecha()); // Se cobrará el día que el paciente asista
+        pagoSaldo.setFechaPago(dto.getFecha()); 
         pagoSaldo.setMonto(saldo);
         pagoSaldo.setMetodoPago("POR DEFINIR");
-        pagoSaldo.setEstadoPago("PENDIENTE"); // El 70% SIEMPRE nace pendiente
+        pagoSaldo.setEstadoPago("PENDIENTE"); 
         pagoSaldo.setConcepto("SALDO_70");
         pagoRepository.save(pagoSaldo);
 
@@ -98,13 +95,10 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
     public CitaMedicaDTO actualizarEstado(Long idCita, String nuevoEstado) {
         CitaMedica cita = citaRepository.findById(idCita)
                 .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada"));
-        if ("ATENDIDA".equalsIgnoreCase(nuevoEstado)
-            && !"EN_ESPERA".equals(cita.getEstado())) {
-
-        throw new IllegalArgumentException(
-                "La cita debe estar EN_ESPERA antes de ser atendida");
-    }
-    cita.setEstado(nuevoEstado.toUpperCase());
+        if ("ATENDIDA".equalsIgnoreCase(nuevoEstado) && !"EN_ESPERA".equals(cita.getEstado())) {
+            throw new IllegalArgumentException("La cita debe estar EN_ESPERA antes de ser atendida");
+        }
+        cita.setEstado(nuevoEstado.toUpperCase());
         return convertirADto(citaRepository.save(cita));
     }
 
@@ -122,7 +116,7 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
         dto.setIdCita(cita.getIdCita());
         dto.setIdPaciente(cita.getPaciente().getIdPaciente());
         dto.setNombreCompletoPaciente(cita.getPaciente().getNombres() + " " + cita.getPaciente().getApellidoPaterno());
-        dto.setDniPaciente(cita.getPaciente().getDni()); // --- NUEVO: DNI del paciente ---
+        dto.setDniPaciente(cita.getPaciente().getDni());
         dto.setIdMedico(cita.getMedico().getIdMedico());
         dto.setNombreCompletoMedico(cita.getMedico().getNombres() + " " + cita.getMedico().getApellidoPaterno());
         dto.setIdEspecialidad(cita.getEspecialidad().getIdEspecialidad());
@@ -131,6 +125,7 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
         dto.setHora(cita.getHora());
         dto.setEstado(cita.getEstado());
         dto.setMotivoConsulta(cita.getMotivoConsulta());
+        dto.setTipoCita(cita.getTipoCita());
         if (cita.getMedico() != null && cita.getMedico().getUsuario() != null) {
             dto.setUsernameMedico(cita.getMedico().getUsuario().getUsername());
         }

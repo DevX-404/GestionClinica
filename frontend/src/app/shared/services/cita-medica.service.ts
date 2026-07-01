@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { CitaMedica } from '../models/cita-medica.model';
 
 @Injectable({
   providedIn: 'root'
@@ -10,20 +9,29 @@ export class CitaMedicaService {
   private http = inject(HttpClient);
   private apiUrl = 'http://localhost:8080/api/citas';
 
-  listarTodas(): Observable<CitaMedica[]> {
-    return this.http.get<CitaMedica[]>(this.apiUrl);
+  listarTodas(): Observable<any[]> {
+    return this.http.get<any[]>(this.apiUrl);
   }
 
-  listarPorMedico(idMedico: number): Observable<CitaMedica[]> {
-    return this.http.get<CitaMedica[]>(`${this.apiUrl}/medico/${idMedico}`);
+  listarPorMedico(idMedico: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/medico/${idMedico}`);
   }
 
-  programarCita(cita: CitaMedica): Observable<CitaMedica> {
-    return this.http.post<CitaMedica>(this.apiUrl, cita);
+  programarCita(cita: any): Observable<any> {
+    return this.http.post<any>(this.apiUrl, cita);
   }
 
-  actualizarEstado(idCita: number, nuevoEstado: string): Observable<CitaMedica> {
-    // Usamos patch como lo tienes en el backend: @PatchMapping("/{id}/estado")
-    return this.http.patch<CitaMedica>(`${this.apiUrl}/${idCita}/estado?nuevoEstado=${nuevoEstado}`, {});
+  actualizarEstado(idCita: number, nuevoEstado: string): Observable<any> {
+    return this.http.patch<any>(`${this.apiUrl}/${idCita}/estado?nuevoEstado=${nuevoEstado}`, {});
+  }
+
+  validarHorario(idMedico: number, fecha: string, hora: string, tipoCita: string): Observable<{disponible: boolean}> {
+    let params = new HttpParams()
+      .set('idMedico', idMedico.toString())
+      .set('fecha', fecha)
+      .set('hora', hora.length === 5 ? `${hora}:00` : hora) 
+      .set('tipoCita', tipoCita);
+
+    return this.http.get<{disponible: boolean}>(`${this.apiUrl}/validar-horario`, { params });
   }
 }

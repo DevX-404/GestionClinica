@@ -37,6 +37,9 @@ public class CitaMedicaDTO {
 
     private String estado;
     private String motivoConsulta;
+    
     // --- CAMPO DE DINERO ---
     private BigDecimal montoPagadoAdelanto;
+
+    private String tipoCita; // Recibirá "CONSULTA" o "PROCEDIMIENTO"
 }
