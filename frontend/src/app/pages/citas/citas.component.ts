@@ -40,6 +40,13 @@ export class CitasComponent implements OnInit {
   sugerenciasDni: any[] = [];
   pacienteSeleccionado: any = null;
   edadDesglosada: string = '';
+  esNuevoPaciente: boolean = false;
+  nuevoPacienteForm = {
+    nombres: '',
+    apellidoPaterno: '',
+    telefono: '',
+    fechaNacimiento: '2000-01-01' // Por defecto para evitar nulos
+  };
 
   especialidadBusqueda: string = '';
   sugerenciasEspecialidad: any[] = [];
@@ -130,11 +137,15 @@ export class CitasComponent implements OnInit {
 
   buscarDniRealTime(): void {
     this.mostrarAlertaRegistro = false;
+    this.esNuevoPaciente = false;
+    
     const term = this.dniBusqueda.trim();
     if (term.length === 0) { this.sugerenciasDni = []; this.limpiarDatosPaciente(); return; }
+    
     this.sugerenciasDni = this.pacientes.filter(p => p.dni && p.dni.startsWith(term));
+    
     if (term.length === 8 && this.sugerenciasDni.length === 0) {
-      this.mostrarAlertaRegistro = true;
+      this.esNuevoPaciente = true;
       this.limpiarDatosPaciente();
     }
   }
@@ -224,7 +235,19 @@ export class CitasComponent implements OnInit {
 
   // --- VALIDACIÓN COMBINADA: Frontend (Rango) + Backend (Choque Operaciones) ---
   irAPagar(): void {
-    if (!this.citaForm.idPaciente || !this.citaForm.idEspecialidad || !this.citaForm.idMedico || !this.citaForm.fecha || !this.citaForm.hora || !this.citaForm.motivoConsulta) {
+    if (this.esNuevoPaciente) {
+      if (!this.nuevoPacienteForm.nombres || !this.nuevoPacienteForm.apellidoPaterno || !this.nuevoPacienteForm.telefono) {
+        this.mostrarMensajeGlobal('Complete los nombres, apellidos y teléfono del nuevo paciente.', 'warning');
+        return;
+      }
+    } else {
+      if (!this.citaForm.idPaciente) {
+        this.mostrarMensajeGlobal('Debe seleccionar un paciente registrado.', 'warning');
+        return;
+      }
+    }
+
+    if (!this.citaForm.idEspecialidad || !this.citaForm.idMedico || !this.citaForm.fecha || !this.citaForm.hora || !this.citaForm.motivoConsulta) {
       this.mostrarMensajeGlobal('Por favor complete todos los datos obligatorios (*) antes de proceder.', 'warning');
       return;
     }
@@ -286,6 +309,43 @@ export class CitasComponent implements OnInit {
   }
 
   confirmarPagoYape(): void {
+    if (this.esNuevoPaciente) {
+      // 1. PRIMERA TRANSACCIÓN: Crear el paciente
+      const payloadPaciente = {
+  tipoDocumento: 'DNI',
+  dni: this.dniBusqueda,
+  nombres: this.nuevoPacienteForm.nombres,
+  apellidoPaterno: this.nuevoPacienteForm.apellidoPaterno,
+  apellidoMaterno: '',
+  fechaNacimiento: this.nuevoPacienteForm.fechaNacimiento,
+  sexo: 'NO_ESPECIFICADO',
+  direccion: '',
+  telefono: this.nuevoPacienteForm.telefono,
+  correo: '',
+  estado: 'ACTIVO'
+};
+
+this.pacienteService.registrar(payloadPaciente).subscribe({
+  next: (nuevoPac: any) => {
+    this.citaForm.idPaciente = nuevoPac.idPaciente;
+    this.ejecutarGuardadoDeCita();
+  },
+  error: () => {
+    this.mostrarMensajeGlobal(
+      'Error al registrar el nuevo paciente.',
+      'error'
+    );
+  }
+});
+
+    } else {
+      // Si ya existía, guardamos la cita de frente
+      this.ejecutarGuardadoDeCita();
+    }
+  }
+
+  // 2. SEGUNDA TRANSACCIÓN: Crear la cita (Tu código original encapsulado)
+  private ejecutarGuardadoDeCita(): void {
     const citaParaEnviar = {
       idPaciente: Number(this.citaForm.idPaciente),
       idMedico: Number(this.citaForm.idMedico),
@@ -293,20 +353,19 @@ export class CitasComponent implements OnInit {
       fecha: this.citaForm.fecha, 
       hora: this.citaForm.hora.length === 5 ? `${this.citaForm.hora}:00` : this.citaForm.hora,
       motivoConsulta: this.citaForm.motivoConsulta,
-      tipoCita: this.citaForm.tipoCita, // Se envía el tipo seleccionado
+      tipoCita: this.citaForm.tipoCita,
       montoPagadoAdelanto: this.montoAdelanto30,
       estado: 'CONFIRMADA'
     };
 
     this.citaService.programarCita(citaParaEnviar as any).subscribe({
-      next: (res) => {
-        this.mostrarMensajeGlobal('¡Cita registrada con éxito!', 'success');
+      next: () => {
+        this.mostrarMensajeGlobal('¡Paciente y Cita registrados con éxito!', 'success');
         this.closeModal();
+        this.cargarCatalogos(); 
         this.cargarCitas(); 
       },
-      error: (err) => {
-        this.mostrarMensajeGlobal('Error al guardar la cita en la base de datos.', 'error');
-      }
+      error: () => this.mostrarMensajeGlobal('Error al guardar la cita en la base de datos.', 'error')
     });
   }
 

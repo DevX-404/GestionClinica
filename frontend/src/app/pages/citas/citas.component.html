@@ -117,37 +117,56 @@
 
         <div class="lg:col-span-2 space-y-3">
 
-          @if (mostrarAlertaRegistro) {
-          <div
-            class="flex w-full border-l-4 border-warning bg-warning-50 p-3 shadow-sm dark:bg-warning-500/10 rounded-r-lg">
-            <div class="w-full">
-              <h5 class="mb-0.5 text-sm font-bold text-warning-900 dark:text-warning-500">Paciente No Encontrado</h5>
-              <p class="text-xs text-warning-700 dark:text-warning-400">El DNI no figura en el sistema. Registre al
-                paciente primero.</p>
+          @if (esNuevoPaciente) {
+            <div class="flex w-full border-l-4 border-blue-500 bg-blue-50 p-3 shadow-sm dark:bg-blue-500/10 rounded-r-lg animate-fade-in">
+              <div class="w-full">
+                <p class="text-[11px] font-bold text-blue-700 dark:text-blue-400">
+                  <svg class="w-4 h-4 inline-block mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  Paciente no registrado. Complete los datos para proceder con el registro y la cita en un solo paso.
+                </p>
+              </div>
             </div>
-          </div>
           }
 
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 
             <div class="relative">
               <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">DNI *</label>
-              <input type="text" [(ngModel)]="dniBusqueda" (input)="buscarDniRealTime()" placeholder="Buscar DNI..."
-                maxlength="8"
+              <input type="text" [(ngModel)]="dniBusqueda" (input)="buscarDniRealTime()" placeholder="Buscar DNI..." maxlength="8"
                 class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
 
               @if (sugerenciasDni.length > 0) {
-              <div
-                class="absolute left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
-                @for (p of sugerenciasDni; track p.idPaciente) {
-                <button type="button" (click)="seleccionarPaciente(p)"
-                  class="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 font-medium">
-                  {{ p.dni }} - {{ p.nombres }} {{ p.apellidoPaterno }}
-                </button>
-                }
-              </div>
+                <div class="absolute left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                  @for (p of sugerenciasDni; track p.idPaciente) {
+                    <button type="button" (click)="seleccionarPaciente(p)" class="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 font-medium">
+                      {{ p.dni }} - {{ p.nombres }} {{ p.apellidoPaterno }}
+                    </button>
+                  }
+                </div>
               }
             </div>
+
+            @if (!esNuevoPaciente) {
+              <div>
+                <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Nombre Completo</label>
+                <input type="text" [value]="pacienteSeleccionado ? pacienteSeleccionado.nombres + ' ' + pacienteSeleccionado.apellidoPaterno : ''" disabled placeholder="Autollene" class="w-full rounded-lg border border-gray-200 bg-gray-100 p-2 text-sm text-gray-500 outline-none dark:border-gray-700 dark:bg-gray-800/50" />
+              </div>
+            } @else {
+              <div class="col-span-1 sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3 animate-fade-in p-3 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/50 rounded-xl">
+                <div>
+                  <label class="mb-1 block text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase">Nombres *</label>
+                  <input type="text" [(ngModel)]="nuevoPacienteForm.nombres" class="w-full rounded-lg border border-blue-200 bg-white p-2 text-sm focus:border-blue-500 outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase">Apellidos *</label>
+                  <input type="text" [(ngModel)]="nuevoPacienteForm.apellidoPaterno" class="w-full rounded-lg border border-blue-200 bg-white p-2 text-sm focus:border-blue-500 outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white" />
+                </div>
+                <div>
+                  <label class="mb-1 block text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase">Teléfono *</label>
+                  <input type="text" [(ngModel)]="nuevoPacienteForm.telefono" placeholder="Ej. 999888777" class="w-full rounded-lg border border-blue-200 bg-white p-2 text-sm focus:border-blue-500 outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white" />
+                </div>
+              </div>
+            }
 
             <div>
               <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Nombre Completo</label>
@@ -290,6 +309,14 @@
       }
 
       @if (pasoActual === 2) {
+        @if (esNuevoPaciente) {
+          <div class="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-lg mb-4 text-center dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300">
+            <p class="text-xs font-semibold">
+              Creando nuevo paciente: <span class="font-bold">{{ nuevoPacienteForm.nombres }} {{ nuevoPacienteForm.apellidoPaterno }}</span><br>
+              Agendando cita para: <span class="font-bold">{{ citaForm.fecha }}</span>
+            </p>
+          </div>
+        }
       <div class="space-y-4 animate-fadeIn max-w-sm mx-auto">
         <div class="text-center bg-brand-50 p-4 rounded-xl border border-brand-100">
           <p class="text-[10px] font-semibold text-brand-600 uppercase tracking-wider">Monto de Separación</p>

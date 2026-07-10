@@ -37,22 +37,22 @@ export class AgendaComponent implements OnInit {
   citasDelDia: any[] = [];
   citasPendientes: any[] = [];
   citasAtendidas: any[] = [];
-  
+
   citaSeleccionada: any = null;
   citaSeleccionadaId: number | null = null;
   consultaCreadaId: number | null = null;
-  
-  historiaClinicaActual: any = null; 
-  historialConsultas: any[] = []; 
-  isLoadingHistoria: boolean = false;
 
-  // --- VARIABLES PARA EDITAR HISTORIAL ---
+  historiaClinicaActual: any = null;
+  historialConsultas: any[] = [];
+  isLoadingHistoria: boolean = false;
+  sidebarHistorialActivo = false;
+
   editandoAlergias = false;
   editandoAntecedentes = false;
   nuevaAlergiaTexto = '';
   nuevoAntecedenteTexto = '';
   guardandoHistoria = false;
-  
+
   isLoading: boolean = false;
   isSaving: boolean = false;
   mostrarCitasLaterales: boolean = false;
@@ -61,6 +61,42 @@ export class AgendaComponent implements OnInit {
 
   vistaActual: 'AGENDA' | 'ATENCION' = 'AGENDA';
   pestanaActiva: 'CONSULTA' | 'RECETA' = 'CONSULTA';
+
+  sintomasTags: string[] = [];
+  nuevoSintoma: string = '';
+
+  mostrarTratamiento: boolean = false;
+  mostrarReposo: boolean = false;
+
+  busquedaMedicamento: string = '';
+  resultadosMedicamentos: any[] = [];
+  recomendacionesNoFarmacologicas: string = '';
+  proximaCita: string = '';
+
+  // Base de datos local mockeada del CIE-10 para el buscador
+  busquedaCie10: string = '';
+  resultadosCie10: any[] = [];
+  cie10Base = [
+    { codigo: 'J11', descripcion: 'Influenza debido a virus de la gripe no identificado' },
+    { codigo: 'J00', descripcion: 'Rinofaringitis aguda (resfriado común)' },
+    { codigo: 'A09', descripcion: 'Diarrea y gastroenteritis de presunto origen infeccioso' },
+    { codigo: 'R50', descripcion: 'Fiebre de otro origen y de origen desconocido' },
+    { codigo: 'E11', descripcion: 'Diabetes mellitus tipo 2' },
+    { codigo: 'I10', descripcion: 'Hipertensión esencial (primaria)' },
+    { codigo: 'K29', descripcion: 'Gastritis y duodenitis' }
+  ];
+
+  // Mock de Base de Datos de Medicamentos (Vademécum local)
+  medicamentosBase = [
+    { nombre: 'Paracetamol', presentacion: 'Tableta 500mg' },
+    { nombre: 'Ibuprofeno', presentacion: 'Tableta 400mg' },
+    { nombre: 'Amoxicilina', presentacion: 'Cápsula 500mg' },
+    { nombre: 'Azitromicina', presentacion: 'Jarabe 250mg/5ml' },
+    { nombre: 'Cetirizina', presentacion: 'Tableta 10mg' },
+    { nombre: 'Loratadina', presentacion: 'Tableta 10mg' },
+    { nombre: 'Diclofenaco', presentacion: 'Ampolla 75mg/3ml' },
+    { nombre: 'Naproxeno', presentacion: 'Gel tópico 10%' }
+  ];
 
   get listaCitasMostrar(): any[] {
     return this.verHistorialDelDia ? this.citasAtendidas : this.citasPendientes;
@@ -86,11 +122,9 @@ export class AgendaComponent implements OnInit {
   nuevoMedicamento = { medicamento: '', dosis: '', frecuencia: '', duracion: '' };
   observacionesReceta: string = '';
 
-  // 3. NUEVO: Variables para controlar la alerta flotante
   globalMsg: string = '';
   globalMsgType: 'success' | 'error' | 'warning' | 'info' = 'info';
 
-  // 4. NUEVO: Método para mostrar la alerta
   mostrarMensajeGlobal(msg: string, type: 'success' | 'error' | 'warning' | 'info'): void {
     this.globalMsg = msg;
     this.globalMsgType = type;
@@ -105,32 +139,19 @@ export class AgendaComponent implements OnInit {
 
   cargarCitasDelDia(): void {
     this.isLoading = true;
-    
-    // Obtenemos el username de la sesión actual
     const usernameLogueado = localStorage.getItem('username')?.toLowerCase() || '';
 
     this.citaService.listarTodas().subscribe((data: any[]) => {
-      
-      // 1. FILTRAR CITAS DEL MÉDICO:
-      // Buscamos que el nombre completo de la cita contenga el username (o viceversa)
-      // Como a veces el username es "admin" y el nombre es distinto, aquí permitiremos 
-      // ver las citas temporalmente si eres ADMIN, para no bloquear el sistema.
       const rolActual = localStorage.getItem('rol') || 'RECEPCIONISTA';
-      
-      // 1.2. FILTRO: Solo citas del médico logueado Y en estados válidos
       const citasDelMedico = data.filter((c: any) => {
-        if (rolActual === 'ADMINISTRADOR') return true; // El admin ve todo
-        
-        // AHORA SÍ: Comparamos el username exacto que nos manda Java con el del navegador
+        if (rolActual === 'ADMINISTRADOR') return true;
         const esMismoMedico = c.usernameMedico && c.usernameMedico.toLowerCase() === usernameLogueado;
         const estadoValido = c.estado === 'EN_ESPERA' || c.estado === 'CONFIRMADA' || c.estado === 'ATENDIDA' || c.estado === 'PENDIENTE_PAGO';
-        
         return esMismoMedico && estadoValido;
       });
 
       this.todasLasCitas = citasDelMedico;
 
-      // 2. LLENAR EL CALENDARIO GRANDE: Mostramos TODOS los estados
       this.calendarOptions.events = citasDelMedico.map((cita: any) => ({
         id: cita.idCita?.toString(),
         title: `${cita.paciente?.nombres || cita.nombreCompletoPaciente || 'Paciente'} - ${cita.estado}`,
@@ -139,7 +160,7 @@ export class AgendaComponent implements OnInit {
         borderColor: this.getColorPorEstado(cita.estado),
         extendedProps: { citaCompleta: cita }
       }));
-      
+
       const hoy = new Date().toISOString().split('T')[0];
       this.citasDelDia = citasDelMedico.filter(c => c.fecha === hoy);
       this.filtrarListasDelDia();
@@ -149,13 +170,8 @@ export class AgendaComponent implements OnInit {
   }
 
   filtrarListasDelDia(): void {
-    // Pestaña "Atendidas"
     this.citasAtendidas = this.citasDelDia.filter(c => c.estado === 'ATENDIDA');
-    
-    // Pestaña "Pendientes": La verdadera Sala de Espera del Médico
-    this.citasPendientes = this.citasDelDia.filter(c => 
-      c.estado === 'EN_ESPERA' || c.estado === 'CONFIRMADA'
-    );
+    this.citasPendientes = this.citasDelDia.filter(c => c.estado === 'EN_ESPERA' || c.estado === 'CONFIRMADA');
   }
 
   handleDateClick(arg: any): void {
@@ -171,7 +187,7 @@ export class AgendaComponent implements OnInit {
   handleEventClick(arg: any): void {
     const cita = arg.event.extendedProps['citaCompleta'];
     if (cita.estado === 'CONFIRMADA' || cita.estado === 'PENDIENTE_PAGO') {
-       this.mostrarMensajeGlobal(`Estado: ${cita.estado}. El paciente aún no cancela su recibo pendiente.`, 'warning');
+      this.mostrarMensajeGlobal(`Estado: ${cita.estado}. El paciente aún no cancela su recibo pendiente.`, 'warning');
     }
 
     this.citasDelDia = this.todasLasCitas.filter(c => c.fecha === cita.fecha);
@@ -183,54 +199,66 @@ export class AgendaComponent implements OnInit {
   }
 
   getColorPorEstado(estado: string): string {
-    switch(estado) {
-      case 'EN_ESPERA': return '#10b981';      // Verde: Pagado 100%, listo.
-      case 'CONFIRMADA': return '#3b82f6';     // Azul: Yapeado, falta 70%.
-      case 'PENDIENTE_PAGO': return '#facc15'; // Amarillo: Cita nueva, sin pagar.
-      case 'ATENDIDA': return '#8b5cf6';       // Morado: Ya pasó consulta.
-      case 'CANCELADA': return '#ef4444';      // Rojo
+    switch (estado) {
+      case 'EN_ESPERA': return '#10b981';
+      case 'CONFIRMADA': return '#3b82f6';
+      case 'PENDIENTE_PAGO': return '#facc15';
+      case 'ATENDIDA': return '#8b5cf6';
+      case 'CANCELADA': return '#ef4444';
       default: return '#9ca3af';
     }
   }
 
   seleccionarCita(cita: any): void {
-    // CANDADO DE SEGURIDAD ESTRICTO PARA INICIAR LA ATENCIÓN
     if (cita.estado !== 'EN_ESPERA') {
       this.mostrarMensajeGlobal(`No puedes iniciar. El paciente ${cita.nombreCompletoPaciente || ''} debe estar EN ESPERA.`, 'error');
       return;
     }
 
+    this.sintomasTags = [];
+    this.nuevoSintoma = '';
+    this.busquedaCie10 = '';
+    this.resultadosCie10 = [];
+    this.mostrarTratamiento = false;
+    this.mostrarReposo = false;
+    this.tratamiento = { descripcion: '', fechaInicio: '', fechaFin: '' };
+    this.recomendacionesNoFarmacologicas = '';
+    this.proximaCita = '';
+    this.busquedaMedicamento = '';
+    this.resultadosMedicamentos = [];
+    this.detallesReceta = [];
     this.citaSeleccionada = cita;
     this.consultaForm.motivo = cita.motivoConsulta || '';
     this.vistaActual = 'ATENCION';
     this.mostrarHistorial = true;
+    this.sidebarHistorialActivo = false;
     this.pestanaActiva = 'CONSULTA';
     this.historiaClinicaActual = null;
-    this.historialConsultas = []; 
+    this.historialConsultas = [];
     this.editandoAlergias = false;
     this.editandoAntecedentes = false;
     this.nuevaAlergiaTexto = '';
     this.nuevoAntecedenteTexto = '';
 
-    const idPaciente = cita.paciente?.idPaciente || cita.idPaciente; 
-    
+    const idPaciente = cita.paciente?.idPaciente || cita.idPaciente;
+
     if (idPaciente) {
       this.isLoadingHistoria = true;
       this.historiaService.obtenerPorPaciente(idPaciente).subscribe({
         next: (historia: any) => {
           this.historiaClinicaActual = historia;
           if (historia.consultasMedicas) {
-            this.historialConsultas = historia.consultasMedicas;
+            this.historialConsultas = this.formatearHistorial(historia.consultasMedicas);
           } else if (historia.consultas) {
-            this.historialConsultas = historia.consultas;
+            this.historialConsultas = this.formatearHistorial(historia.consultas);
           }
           this.isLoadingHistoria = false;
           this.cdr.detectChanges();
         },
         error: (err) => {
-          this.historiaClinicaActual = { 
-            alergias: "El paciente aún no registra alergias.", 
-            antecedentes: "El paciente aún no registra antecedentes médicos." 
+          this.historiaClinicaActual = {
+            alergias: "El paciente aún no registra alergias.",
+            antecedentes: "El paciente aún no registra antecedentes médicos."
           };
           this.historialConsultas = [];
           this.isLoadingHistoria = false;
@@ -242,7 +270,6 @@ export class AgendaComponent implements OnInit {
     }
   }
 
-  // --- NUEVA LÓGICA DE GUARDADO AUTOMÁTICO DE FECHAS ---
   guardarDatosFicha(tipo: 'ALERGIAS' | 'ANTECEDENTES') {
     if (this.guardandoHistoria) return;
     if (!this.historiaClinicaActual.idHistoriaClinica) {
@@ -266,8 +293,7 @@ export class AgendaComponent implements OnInit {
   private aplicarYGuardarActualizacion(tipo: 'ALERGIAS' | 'ANTECEDENTES') {
     this.guardandoHistoria = true;
     const fechaActual = new Date().toLocaleDateString('es-PE');
-    
-    // SOLUCIÓN AL ERROR NULL: Convertimos a string vacío si viene null de la BD
+
     let alergiasActuales = this.historiaClinicaActual?.alergias || '';
     let antecedentesActuales = this.historiaClinicaActual?.antecedentes || '';
 
@@ -280,27 +306,27 @@ export class AgendaComponent implements OnInit {
     if (tipo === 'ALERGIAS' && this.nuevaAlergiaTexto.trim()) {
       let textoPrevio = payload.alergias;
       if (textoPrevio === 'Ninguna conocida.' || textoPrevio?.includes('aún no registra')) textoPrevio = '';
-      payload.alergias = textoPrevio 
-        ? `${textoPrevio}\n[Agregado el ${fechaActual}]: ${this.nuevaAlergiaTexto}` 
+      payload.alergias = textoPrevio
+        ? `${textoPrevio}\n[Agregado el ${fechaActual}]: ${this.nuevaAlergiaTexto}`
         : `[Agregado el ${fechaActual}]: ${this.nuevaAlergiaTexto}`;
     }
 
     if (tipo === 'ANTECEDENTES' && this.nuevoAntecedenteTexto.trim()) {
       let textoPrevio = payload.antecedentes;
       if (textoPrevio === 'Ninguno registrado.' || textoPrevio?.includes('aún no registra')) textoPrevio = '';
-      payload.antecedentes = textoPrevio 
-        ? `${textoPrevio}\n[Agregado el ${fechaActual}]: ${this.nuevoAntecedenteTexto}` 
+      payload.antecedentes = textoPrevio
+        ? `${textoPrevio}\n[Agregado el ${fechaActual}]: ${this.nuevoAntecedenteTexto}`
         : `[Agregado el ${fechaActual}]: ${this.nuevoAntecedenteTexto}`;
     }
 
     this.historiaService.actualizarFichaGeneral(this.historiaClinicaActual.idHistoriaClinica, payload).subscribe({
       next: (actualizada: any) => {
-        this.historiaClinicaActual = actualizada;
+        this.historiaClinicaActual = this.updatedFicha(actualizada);
         this.editandoAlergias = false;
         this.editandoAntecedentes = false;
         this.nuevaAlergiaTexto = '';
         this.nuevoAntecedenteTexto = '';
-        this.guardandoHistoria = false; // Se apaga el loader
+        this.guardandoHistoria = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -311,10 +337,14 @@ export class AgendaComponent implements OnInit {
     });
   }
 
+  private updatedFicha(actualizada: any): any {
+    return actualizada;
+  }
+
   comenzarConsultaReal() { this.mostrarHistorial = false; this.cdr.detectChanges(); }
   cambiarPestana(p: 'CONSULTA' | 'RECETA') { this.pestanaActiva = p; this.cdr.detectChanges(); }
   volverAgenda() { this.vistaActual = 'AGENDA'; this.citaSeleccionada = null; this.cargarCitasDelDia(); }
-  
+
   agregarDiagnostico(): void {
     if (this.nuevoDiagnostico.nombre.trim()) {
       this.diagnosticos.push({ ...this.nuevoDiagnostico });
@@ -327,28 +357,63 @@ export class AgendaComponent implements OnInit {
     if (this.nuevoMedicamento.medicamento.trim()) {
       this.detallesReceta.push({ ...this.nuevoMedicamento });
       this.nuevoMedicamento = { medicamento: '', dosis: '', frecuencia: '', duracion: '' };
+      this.busquedaMedicamento = ''; 
     }
+  }
+  filtrarMedicamentos(): void {
+    const query = this.busquedaMedicamento.toLowerCase();
+    if (!query) {
+      this.resultadosMedicamentos = [];
+      return;
+    }
+    this.resultadosMedicamentos = this.medicamentosBase.filter(m => 
+      m.nombre.toLowerCase().includes(query) || m.presentacion.toLowerCase().includes(query)
+    );
+    // Para que si escriben algo manual, igual se asigne al modelo
+    this.nuevoMedicamento.medicamento = this.busquedaMedicamento;
+  }
+
+  seleccionarMedicamento(med: any): void {
+    const seleccion = `${med.nombre} - ${med.presentacion}`;
+    this.nuevoMedicamento.medicamento = seleccion;
+    this.busquedaMedicamento = seleccion;
+    this.resultadosMedicamentos = [];
+  }
+
+  vistaPreviaReceta(): void {
+    this.mostrarMensajeGlobal('Generando vista previa con firma y código QR...', 'info');
   }
   quitarMedicamento(index: number): void { this.detallesReceta.splice(index, 1); }
 
   guardarTodo(): void {
-    if (!this.consultaForm.sintomas || this.diagnosticos.length === 0 || !this.tratamiento.descripcion) {
-      this.mostrarMensajeGlobal('Por favor, ingresa los síntomas, al menos un diagnóstico y tratamiento.', 'warning');
+    if (this.sintomasTags.length === 0 || this.diagnosticos.length === 0) {
+      this.mostrarMensajeGlobal('Por favor, ingresa al menos un síntoma y un diagnóstico CIE-10.', 'warning');
       return;
     }
     if (this.isSaving) return;
     this.isSaving = true;
 
+    const sintomasUnidos = this.sintomasTags.join(', ');
+
     const payloadConsulta = {
-      sintomas: this.consultaForm.sintomas,
+      sintomas: sintomasUnidos,
       diagnosticoGeneral: JSON.stringify(this.diagnosticos),
-      tratamiento: JSON.stringify(this.tratamiento),        
+      tratamiento: JSON.stringify({
+        descripcion: this.mostrarTratamiento ? this.tratamiento.descripcion : 'Sin indicaciones médicas.',
+        fechaInicio: this.mostrarReposo ? this.tratamiento.fechaInicio : '',
+        fechaFin: this.mostrarReposo ? this.tratamiento.fechaFin : ''
+      }),        
       observaciones: this.consultaForm.observaciones
     };
 
     this.consultaService.atenderCita(this.citaSeleccionada.idCita, payloadConsulta).subscribe({
       next: (consultaGuardada: any) => {
         if (this.detallesReceta.length > 0) {
+          
+          const textoRecomendaciones = this.recomendacionesNoFarmacologicas ? `Recomendaciones: ${this.recomendacionesNoFarmacologicas}` : 'Sin indicaciones adicionales.';
+          const textoCita = this.proximaCita ? `\nPróxima cita de control: ${this.proximaCita}` : '';
+          this.observacionesReceta = textoRecomendaciones + textoCita;
+
           const payloadReceta: RecetaMedicaDTO = {
             observaciones: this.observacionesReceta,
             idConsulta: consultaGuardada.idConsulta,
@@ -379,7 +444,99 @@ export class AgendaComponent implements OnInit {
     });
   }
 
-  exportarPDF(): void { 
-    this.mostrarMensajeGlobal('Generando PDF en segundo plano...', 'info'); 
+  exportarPDF(): void {
+    this.mostrarMensajeGlobal('Generando PDF en segundo plano...', 'info');
+  }
+
+  // ==========================================
+  //     NUEVOS PARSERS PARA RENDERIZADO UX
+  // ==========================================
+  get alergiasFormateadas(): { fecha: string; detalle: string }[] {
+    const texto = this.historiaClinicaActual?.alergias;
+    if (!texto || texto.trim() === '' || texto.includes('aún no registra') || texto === 'Ninguna conocida.') {
+      return [];
+    }
+    return texto.split('\n').map((linea: string) => {
+      const match = linea.match(/^\[Agregado el ([^\]]+)\]:\s*(.*)$/);
+      if (match) return { fecha: match[1], detalle: match[2] };
+      return { fecha: '', detalle: linea };
+    }).filter((item: { fecha: string; detalle: string }) =>
+      item.detalle.trim() !== ''
+    );
+  }
+
+  get antecedentesFormateadas(): { fecha: string; detalle: string }[] {
+    const texto = this.historiaClinicaActual?.antecedentes;
+    if (!texto || texto.trim() === '' || texto.includes('aún no registra') || texto === 'Ninguno registrado.') {
+      return [];
+    }
+    return texto.split('\n').map((linea: string) => {
+      const match = linea.match(/^\[Agregado el ([^\]]+)\]:\s*(.*)$/);
+      if (match) return { fecha: match[1], detalle: match[2] };
+      return { fecha: '', detalle: linea };
+    }).filter((item: { fecha: string; detalle: string }) =>
+      item.detalle.trim() !== ''
+    );
+  }
+
+  // --- MÉTODO PARA PARSEAR EL JSON DE LA BITÁCORA ---
+  private formatearHistorial(consultas: any[]): any[] {
+    return consultas.map(c => {
+      let diagnosticosParsed = [];
+      let tratamientoParsed = {};
+
+      // Intentamos parsear los JSON. Si por alguna razón hay datos viejos en texto plano, el catch lo salva.
+      try { 
+        diagnosticosParsed = JSON.parse(c.diagnosticoGeneral); 
+        if (!Array.isArray(diagnosticosParsed)) diagnosticosParsed = [];
+      } catch(e) { 
+        diagnosticosParsed = c.diagnosticoGeneral ? [{nombre: 'General', descripcion: c.diagnosticoGeneral}] : []; 
+      }
+
+      try { 
+        tratamientoParsed = JSON.parse(c.tratamiento); 
+      } catch(e) { 
+        tratamientoParsed = { descripcion: c.tratamiento || 'Sin tratamiento asignado' }; 
+      }
+
+      // Retornamos la consulta original pero con dos nuevas propiedades parseadas listas para usar
+      return { ...c, diagnosticosParsed, tratamientoParsed };
+    });
+  }
+
+  // --- MÉTODOS PARA SÍNTOMAS (TAGS) ---
+  agregarSintoma(event: Event): void {
+    event.preventDefault(); // Evita que recargue la página si el Enter activa un form
+    const valor = this.nuevoSintoma.trim();
+    if (valor && !this.sintomasTags.includes(valor)) {
+      this.sintomasTags.push(valor);
+    }
+    this.nuevoSintoma = '';
+  }
+
+  removerSintoma(index: number): void {
+    this.sintomasTags.splice(index, 1);
+  }
+
+  // --- MÉTODOS PARA BUSCADOR CIE-10 ---
+  filtrarCie10(): void {
+    const query = this.busquedaCie10.toLowerCase();
+    if (!query) {
+      this.resultadosCie10 = [];
+      return;
+    }
+    // Busca coincidencias en el código o en la descripción
+    this.resultadosCie10 = this.cie10Base.filter(item => 
+      item.codigo.toLowerCase().includes(query) || item.descripcion.toLowerCase().includes(query)
+    );
+  }
+
+  seleccionarCie10(item: any): void {
+    const yaExiste = this.diagnosticos.find(d => d.nombre === item.codigo);
+    if (!yaExiste) {
+      this.diagnosticos.push({ nombre: item.codigo, descripcion: item.descripcion });
+    }
+    this.busquedaCie10 = '';
+    this.resultadosCie10 = [];
   }
 }
