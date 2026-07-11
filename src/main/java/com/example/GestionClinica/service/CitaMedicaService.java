@@ -7,6 +7,7 @@ import java.util.List;
 
 public interface CitaMedicaService {
     CitaMedicaDTO programarCita(CitaMedicaDTO dto);
+    CitaMedicaDTO programarCitaRapida(com.example.GestionClinica.dto.CitaRegistroRapidoDTO dto);
     List<CitaMedicaDTO> listarTodas();
     CitaMedicaDTO actualizarEstado(Long idCita, String nuevoEstado);
     List<CitaMedicaDTO> listarPorMedico(Long idMedico, LocalDate fecha);

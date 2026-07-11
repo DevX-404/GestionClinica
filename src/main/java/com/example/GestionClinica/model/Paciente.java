@@ -37,29 +37,28 @@ public class Paciente {
     @Column(length = 50, nullable = false)
     private String apellidoPaterno;
 
-    @NotBlank(message = "El apellido materno es obligatorio")
     @Size(max = 50)
-    @Column(length = 50, nullable = false)
+    @Column(length = 50)
     private String apellidoMaterno;
 
-    @NotNull(message = "La fecha de nacimiento es obligatoria")
     @Past(message = "La fecha de nacimiento debe ser una fecha pasada")
+    @Column
     private LocalDate fechaNacimiento;
 
-    @NotBlank(message = "El sexo es obligatorio")
-    @Column(length = 10, nullable = false)
+    @Size(max = 10)
+    @Column(length = 10)
     private String sexo;
 
     @Size(max = 150)
-    @Column(length = 150)
+    @Column(length = 150, nullable = true)
     private String direccion;
 
     @Size(max = 20)
-    @Column(length = 20)
+    @Column(length = 20, nullable = true)
     private String telefono;
 
     @Email(message = "El correo debe tener un formato válido")
-    @Column(length = 100)
+    @Column(length = 100, nullable = true)
     private String correo;
 
     @Column(length = 15, nullable = false)

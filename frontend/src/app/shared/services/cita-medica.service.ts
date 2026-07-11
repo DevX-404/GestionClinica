@@ -21,6 +21,10 @@ export class CitaMedicaService {
     return this.http.post<any>(this.apiUrl, cita);
   }
 
+  programarCitaRapida(payload: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/rapida`, payload);
+  }
+
   actualizarEstado(idCita: number, nuevoEstado: string): Observable<any> {
     return this.http.patch<any>(`${this.apiUrl}/${idCita}/estado?nuevoEstado=${nuevoEstado}`, {});
   }

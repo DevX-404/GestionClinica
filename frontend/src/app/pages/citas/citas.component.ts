@@ -309,65 +309,61 @@ export class CitasComponent implements OnInit {
   }
 
   confirmarPagoYape(): void {
-    if (this.esNuevoPaciente) {
-      // 1. PRIMERA TRANSACCIÓN: Crear el paciente
-      const payloadPaciente = {
-  tipoDocumento: 'DNI',
-  dni: this.dniBusqueda,
-  nombres: this.nuevoPacienteForm.nombres,
-  apellidoPaterno: this.nuevoPacienteForm.apellidoPaterno,
-  apellidoMaterno: '',
-  fechaNacimiento: this.nuevoPacienteForm.fechaNacimiento,
-  sexo: 'NO_ESPECIFICADO',
-  direccion: '',
-  telefono: this.nuevoPacienteForm.telefono,
-  correo: '',
-  estado: 'ACTIVO'
-};
 
-this.pacienteService.registrar(payloadPaciente).subscribe({
-  next: (nuevoPac: any) => {
-    this.citaForm.idPaciente = nuevoPac.idPaciente;
-    this.ejecutarGuardadoDeCita();
-  },
-  error: () => {
-    this.mostrarMensajeGlobal(
-      'Error al registrar el nuevo paciente.',
-      'error'
-    );
-  }
-});
+  const payloadRapido = {
+    dniPaciente: this.dniBusqueda,
 
-    } else {
-      // Si ya existía, guardamos la cita de frente
-      this.ejecutarGuardadoDeCita();
+    nombresPaciente: this.esNuevoPaciente
+        ? this.nuevoPacienteForm.nombres
+        : this.pacienteSeleccionado?.nombres,
+
+    apellidoPaterno: this.esNuevoPaciente
+        ? this.nuevoPacienteForm.apellidoPaterno
+        : this.pacienteSeleccionado?.apellidoPaterno,
+
+    apellidoMaterno: this.esNuevoPaciente
+        ? ''
+        : this.pacienteSeleccionado?.apellidoMaterno,
+
+    telefonoPaciente: this.esNuevoPaciente
+        ? this.nuevoPacienteForm.telefono
+        : this.pacienteSeleccionado?.telefono,
+
+    // ¡NUEVO! Enviamos la fecha para que PostgreSQL no bote el error 500
+    fechaNacimiento: this.esNuevoPaciente 
+        ? this.nuevoPacienteForm.fechaNacimiento 
+        : (this.pacienteSeleccionado?.fechaNacimiento || '2000-01-01'),
+
+    idMedico: Number(this.citaForm.idMedico),
+    idEspecialidad: Number(this.citaForm.idEspecialidad),
+
+    fecha: this.citaForm.fecha,
+
+    hora: this.citaForm.hora.length === 5
+        ? `${this.citaForm.hora}:00`
+        : this.citaForm.hora,
+
+    motivoConsulta: this.citaForm.motivoConsulta,
+    tipoCita: this.citaForm.tipoCita,
+    montoPagadoAdelanto: this.montoAdelanto30
+  };
+
+  this.citaService.programarCitaRapida(payloadRapido).subscribe({
+    next: () => {
+      this.mostrarMensajeGlobal('¡Cita y Paciente registrados con éxito!', 'success');
+      this.closeModal();
+      this.cargarCatalogos();
+      this.cargarCitas();
+    },
+    error: (err) => {
+      console.error(err);
+      this.mostrarMensajeGlobal(
+        'Error al registrar la cita. Revisa la conexión.',
+        'error'
+      );
     }
-  }
-
-  // 2. SEGUNDA TRANSACCIÓN: Crear la cita (Tu código original encapsulado)
-  private ejecutarGuardadoDeCita(): void {
-    const citaParaEnviar = {
-      idPaciente: Number(this.citaForm.idPaciente),
-      idMedico: Number(this.citaForm.idMedico),
-      idEspecialidad: Number(this.citaForm.idEspecialidad),
-      fecha: this.citaForm.fecha, 
-      hora: this.citaForm.hora.length === 5 ? `${this.citaForm.hora}:00` : this.citaForm.hora,
-      motivoConsulta: this.citaForm.motivoConsulta,
-      tipoCita: this.citaForm.tipoCita,
-      montoPagadoAdelanto: this.montoAdelanto30,
-      estado: 'CONFIRMADA'
-    };
-
-    this.citaService.programarCita(citaParaEnviar as any).subscribe({
-      next: () => {
-        this.mostrarMensajeGlobal('¡Paciente y Cita registrados con éxito!', 'success');
-        this.closeModal();
-        this.cargarCatalogos(); 
-        this.cargarCitas(); 
-      },
-      error: () => this.mostrarMensajeGlobal('Error al guardar la cita en la base de datos.', 'error')
-    });
-  }
+  });
+}
 
   exportarVoucherPDF(): void {
     this.mostrarMensajeGlobal('Preparando PDF...', 'info');

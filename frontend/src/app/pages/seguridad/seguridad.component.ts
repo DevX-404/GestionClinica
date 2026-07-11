@@ -186,8 +186,9 @@ export class SeguridadComponent implements OnInit {
     if (this.usuarioSeleccionado) {
       this.usuarioService.restablecerPassword(this.usuarioSeleccionado.idUsuario, this.nuevaPassword).subscribe({
         next: () => {
-          this.closePasswordModal();
           this.mostrarMensajeGlobal(`Contraseña de ${this.usuarioSeleccionado?.username} restablecida con éxito.`, 'success');
+          
+          this.closePasswordModal();
           this.cdr.detectChanges();
         },
         error: () => {

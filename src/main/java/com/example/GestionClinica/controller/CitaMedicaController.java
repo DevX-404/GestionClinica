@@ -26,6 +26,11 @@ public class CitaMedicaController {
         return ResponseEntity.ok(citaService.listarTodas());
     }
 
+    @PostMapping("/rapida")
+    public ResponseEntity<CitaMedicaDTO> crearCitaRapida(@RequestBody com.example.GestionClinica.dto.CitaRegistroRapidoDTO dto) {
+        return new ResponseEntity<>(citaService.programarCitaRapida(dto), HttpStatus.CREATED);
+    }
+
     @PostMapping
     public ResponseEntity<CitaMedicaDTO> crearCita(@Valid @RequestBody CitaMedicaDTO dto) {
         return new ResponseEntity<>(citaService.programarCita(dto), HttpStatus.CREATED);
