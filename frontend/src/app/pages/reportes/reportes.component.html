@@ -1,5 +1,6 @@
 <div class="mx-auto max-w-7xl p-4 md:p-6 2xl:p-10">
   
+  <!-- ENCABEZADO -->
   <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <h2 class="text-2xl font-bold text-black dark:text-white">Reportes y Estadísticas</h2>
@@ -7,11 +8,12 @@
     </div>
     
     <div class="flex flex-wrap items-center gap-3">
-      <select [(ngModel)]="rangoFechas" (change)="aplicarFiltro()" class="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white transition-all shadow-sm">
+      <select [(ngModel)]="rangoFechas" (change)="aplicarFiltro()" class="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white transition-all shadow-sm cursor-pointer">
         <option value="HOY">Hoy</option>
         <option value="SEMANA_ACTUAL">Esta Semana</option>
         <option value="MES_ACTUAL">Este Mes</option>
         <option value="ANIO_ACTUAL">Este Año</option>
+        <option value="HISTORICO">Histórico (Todo)</option>
       </select>
 
       <button (click)="exportarExcel()" class="flex items-center gap-2 rounded-lg border border-green-500 bg-green-50 px-4 py-2 text-sm font-bold text-green-600 hover:bg-green-100 transition-colors shadow-sm">
@@ -26,68 +28,144 @@
     </div>
   </div>
 
+  <!-- ALERTA GLOBAL -->
+  @if (globalMsg) {
+    <div [ngClass]="globalMsgType === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'" class="mb-4 rounded-lg border p-4 text-sm font-bold shadow-sm transition-all flex items-center gap-3">
+      {{ globalMsg }}
+    </div>
+  }
+
+  <!-- INDICADOR DE CARGA GLOBAL -->
+  @if (isLoading) {
+    <div class="mb-6 rounded-lg bg-brand-50 p-4 text-center text-sm font-bold text-brand-600 border border-brand-200 animate-pulse">
+      Sincronizando métricas con la base de datos...
+    </div>
+  }
+
+  <!-- GRÁFICOS -->
   <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
     
+    <!-- INGRESOS -->
     <div class="col-span-1 md:col-span-2 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 transition-all hover:shadow-md">
-      <div class="mb-4">
-        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Flujo de Ingresos Recaudados</h3>
-        <p class="text-sm text-gray-500">Métricas de caja (Adelantos y Saldos completados) durante el período seleccionado.</p>
+      <div class="mb-4 flex justify-between items-start">
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white">Flujo de Ingresos Recaudados</h3>
+          <p class="text-sm text-gray-500">Métricas de caja (pagos completados) en el período seleccionado.</p>
+        </div>
+        <div class="text-right">
+          <p class="text-xs font-bold text-gray-400 uppercase">Total Recaudado</p>
+          <p class="text-xl font-black text-green-600">S/ {{ totalIngresos.toFixed(2) }}</p>
+        </div>
       </div>
-      <apx-chart 
-        [series]="chartIngresos.series" 
-        [chart]="chartIngresos.chart" 
-        [xaxis]="chartIngresos.xaxis" 
-        [yaxis]="chartIngresos.yaxis" 
-        [dataLabels]="chartIngresos.dataLabels" 
-        [stroke]="chartIngresos.stroke" 
-        [colors]="chartIngresos.colors" 
-        [fill]="chartIngresos.fill">
-      </apx-chart>
+      @if (totalIngresos > 0) {
+        <apx-chart 
+          [series]="chartIngresos.series" 
+          [chart]="chartIngresos.chart" 
+          [xaxis]="chartIngresos.xaxis" 
+          [yaxis]="chartIngresos.yaxis" 
+          [dataLabels]="chartIngresos.dataLabels" 
+          [stroke]="chartIngresos.stroke" 
+          [colors]="chartIngresos.colors" 
+          [fill]="chartIngresos.fill">
+        </apx-chart>
+      } @else if (!isLoading) {
+        <div class="h-64 flex items-center justify-center text-gray-400 text-sm font-medium border-2 border-dashed rounded-xl mt-4 border-gray-200 dark:border-gray-800">
+          No hay ingresos registrados en este período.
+        </div>
+      }
     </div>
 
+    <!-- ESPECIALIDADES -->
     <div class="col-span-1 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 transition-all hover:shadow-md flex flex-col">
       <div class="mb-4">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white">Demanda por Especialidad</h3>
         <p class="text-sm text-gray-500">Distribución de citas generadas.</p>
       </div>
       <div class="flex-1 flex items-center justify-center">
-        <apx-chart 
-          [series]="chartEspecialidades.series" 
-          [chart]="chartEspecialidades.chart" 
-          [labels]="chartEspecialidades.labels" 
-          [colors]="chartEspecialidades.colors" 
-          [plotOptions]="chartEspecialidades.plotOptions" 
-          [legend]="chartEspecialidades.legend" 
-          [dataLabels]="chartEspecialidades.dataLabels">
-        </apx-chart>
+        @if (chartEspecialidades?.series?.length > 0) {
+          <apx-chart 
+            [series]="chartEspecialidades.series" 
+            [chart]="chartEspecialidades.chart" 
+            [labels]="chartEspecialidades.labels" 
+            [colors]="chartEspecialidades.colors" 
+            [plotOptions]="chartEspecialidades.plotOptions" 
+            [legend]="chartEspecialidades.legend" 
+            [dataLabels]="chartEspecialidades.dataLabels">
+          </apx-chart>
+        } @else if (!isLoading) {
+          <div class="w-full h-48 flex items-center justify-center text-gray-400 text-sm font-medium border-2 border-dashed rounded-xl border-gray-200 dark:border-gray-800">
+            Sin datos de citas.
+          </div>
+        }
       </div>
     </div>
 
+    <!-- ESTADO DE CITAS -->
     <div class="col-span-1 md:col-span-2 xl:col-span-3 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 transition-all hover:shadow-md">
-      <div class="mb-4">
-        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Eficacia Operativa de Citas</h3>
-        <p class="text-sm text-gray-500">Relación directa entre los pacientes atendidos con éxito frente a las inasistencias o cancelaciones.</p>
+      <div class="mb-4 flex justify-between items-start">
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white">Eficacia Operativa de Citas</h3>
+          <p class="text-sm text-gray-500">Relación directa entre los pacientes atendidos con éxito frente a las inasistencias o cancelaciones.</p>
+        </div>
+        <div class="text-right">
+          <p class="text-xs font-bold text-gray-400 uppercase">Total Citas</p>
+          <p class="text-xl font-black text-brand-600">{{ totalCitasFiltro }}</p>
+        </div>
       </div>
-      <apx-chart 
-        [series]="chartCitas.series" 
-        [chart]="chartCitas.chart" 
-        [xaxis]="chartCitas.xaxis" 
-        [colors]="chartCitas.colors" 
-        [plotOptions]="chartCitas.plotOptions" 
-        [dataLabels]="chartCitas.dataLabels" 
-        [legend]="chartCitas.legend"
-        [tooltip]="chartCitas.tooltip">
-      </apx-chart>
+      @if (totalCitasFiltro > 0) {
+        <apx-chart 
+          [series]="chartCitas.series" 
+          [chart]="chartCitas.chart" 
+          [xaxis]="chartCitas.xaxis" 
+          [colors]="chartCitas.colors" 
+          [plotOptions]="chartCitas.plotOptions" 
+          [dataLabels]="chartCitas.dataLabels" 
+          [legend]="chartCitas.legend"
+          [tooltip]="chartCitas.tooltip">
+        </apx-chart>
+      } @else if (!isLoading) {
+        <div class="h-48 flex items-center justify-center text-gray-400 text-sm font-medium border-2 border-dashed rounded-xl mt-4 border-gray-200 dark:border-gray-800">
+          No hay citas registradas en este período.
+        </div>
+      }
     </div>
 
   </div>
 
+  <!-- TOP PACIENTES FRECUENTES -->
   <div class="mt-6 rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-white/[0.02]">
-      <h3 class="text-base font-bold text-gray-900 dark:text-white">Lista de Pacientes Frecuentes</h3>
+    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-white/[0.02] flex justify-between items-center">
+      <h3 class="text-base font-bold text-gray-900 dark:text-white">Top 5 Pacientes Frecuentes</h3>
+      <span class="text-xs font-semibold text-gray-500 bg-gray-200 px-2 py-1 rounded-md dark:bg-gray-800">Según citas agendadas</span>
     </div>
-    <div class="p-10 text-center text-gray-400 font-medium">
-      Esta sección se llenará de vida en cuanto conectemos la tabla con la base de datos PostgreSQL.
+    
+    <div class="max-w-full overflow-x-auto">
+      <table class="w-full table-auto text-left">
+        <thead>
+          <tr class="border-b border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900 text-xs text-gray-400 uppercase tracking-wider">
+            <th class="px-6 py-3 font-bold">Paciente</th>
+            <th class="px-6 py-3 font-bold text-center">DNI</th>
+            <th class="px-6 py-3 font-bold text-center">Citas Totales</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          @if (isLoading) {
+            <tr><td colspan="3" class="px-6 py-6 text-center text-brand-500 animate-pulse text-sm font-medium">Procesando ranking...</td></tr>
+          } @else {
+            @for (paciente of pacientesFrecuentes; track paciente.dni) {
+              <tr class="hover:bg-gray-50 dark:hover:bg-white/[0.01] transition-colors">
+                <td class="px-6 py-4 text-sm font-bold text-gray-900 dark:text-white capitalize">{{ paciente.nombre }}</td>
+                <td class="px-6 py-4 text-sm text-gray-500 text-center">{{ paciente.dni }}</td>
+                <td class="px-6 py-4 text-sm text-center font-bold text-brand-600">
+                  <span class="bg-brand-50 border border-brand-100 px-3 py-1 rounded-lg dark:bg-brand-900/20 dark:border-brand-800">{{ paciente.totalCitas }} atenciones</span>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="3" class="px-6 py-8 text-center text-sm text-gray-400">No hay atenciones en el rango de fechas seleccionado.</td></tr>
+            }
+          }
+        </tbody>
+      </table>
     </div>
   </div>
 
