@@ -7,8 +7,8 @@ import com.example.GestionClinica.repository.PacienteRepository;
 import com.example.GestionClinica.repository.PagoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDate;
+
 
 @Service
 public class DashboardService {
@@ -27,6 +27,12 @@ public class DashboardService {
         metrics.setCitasHoy(citaRepository.countByFecha(hoy));
         metrics.setCitasPendientesHoy(citaRepository.countByFechaAndEstado(hoy, "PENDIENTE"));
         metrics.setIngresosHoy(pagoRepository.sumarIngresosPorFecha(hoy));
+
+        metrics.setCitasCompletadasHoy(citaRepository.countByFechaAndEstado(hoy, "COMPLETADA"));
+        metrics.setCitasCanceladasHoy(citaRepository.countByFechaAndEstado(hoy, "CANCELADA"));
+
+        LocalDate inicioMes = hoy.withDayOfMonth(1);
+        metrics.setNuevosPacientesMes(pacienteRepository.countByFechaRegistroGreaterThanEqual(inicioMes));
 
         return metrics;
     }

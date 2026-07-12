@@ -63,4 +63,12 @@ public class Paciente {
 
     @Column(length = 15, nullable = false)
     private String estado = "ACTIVO"; // Control de estado para borrado lógico
+
+    @Column(name = "fecha_registro", updatable = false)
+    private LocalDate fechaRegistro;
+
+    @PrePersist
+    protected void onCreate() {
+        this.fechaRegistro = LocalDate.now(); // Asigna la fecha actual automáticamente al guardar
+    }
 }

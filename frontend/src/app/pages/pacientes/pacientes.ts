@@ -11,12 +11,14 @@ import { PacienteService } from '../../shared/services/paciente.service';
   templateUrl: './pacientes.html'
 })
 export class PacientesComponent implements OnInit {
-  // Listas de datos
+  // Lista de datos original de la base de datos
   pacientes: Paciente[] = [];
-  pacientesFiltrados: Paciente[] = [];
   
-  // Filtro de búsqueda
-  filtroBusqueda: string = '';
+  // --- VARIABLES PARA TAILADMIN DATATABLES ---
+  searchTerm: string = '';
+  sortOrder: string = 'desc'; // 'desc' = Recién llegados, 'asc' = Antiguos
+  pageSize: number = 5;
+  currentPage: number = 1;
 
   // Control del Modal
   isModalOpen: boolean = false;
@@ -49,7 +51,6 @@ export class PacientesComponent implements OnInit {
     this.pacienteService.listarTodos().subscribe({
       next: (data) => {
         this.pacientes = data;
-        this.pacientesFiltrados = data;
         this.isLoading = false; 
         this.cdr.detectChanges();
       },
@@ -62,18 +63,51 @@ export class PacientesComponent implements OnInit {
     });
   }
 
-  filtrar(): void {
-    const busqueda = this.filtroBusqueda.toLowerCase().trim();
-    if (!busqueda) {
-      this.pacientesFiltrados = this.pacientes;
-    } else {
-      this.pacientesFiltrados = this.pacientes.filter(p => 
-        p.nombres.toLowerCase().includes(busqueda) ||
-        p.apellidoPaterno.toLowerCase().includes(busqueda) ||
-        p.dni.includes(busqueda)
+  // --- LÓGICA DE FILTRADO, ORDENAMIENTO Y PAGINACIÓN TAILADMIN ---
+  get listaFiltrada(): Paciente[] {
+    let result = this.pacientes;
+
+    // 1. Buscador
+    if (this.searchTerm) {
+      const term = this.searchTerm.toLowerCase().trim();
+      result = result.filter(p => 
+        p.nombres.toLowerCase().includes(term) ||
+        p.apellidoPaterno.toLowerCase().includes(term) ||
+        p.dni.includes(term)
       );
     }
+
+    // 2. Ordenar Antiguos vs Recientes
+    result = result.sort((a, b) => {
+      const idA = a.idPaciente || 0;
+      const idB = b.idPaciente || 0;
+      return this.sortOrder === 'desc' ? idB - idA : idA - idB;
+    });
+
+    return result;
   }
+
+  get filteredPacientes(): Paciente[] {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    return this.listaFiltrada.slice(startIndex, startIndex + this.pageSize);
+  }
+
+  get totalEntradas(): number {
+    return this.listaFiltrada.length;
+  }
+
+  nextPage(): void {
+    if ((this.currentPage * this.pageSize) < this.totalEntradas) {
+      this.currentPage++;
+    }
+  }
+
+  prevPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+    }
+  }
+  // -------------------------------------------------------------
 
   openModal(paciente?: Paciente): void {
     this.errorMsg = '';
@@ -159,8 +193,11 @@ export class PacientesComponent implements OnInit {
           this.cargarPacientes();
         },
         error: (err) => {
-          if (err.status === 400) {
-            this.errorMsg = 'El DNI ingresado ya se encuentra registrado.';
+          // CORRECCIÓN PARA DIFERENCIAR ERRORES (FECHA VS DNI)
+          if (err.status === 400 && err.error && err.error.message) {
+            this.errorMsg = err.error.message;
+          } else if (err.status === 400) {
+            this.errorMsg = 'Hay un error en los datos (revisa que la fecha tenga el formato correcto).';
           } else {
             this.errorMsg = 'Error al guardar la ficha del paciente.';
           }
