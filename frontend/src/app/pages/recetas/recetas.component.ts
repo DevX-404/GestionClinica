@@ -5,7 +5,7 @@ import { RecetaMedicaService } from '../../shared/services/receta-medica.service
 
 export interface PacienteAgrupado {
   nombrePaciente: string;
-  dniPaciente: string; // <--- NUEVO
+  dniPaciente: string; 
   ultimaEmision: string;
   totalRecetas: number;
   recetas: any[];
@@ -23,7 +23,12 @@ export class RecetasComponent implements OnInit {
   
   pacientesAgrupados: PacienteAgrupado[] = [];
   pacientesFiltrados: PacienteAgrupado[] = [];
+  pacientesPaginados: PacienteAgrupado[] = []; // NUEVO: Para la paginación de la tabla
+  
+  // Controles de Paginación y Búsqueda
   searchTerm: string = '';
+  itemsPorPagina: number = 5;
+  paginaActual: number = 1;
   
   isLoading = false;
   isModalOpen = false;
@@ -73,7 +78,7 @@ export class RecetasComponent implements OnInit {
       if (!grupos[nombre]) {
         grupos[nombre] = {
           nombrePaciente: nombre,
-          dniPaciente: r.dniPaciente || 'Sin DNI', // <--- NUEVO
+          dniPaciente: r.dniPaciente || 'Sin DNI', 
           ultimaEmision: r.fechaEmision,
           totalRecetas: 0,
           recetas: []
@@ -85,6 +90,9 @@ export class RecetasComponent implements OnInit {
 
     this.pacientesAgrupados = Object.values(grupos);
     this.pacientesFiltrados = [...this.pacientesAgrupados];
+    
+    // Iniciar la tabla
+    this.actualizarTabla();
   }
 
   usarDatosDePrueba() {
@@ -104,13 +112,57 @@ export class RecetasComponent implements OnInit {
   }
 
   buscar() {
-    const term = this.searchTerm.toLowerCase();
-    this.pacientesFiltrados = this.pacientesAgrupados.filter(p => 
-      p.nombrePaciente.toLowerCase().includes(term) ||
-      p.ultimaEmision.includes(term) ||
-      p.dniPaciente.includes(term) 
-    );
+    const term = this.searchTerm.toLowerCase().trim();
+    if (!term) {
+      this.pacientesFiltrados = [...this.pacientesAgrupados];
+    } else {
+      this.pacientesFiltrados = this.pacientesAgrupados.filter(p => 
+        p.nombrePaciente.toLowerCase().includes(term) ||
+        p.ultimaEmision.includes(term) ||
+        p.dniPaciente.includes(term) 
+      );
+    }
+    
+    // Regresamos a la primera página tras buscar y actualizamos tabla
+    this.paginaActual = 1;
+    this.actualizarTabla();
   }
+
+  // --- LÓGICA DE PAGINACIÓN ---
+  actualizarTabla(): void {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    const fin = inicio + Number(this.itemsPorPagina);
+    this.pacientesPaginados = this.pacientesFiltrados.slice(inicio, fin);
+  }
+
+  cambiarPaginacion(): void {
+    this.paginaActual = 1;
+    this.actualizarTabla();
+  }
+
+  paginaAnterior(): void {
+    if (this.paginaActual > 1) {
+      this.paginaActual--;
+      this.actualizarTabla();
+    }
+  }
+
+  paginaSiguiente(): void {
+    if ((this.paginaActual * this.itemsPorPagina) < this.pacientesFiltrados.length) {
+      this.paginaActual++;
+      this.actualizarTabla();
+    }
+  }
+
+  calcularRangoInicio(): number {
+    return this.pacientesFiltrados.length === 0 ? 0 : ((this.paginaActual - 1) * this.itemsPorPagina) + 1;
+  }
+
+  calcularRangoFin(): number {
+    const fin = this.paginaActual * this.itemsPorPagina;
+    return fin > this.pacientesFiltrados.length ? this.pacientesFiltrados.length : fin;
+  }
+  // --- FIN LÓGICA DE PAGINACIÓN ---
 
   verExpediente(paciente: PacienteAgrupado) {
     this.pacienteSeleccionado = paciente;

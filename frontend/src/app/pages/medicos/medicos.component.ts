@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule,ReactiveFormsModule,FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MedicoService } from '../../shared/services/medico.service';
 import { EspecialidadService } from '../../shared/services/especialidad.service';
 import { HorarioMedicoService } from '../../shared/services/horario-medico.service';
@@ -11,7 +11,7 @@ import { HorarioMedico } from '../../shared/models/horario-medico.model';
 @Component({
   selector: 'app-medicos',
   standalone: true,
-  imports: [CommonModule, FormsModule,ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './medicos.component.html'
 })
 export class MedicosComponent implements OnInit {
@@ -21,12 +21,19 @@ export class MedicosComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
   private fb = inject(FormBuilder);
 
+  // DATOS
   medicos: Medico[] = [];
   medicosFiltrados: Medico[] = [];
+  medicosPaginados: Medico[] = []; // NUEVO: Para la paginación de la tabla
   especialidades: Especialidad[] = [];
   horarios: HorarioMedico[] = [];
   
+  // CONTROLES DE LA TABLA
   searchTerm: string = '';
+  filtroEstado: string = ''; // NUEVO: Para filtrar por disponibilidad
+  itemsPorPagina: number = 5;
+  paginaActual: number = 1;
+
   isLoading: boolean = false;
   isLoadingHorarios: boolean = false;
   
@@ -44,9 +51,8 @@ export class MedicosComponent implements OnInit {
   medicoSeleccionado?: Medico;
   errorScheduleMsg: string = '';
   
-  // --- AHORA USAMOS FECHA EXACTA EN LUGAR DE DÍA ---
   horarioForm = {
-    fechaTurno: '', // YYYY-MM-DD
+    fechaTurno: '', 
     horaInicio: '',
     horaFin: ''
   };
@@ -65,14 +71,14 @@ export class MedicosComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Es importante cargar primero las especialidades para poder cruzar los nombres en la tabla
     this.cargarEspecialidades();
     this.cargarMedicos();
   }
 
-  // --- TRADUCTOR DE FECHAS (Magia de Angular) ---
   formatearFechaLarga(fechaIso: string): string {
     if(!fechaIso || !fechaIso.includes('-')) return fechaIso; 
-    const fecha = new Date(fechaIso + 'T00:00:00'); // Evitamos problemas de zona horaria
+    const fecha = new Date(fechaIso + 'T00:00:00'); 
     const opciones: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     let texto = fecha.toLocaleDateString('es-PE', opciones);
     return texto;
@@ -85,14 +91,24 @@ export class MedicosComponent implements OnInit {
     });
   }
 
+  // --- FUNCIÓN PARA OBTENER EL NOMBRE DE LA ESPECIALIDAD ---
+  getNombreEspecialidad(idEspecialidad: number): string {
+    const esp = this.especialidades.find(e => e.idEspecialidad === idEspecialidad);
+    return esp ? esp.nombre : 'Sin Especialidad';
+  }
+
   cargarMedicos(): void {
     this.isLoading = true;
     this.cdr.detectChanges();
 
     this.medicoService.listarTodos().subscribe({
       next: (data) => {
-        this.medicos = data;
-        this.medicosFiltrados = data;
+        // Orden de llegada: Los ID más altos (más recientes) arriba
+        const dataOrdenada = data.sort((a, b) => (b.idMedico || 0) - (a.idMedico || 0));
+        
+        this.medicos = dataOrdenada;
+        this.filtrar(); // Llamamos al filtro para que inicialice la tabla
+        
         this.isLoading = false;
         this.cdr.detectChanges();
       },
@@ -104,14 +120,68 @@ export class MedicosComponent implements OnInit {
     });
   }
 
+  // --- BUSCADOR Y FILTROS CORREGIDOS ---
   filtrar(): void {
-    const term = this.searchTerm.toLowerCase();
-    this.medicosFiltrados = this.medicos.filter(m => 
-      m.nombres.toLowerCase().includes(term) ||
-      m.apellidoPaterno.toLowerCase().includes(term) ||
-      m.codigoColegiatura.toLowerCase().includes(term)
-    );
+    const term = this.searchTerm.toLowerCase().trim();
+
+    this.medicosFiltrados = this.medicos.filter(m => {
+      const nombreCompleto = `${m.nombres} ${m.apellidoPaterno} ${m.apellidoMaterno}`.toLowerCase();
+      const cmp = (m.codigoColegiatura || '').toLowerCase();
+      const especialidad = this.getNombreEspecialidad(m.idEspecialidad).toLowerCase(); // Ahora cruzamos la especialidad
+      const estado = m.estadoDisponibilidad || '';
+
+      // Match Buscador de texto (Nombre, CMP o Especialidad)
+      const matchSearch = term === '' || 
+                          nombreCompleto.includes(term) || 
+                          cmp.includes(term) || 
+                          especialidad.includes(term);
+      
+      // Match Select de Disponibilidad
+      const matchEstado = this.filtroEstado === '' || estado === this.filtroEstado;
+
+      return matchSearch && matchEstado;
+    });
+
+    // Resetear paginación al buscar
+    this.paginaActual = 1;
+    this.actualizarTabla();
   }
+
+  // --- LÓGICA DE PAGINACIÓN ---
+  actualizarTabla(): void {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    const fin = inicio + Number(this.itemsPorPagina);
+    this.medicosPaginados = this.medicosFiltrados.slice(inicio, fin);
+  }
+
+  cambiarPaginacion(): void {
+    this.paginaActual = 1;
+    this.actualizarTabla();
+  }
+
+  paginaAnterior(): void {
+    if (this.paginaActual > 1) {
+      this.paginaActual--;
+      this.actualizarTabla();
+    }
+  }
+
+  paginaSiguiente(): void {
+    if ((this.paginaActual * this.itemsPorPagina) < this.medicosFiltrados.length) {
+      this.paginaActual++;
+      this.actualizarTabla();
+    }
+  }
+
+  calcularRangoInicio(): number {
+    return this.medicosFiltrados.length === 0 ? 0 : ((this.paginaActual - 1) * this.itemsPorPagina) + 1;
+  }
+
+  calcularRangoFin(): number {
+    const fin = this.paginaActual * this.itemsPorPagina;
+    return fin > this.medicosFiltrados.length ? this.medicosFiltrados.length : fin;
+  }
+  // --- FIN LÓGICA PAGINACIÓN ---
 
   generarCMPAleatorio(): string {
     const numeroAleatorio = Math.floor(10000 + Math.random() * 90000); 

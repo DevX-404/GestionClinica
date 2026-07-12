@@ -16,7 +16,12 @@ export class HistoriaClinicaComponent implements OnInit {
 
   expedientes: any[] = [];
   expedientesFiltrados: any[] = [];
+  expedientesPaginados: any[] = []; // NUEVO: Para la paginación de la tabla
+  
+  // Controles de Paginación y Búsqueda
   searchTerm: string = '';
+  itemsPorPagina: number = 5;
+  paginaActual: number = 1;
   
   isLoading = false;
   isModalOpen = false;
@@ -33,6 +38,10 @@ export class HistoriaClinicaComponent implements OnInit {
       next: (data: any[]) => {
         this.expedientes = data;
         this.expedientesFiltrados = data;
+        
+        // Iniciar la tabla
+        this.actualizarTabla();
+
         this.isLoading = false;
         this.cdr.detectChanges();
       },
@@ -44,16 +53,62 @@ export class HistoriaClinicaComponent implements OnInit {
     });
   }
 
+  // --- BUSCADOR CORREGIDO ---
   buscar() {
-    const term = this.searchTerm.toLowerCase();
-    this.expedientesFiltrados = this.expedientes.filter(e => {
-      const nombre = (e.nombreCompletoPaciente || e.paciente?.nombres || '').toLowerCase();
-      const dni = e.paciente?.dni || e.dniPaciente || '';
-      const id = e.idHistoriaClinica ? e.idHistoriaClinica.toString() : '';
-      
-      return nombre.includes(term) || dni.includes(term) || id.includes(term);
-    });
+    const term = this.searchTerm.toLowerCase().trim();
+    if (!term) {
+      this.expedientesFiltrados = [...this.expedientes];
+    } else {
+      // Las variables coinciden ahora con las que se muestran en el HTML
+      this.expedientesFiltrados = this.expedientes.filter(e => {
+        const nombre = (e.nombreCompletoPaciente || '').toLowerCase();
+        const dni = (e.dni || '').toLowerCase();
+        const expediente = (e.numeroExpediente || '').toLowerCase();
+        
+        return nombre.includes(term) || dni.includes(term) || expediente.includes(term);
+      });
+    }
+
+    // Regresamos a la primera página tras buscar y actualizamos tabla
+    this.paginaActual = 1;
+    this.actualizarTabla();
   }
+
+  // --- LÓGICA DE PAGINACIÓN ---
+  actualizarTabla(): void {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    const fin = inicio + Number(this.itemsPorPagina);
+    this.expedientesPaginados = this.expedientesFiltrados.slice(inicio, fin);
+  }
+
+  cambiarPaginacion(): void {
+    this.paginaActual = 1;
+    this.actualizarTabla();
+  }
+
+  paginaAnterior(): void {
+    if (this.paginaActual > 1) {
+      this.paginaActual--;
+      this.actualizarTabla();
+    }
+  }
+
+  paginaSiguiente(): void {
+    if ((this.paginaActual * this.itemsPorPagina) < this.expedientesFiltrados.length) {
+      this.paginaActual++;
+      this.actualizarTabla();
+    }
+  }
+
+  calcularRangoInicio(): number {
+    return this.expedientesFiltrados.length === 0 ? 0 : ((this.paginaActual - 1) * this.itemsPorPagina) + 1;
+  }
+
+  calcularRangoFin(): number {
+    const fin = this.paginaActual * this.itemsPorPagina;
+    return fin > this.expedientesFiltrados.length ? this.expedientesFiltrados.length : fin;
+  }
+  // --- FIN LÓGICA DE PAGINACIÓN ---
 
   verHistorial(exp: any) {
     // Clonamos el expediente para no alterar los datos en crudo de la tabla

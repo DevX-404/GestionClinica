@@ -1,5 +1,6 @@
 <div class="mx-auto max-w-7xl p-4 md:p-6 2xl:p-10">
   
+  <!-- ENCABEZADO PRINCIPAL -->
   <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <h2 class="text-2xl font-bold text-black dark:text-white">Recetas Médicas Emitidas</h2>
@@ -7,16 +8,39 @@
     </div>
   </div>
 
-  <div class="mb-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.02]">
-    <div class="relative w-full max-w-md">
-      <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-      </span>
-      <input type="text" [(ngModel)]="searchTerm" (input)="buscar()" placeholder="Buscar por Nombre o DNI..." class="w-full rounded-lg border border-gray-300 bg-transparent py-2.5 pl-12 pr-4 text-sm text-black outline-none transition focus:border-brand-500 dark:border-gray-700 dark:text-white dark:focus:border-brand-500" />
-    </div>
-  </div>
+  <!-- CONTENEDOR DATA-TABLE -->
+  <div class="rounded-2xl border border-gray-200 bg-white shadow-theme-xl dark:border-gray-800 dark:bg-gray-900 overflow-hidden mb-6">
+    
+    <!-- CONTROLES SUPERIORES (Mostrar X entradas y Buscador) -->
+    <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+        <span>Mostrar</span>
+        <select 
+          [(ngModel)]="itemsPorPagina" 
+          (change)="cambiarPaginacion()"
+          class="border border-gray-300 rounded-md px-2 py-1 outline-none focus:border-brand-500 dark:bg-gray-800 dark:border-gray-700">
+          <option [value]="5">5</option>
+          <option [value]="10">10</option>
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+        </select>
+        <span>entradas</span>
+      </div>
 
-  <div class="rounded-2xl border border-gray-200 bg-white shadow-theme-xl dark:border-gray-800 dark:bg-white/[0.02] overflow-hidden">
+      <div class="relative w-full sm:w-80">
+        <input 
+          type="text" 
+          [(ngModel)]="searchTerm" 
+          (input)="buscar()" 
+          placeholder="Buscar por Nombre o DNI..." 
+          class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white transition-all" />
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute left-3 top-2.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- TABLA DE RECETAS -->
     <div class="max-w-full overflow-x-auto">
       <table class="w-full table-auto text-left">
         <thead>
@@ -37,7 +61,8 @@
               </td>
             </tr>
           } @else {
-            @for (p of pacientesFiltrados; track p.nombrePaciente) {
+            <!-- Iteramos sobre pacientesPaginados en lugar de filtrados -->
+            @for (p of pacientesPaginados; track p.nombrePaciente) {
               <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors">
                 
                 <td class="px-6 py-4">
@@ -69,7 +94,7 @@
               </tr>
             } @empty {
               <tr>
-                <td colspan="5" class="px-6 py-10 text-center text-base text-gray-400">
+                <td colspan="5" class="px-6 py-10 text-center text-sm text-gray-400">
                   No se encontraron pacientes con recetas médicas.
                 </td>
               </tr>
@@ -78,8 +103,30 @@
         </tbody>
       </table>
     </div>
+
+    <!-- CONTROLES INFERIORES (Paginación Footer) -->
+    <div *ngIf="!isLoading" class="p-4 border-t border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-center gap-4 bg-white dark:bg-gray-900 text-sm text-gray-600 dark:text-gray-400">
+      <div>
+        Mostrando {{ calcularRangoInicio() }} a {{ calcularRangoFin() }} de {{ pacientesFiltrados.length }} entradas
+      </div>
+      <div class="flex gap-2">
+        <button 
+          (click)="paginaAnterior()" 
+          [disabled]="paginaActual === 1"
+          class="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-gray-700 dark:hover:bg-gray-800">
+          Anterior
+        </button>
+        <button 
+          (click)="paginaSiguiente()" 
+          [disabled]="paginaActual * itemsPorPagina >= pacientesFiltrados.length"
+          class="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-gray-700 dark:hover:bg-gray-800">
+          Siguiente
+        </button>
+      </div>
+    </div>
   </div>
 
+  <!-- INICIO MODAL DE DETALLES (INTACTO) -->
   @if (isModalOpen) {
     <div class="fixed inset-0 z-99999 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
       <div class="w-full max-w-4xl rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-xl dark:border-gray-800 dark:bg-gray-dark max-h-[90vh] overflow-y-auto">

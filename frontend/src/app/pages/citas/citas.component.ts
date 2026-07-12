@@ -22,10 +22,16 @@ export class CitasComponent implements OnInit {
   private horarioService = inject(HorarioMedicoService);
   private cdr = inject(ChangeDetectorRef);
   
+  // DATOS DE CITAS
   citas: any[] = [];
   citasFiltradas: any[] = []; 
+  citasPaginadas: any[] = []; // NUEVO: Para la paginación de la tabla
+  
+  // CONTROLES DE LA TABLA
   searchTermCitas: string = ''; 
   cargandoCitas: boolean = false; 
+  itemsPorPagina: number = 5;
+  paginaActual: number = 1;
 
   pacientes: any[] = [];
   especialidades: any[] = [];
@@ -34,7 +40,7 @@ export class CitasComponent implements OnInit {
   isModalOpen: boolean = false;
   pasoActual: 1 | 2 = 1; 
   mostrarAlertaRegistro: boolean = false;
-  validandoHorarioBackend: boolean = false; // <-- Control visual de espera
+  validandoHorarioBackend: boolean = false;
   
   dniBusqueda: string = '';
   sugerenciasDni: any[] = [];
@@ -45,7 +51,7 @@ export class CitasComponent implements OnInit {
     nombres: '',
     apellidoPaterno: '',
     telefono: '',
-    fechaNacimiento: '2000-01-01' // Por defecto para evitar nulos
+    fechaNacimiento: '2000-01-01' 
   };
 
   especialidadBusqueda: string = '';
@@ -79,7 +85,7 @@ export class CitasComponent implements OnInit {
     fecha: '',
     hora: '',
     motivoConsulta: '',
-    tipoCita: 'CONSULTA', // <-- NUEVO: Por defecto es una consulta estándar
+    tipoCita: 'CONSULTA', 
     montoPagadoAdelanto: 0,
     estado: 'PENDIENTE_PAGO'
   };
@@ -89,7 +95,6 @@ export class CitasComponent implements OnInit {
     this.cargarCitas();
   }
 
-  // Traductor visual de Fechas
   formatearFechaLarga(fechaIso: string): string {
     if(!fechaIso || !fechaIso.includes('-')) return fechaIso; 
     const fecha = new Date(fechaIso + 'T00:00:00');
@@ -106,6 +111,10 @@ export class CitasComponent implements OnInit {
         const dataOrdenada = data.sort((a: any, b: any) => b.idCita - a.idCita);
         this.citas = dataOrdenada;
         this.citasFiltradas = dataOrdenada; 
+        
+        // INICIALIZAR LA PAGINACIÓN
+        this.actualizarTabla();
+        
         this.cargandoCitas = false;
         this.cdr.detectChanges();
       },
@@ -119,21 +128,65 @@ export class CitasComponent implements OnInit {
     this.medicoService.listarTodos().subscribe(data => this.medicos = data);
   }
 
+  // --- BUSCADOR CORREGIDO ---
   filtrarCitas(): void {
     const term = this.searchTermCitas.toLowerCase().trim();
-    if (!term) { this.citasFiltradas = [...this.citas]; return; }
-    const pacientesEncontrados = this.pacientes.filter(p => p.dni && p.dni.includes(term));
-    const idsPacientes = pacientesEncontrados.map(p => p.idPaciente);
-
-    this.citasFiltradas = this.citas.filter(c => 
-      (c.nombreCompletoPaciente && c.nombreCompletoPaciente.toLowerCase().includes(term)) ||
-      (c.nombreCompletoMedico && c.nombreCompletoMedico.toLowerCase().includes(term)) ||
-      (c.nombreEspecialidad && c.nombreEspecialidad.toLowerCase().includes(term)) ||
-      (c.estado && c.estado.toLowerCase().includes(term)) ||
-      (c.fecha && c.fecha.includes(term)) ||
-      (idsPacientes.includes(c.idPaciente)) 
-    );
+    if (!term) { 
+      this.citasFiltradas = [...this.citas]; 
+    } else {
+      // Ahora buscamos directamente dentro de las propiedades de la cita, 
+      // esto soluciona el problema de que el DNI completo no daba resultados.
+      this.citasFiltradas = this.citas.filter(c => 
+        (c.nombreCompletoPaciente && c.nombreCompletoPaciente.toLowerCase().includes(term)) ||
+        (c.nombreCompletoMedico && c.nombreCompletoMedico.toLowerCase().includes(term)) ||
+        (c.nombreEspecialidad && c.nombreEspecialidad.toLowerCase().includes(term)) ||
+        (c.estado && c.estado.toLowerCase().includes(term)) ||
+        (c.fecha && c.fecha.includes(term)) ||
+        (c.dniPaciente && c.dniPaciente.toLowerCase().includes(term)) // <-- ¡Aquí estaba el truco!
+      );
+    }
+    
+    // Regresamos a la primera página tras buscar y actualizamos tabla
+    this.paginaActual = 1;
+    this.actualizarTabla();
   }
+
+  // --- LÓGICA DE PAGINACIÓN ---
+  actualizarTabla(): void {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    const fin = inicio + Number(this.itemsPorPagina);
+    this.citasPaginadas = this.citasFiltradas.slice(inicio, fin);
+  }
+
+  cambiarPaginacion(): void {
+    this.paginaActual = 1;
+    this.actualizarTabla();
+  }
+
+  paginaAnterior(): void {
+    if (this.paginaActual > 1) {
+      this.paginaActual--;
+      this.actualizarTabla();
+    }
+  }
+
+  paginaSiguiente(): void {
+    if ((this.paginaActual * this.itemsPorPagina) < this.citasFiltradas.length) {
+      this.paginaActual++;
+      this.actualizarTabla();
+    }
+  }
+
+  calcularRangoInicio(): number {
+    return this.citasFiltradas.length === 0 ? 0 : ((this.paginaActual - 1) * this.itemsPorPagina) + 1;
+  }
+
+  calcularRangoFin(): number {
+    const fin = this.paginaActual * this.itemsPorPagina;
+    return fin > this.citasFiltradas.length ? this.citasFiltradas.length : fin;
+  }
+  // --- FIN LÓGICA DE PAGINACIÓN ---
+
 
   buscarDniRealTime(): void {
     this.mostrarAlertaRegistro = false;
@@ -233,7 +286,6 @@ export class CitasComponent implements OnInit {
     });
   }
 
-  // --- VALIDACIÓN COMBINADA: Frontend (Rango) + Backend (Choque Operaciones) ---
   irAPagar(): void {
     if (this.esNuevoPaciente) {
       if (!this.nuevoPacienteForm.nombres || !this.nuevoPacienteForm.apellidoPaterno || !this.nuevoPacienteForm.telefono) {
@@ -252,7 +304,6 @@ export class CitasComponent implements OnInit {
       return;
     }
 
-    // 1. Validación de Frontend (Verificar que la hora esté dentro del turno del médico)
     if (this.horariosMedicoSeleccionado.length === 0) {
       this.mostrarMensajeGlobal('Este médico no tiene turnos programados en el sistema.', 'warning');
       return;
@@ -280,7 +331,6 @@ export class CitasComponent implements OnInit {
       return;
     }
 
-    // 2. Validación de Backend (Verificar que no haya choques con operaciones)
     this.validandoHorarioBackend = true;
     this.cdr.detectChanges();
 
@@ -309,61 +359,59 @@ export class CitasComponent implements OnInit {
   }
 
   confirmarPagoYape(): void {
+    const payloadRapido = {
+      dniPaciente: this.dniBusqueda,
 
-  const payloadRapido = {
-    dniPaciente: this.dniBusqueda,
+      nombresPaciente: this.esNuevoPaciente
+          ? this.nuevoPacienteForm.nombres
+          : this.pacienteSeleccionado?.nombres,
 
-    nombresPaciente: this.esNuevoPaciente
-        ? this.nuevoPacienteForm.nombres
-        : this.pacienteSeleccionado?.nombres,
+      apellidoPaterno: this.esNuevoPaciente
+          ? this.nuevoPacienteForm.apellidoPaterno
+          : this.pacienteSeleccionado?.apellidoPaterno,
 
-    apellidoPaterno: this.esNuevoPaciente
-        ? this.nuevoPacienteForm.apellidoPaterno
-        : this.pacienteSeleccionado?.apellidoPaterno,
+      apellidoMaterno: this.esNuevoPaciente
+          ? ''
+          : this.pacienteSeleccionado?.apellidoMaterno,
 
-    apellidoMaterno: this.esNuevoPaciente
-        ? ''
-        : this.pacienteSeleccionado?.apellidoMaterno,
+      telefonoPaciente: this.esNuevoPaciente
+          ? this.nuevoPacienteForm.telefono
+          : this.pacienteSeleccionado?.telefono,
 
-    telefonoPaciente: this.esNuevoPaciente
-        ? this.nuevoPacienteForm.telefono
-        : this.pacienteSeleccionado?.telefono,
+      fechaNacimiento: this.esNuevoPaciente 
+          ? this.nuevoPacienteForm.fechaNacimiento 
+          : (this.pacienteSeleccionado?.fechaNacimiento || '2000-01-01'),
 
-    // ¡NUEVO! Enviamos la fecha para que PostgreSQL no bote el error 500
-    fechaNacimiento: this.esNuevoPaciente 
-        ? this.nuevoPacienteForm.fechaNacimiento 
-        : (this.pacienteSeleccionado?.fechaNacimiento || '2000-01-01'),
+      idMedico: Number(this.citaForm.idMedico),
+      idEspecialidad: Number(this.citaForm.idEspecialidad),
 
-    idMedico: Number(this.citaForm.idMedico),
-    idEspecialidad: Number(this.citaForm.idEspecialidad),
+      fecha: this.citaForm.fecha,
 
-    fecha: this.citaForm.fecha,
+      hora: this.citaForm.hora.length === 5
+          ? `${this.citaForm.hora}:00`
+          : this.citaForm.hora,
 
-    hora: this.citaForm.hora.length === 5
-        ? `${this.citaForm.hora}:00`
-        : this.citaForm.hora,
+      motivoConsulta: this.citaForm.motivoConsulta,
+      tipoCita: this.citaForm.tipoCita,
+      montoPagadoAdelanto: this.montoAdelanto30
+    };
 
-    motivoConsulta: this.citaForm.motivoConsulta,
-    tipoCita: this.citaForm.tipoCita,
-    montoPagadoAdelanto: this.montoAdelanto30
-  };
-
-  this.citaService.programarCitaRapida(payloadRapido).subscribe({
-    next: () => {
-      this.mostrarMensajeGlobal('¡Cita y Paciente registrados con éxito!', 'success');
-      this.closeModal();
-      this.cargarCatalogos();
-      this.cargarCitas();
-    },
-    error: (err) => {
-      console.error(err);
-      this.mostrarMensajeGlobal(
-        'Error al registrar la cita. Revisa la conexión.',
-        'error'
-      );
-    }
-  });
-}
+    this.citaService.programarCitaRapida(payloadRapido).subscribe({
+      next: () => {
+        this.mostrarMensajeGlobal('¡Cita y Paciente registrados con éxito!', 'success');
+        this.closeModal();
+        this.cargarCatalogos();
+        this.cargarCitas();
+      },
+      error: (err) => {
+        console.error(err);
+        this.mostrarMensajeGlobal(
+          'Error al registrar la cita. Revisa la conexión.',
+          'error'
+        );
+      }
+    });
+  }
 
   exportarVoucherPDF(): void {
     this.mostrarMensajeGlobal('Preparando PDF...', 'info');

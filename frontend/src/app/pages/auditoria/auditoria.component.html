@@ -1,5 +1,6 @@
 <div class="mx-auto max-w-7xl p-4 md:p-6 2xl:p-10">
   
+  <!-- ENCABEZADO PRINCIPAL -->
   <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <h2 class="text-2xl font-bold text-black dark:text-white flex items-center gap-2">
@@ -8,13 +9,52 @@
       </h2>
       <p class="text-sm text-gray-500">Trazabilidad de seguridad de las operaciones del sistema.</p>
     </div>
-    <div class="flex items-center">
-      <input type="text" [(ngModel)]="searchTerm" (input)="filtrar()" placeholder="Filtrar por usuario, acción o módulo..."
-        class="w-full rounded-lg border border-gray-300 bg-transparent px-5 py-2.5 outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 sm:w-80" />
+
+    <!-- BOTÓN EXPORTAR EXCEL -->
+    <div class="flex items-center gap-3">
+      <button (click)="exportarExcel()" class="flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 transition-colors shadow-sm">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        Exportar Excel
+      </button>
     </div>
   </div>
 
-  <div class="rounded-2xl border border-gray-200 bg-white shadow-theme-sm dark:border-gray-800 dark:bg-gray-900 overflow-hidden">
+  <!-- CONTENEDOR DATA-TABLE -->
+  <div class="rounded-2xl border border-gray-200 bg-white shadow-theme-xl dark:border-gray-800 dark:bg-gray-900 overflow-hidden mb-6">
+    
+    <!-- CONTROLES SUPERIORES (Mostrar X entradas y Buscador) -->
+    <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-center gap-4">
+      
+      <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+        <span>Mostrar</span>
+        <select 
+          [(ngModel)]="itemsPorPagina" 
+          (change)="cambiarPaginacion()"
+          class="border border-gray-300 rounded-md px-2 py-1 outline-none focus:border-brand-500 dark:bg-gray-800 dark:border-gray-700">
+          <option [value]="5">5</option>
+          <option [value]="10">10</option>
+          <option [value]="20">20</option>
+          <option [value]="50">50</option>
+          <option [value]="100">100</option>
+        </select>
+        <span>entradas</span>
+      </div>
+
+      <div class="relative w-full sm:w-80">
+        <input 
+          type="text" 
+          [(ngModel)]="searchTerm" 
+          (input)="filtrar()" 
+          placeholder="Filtrar por usuario, acción o módulo..." 
+          class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white transition-all" />
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute left-3 top-2.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+
+    </div>
+
+    <!-- TABLA DE LOGS -->
     <div class="max-w-full overflow-x-auto">
       <table class="w-full table-auto text-left">
         <thead>
@@ -27,12 +67,14 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+          
           @if (isLoading) {
             <tr><td colspan="5" class="px-6 py-10 text-center text-sm font-medium text-brand-500 animate-pulse">Analizando trazas de seguridad...</td></tr>
           } @else {
-            @for (log of logsFiltrados; track log.idAuditoria) {
+            <!-- Iteramos sobre logsPaginados -->
+            @for (log of logsPaginados; track log.idAuditoria) {
               <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.01]">
-                <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-300">
+                <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-300 whitespace-nowrap">
                   {{ log.fechaHora | date:'dd/MM/yyyy HH:mm:ss' }}
                 </td>
                 <td class="px-6 py-4 text-sm font-bold text-gray-900 dark:text-white">
@@ -42,7 +84,7 @@
                   {{ log.entidad }}
                 </td>
                 <td class="px-6 py-4">
-                  <span [ngClass]="getColorAccion(log.accion)" class="inline-flex border rounded-md px-2.5 py-0.5 text-[10px] font-bold uppercase">
+                  <span [ngClass]="getColorAccion(log.accion)" class="inline-flex border rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider">
                     {{ log.accion }}
                   </span>
                 </td>
@@ -57,5 +99,21 @@
         </tbody>
       </table>
     </div>
+
+    <!-- CONTROLES INFERIORES (Paginación Footer) -->
+    <div *ngIf="!isLoading" class="p-4 border-t border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-center gap-4 bg-white dark:bg-gray-900 text-sm text-gray-600 dark:text-gray-400">
+      <div>
+        Mostrando {{ calcularRangoInicio() }} a {{ calcularRangoFin() }} de {{ logsFiltrados.length }} entradas
+      </div>
+      <div class="flex gap-2">
+        <button (click)="paginaAnterior()" [disabled]="paginaActual === 1" class="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-gray-700 dark:hover:bg-gray-800">
+          Anterior
+        </button>
+        <button (click)="paginaSiguiente()" [disabled]="paginaActual * itemsPorPagina >= logsFiltrados.length" class="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-gray-700 dark:hover:bg-gray-800">
+          Siguiente
+        </button>
+      </div>
+    </div>
+
   </div>
 </div>

@@ -14,9 +14,16 @@ export class SeguridadComponent implements OnInit {
   private usuarioService = inject(UsuarioService);
   private cdr = inject(ChangeDetectorRef);
 
+  // DATOS
   usuarios: Usuario[] = [];
   usuariosFiltrados: Usuario[] = [];
+  usuariosPaginados: Usuario[] = []; // NUEVO: Para la paginación de la tabla
+  
+  // CONTROLES DE LA TABLA
   searchTerm: string = '';
+  itemsPorPagina: number = 5;
+  paginaActual: number = 1;
+
   isLoading: boolean = false;
 
   // Alertas
@@ -32,7 +39,6 @@ export class SeguridadComponent implements OnInit {
   // Modal CRUD Usuarios
   isUserModalOpen: boolean = false;
   isEditMode: boolean = false;
-  // --- AÑADIMOS UNA VARIABLE PARA SABER SI DEBEMOS BLOQUEAR EL NOMBRE ---
   bloquearNombreEnEdicion: boolean = false;
   usuarioForm: any = { username: '', email: '', password: '', rol: 'RECEPCIONISTA', modulosAcceso: [] };
 
@@ -54,7 +60,7 @@ export class SeguridadComponent implements OnInit {
     this.usuarioService.listarTodos().subscribe({
       next: (data) => {
         this.usuarios = data;
-        this.usuariosFiltrados = data;
+        this.filtrar(); // Inicializa el filtrado y la paginación
         this.isLoading = false;
         this.cdr.detectChanges();
       },
@@ -66,15 +72,60 @@ export class SeguridadComponent implements OnInit {
     });
   }
 
+  // --- FILTRADO CORREGIDO CON PAGINACIÓN ---
   filtrar(): void {
-    const term = this.searchTerm.toLowerCase();
-    this.usuariosFiltrados = this.usuarios.filter(u => 
-      u.username.toLowerCase().includes(term) ||
-      u.email.toLowerCase().includes(term) ||
-      u.rol.toLowerCase().includes(term) ||
-      (u.nombreCompleto && u.nombreCompleto.toLowerCase().includes(term)) // Búsqueda extra por nombre
-    );
+    const term = this.searchTerm.toLowerCase().trim();
+    if (!term) {
+      this.usuariosFiltrados = [...this.usuarios];
+    } else {
+      this.usuariosFiltrados = this.usuarios.filter(u => 
+        u.username.toLowerCase().includes(term) ||
+        u.email.toLowerCase().includes(term) ||
+        u.rol.toLowerCase().includes(term) ||
+        (u.nombreCompleto && u.nombreCompleto.toLowerCase().includes(term)) // Búsqueda extra por nombre
+      );
+    }
+    
+    // Regresamos a la primera página tras buscar y actualizamos tabla
+    this.paginaActual = 1;
+    this.actualizarTabla();
   }
+
+  // --- LÓGICA DE PAGINACIÓN ---
+  actualizarTabla(): void {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    const fin = inicio + Number(this.itemsPorPagina);
+    this.usuariosPaginados = this.usuariosFiltrados.slice(inicio, fin);
+  }
+
+  cambiarPaginacion(): void {
+    this.paginaActual = 1;
+    this.actualizarTabla();
+  }
+
+  paginaAnterior(): void {
+    if (this.paginaActual > 1) {
+      this.paginaActual--;
+      this.actualizarTabla();
+    }
+  }
+
+  paginaSiguiente(): void {
+    if ((this.paginaActual * this.itemsPorPagina) < this.usuariosFiltrados.length) {
+      this.paginaActual++;
+      this.actualizarTabla();
+    }
+  }
+
+  calcularRangoInicio(): number {
+    return this.usuariosFiltrados.length === 0 ? 0 : ((this.paginaActual - 1) * this.itemsPorPagina) + 1;
+  }
+
+  calcularRangoFin(): number {
+    const fin = this.paginaActual * this.itemsPorPagina;
+    return fin > this.usuariosFiltrados.length ? this.usuariosFiltrados.length : fin;
+  }
+  // --- FIN LÓGICA PAGINACIÓN ---
 
   // --- CRUD Modal Lógica ---
   openUserModal(usuario?: any): void {
@@ -136,10 +187,8 @@ export class SeguridadComponent implements OnInit {
       this.usuarioService.cambiarEstado(usuario.idUsuario).subscribe({
         next: (userAcutalizado) => {
           this.mostrarMensajeGlobal(`Estado actualizado correctamente.`, 'success');
-          // Actualizamos el objeto en la vista sin recargar todo
-          const idx = this.usuariosFiltrados.findIndex(u => u.idUsuario === usuario.idUsuario);
-          if (idx !== -1) this.usuariosFiltrados[idx].activo = userAcutalizado.activo;
-          this.cdr.detectChanges();
+          // Refrescamos la lista para que se actualice la vista paginada automáticamente
+          this.cargarUsuarios();
         },
         error: () => {
           this.mostrarMensajeGlobal('No se pudo cambiar el estado.', 'error');
@@ -187,7 +236,6 @@ export class SeguridadComponent implements OnInit {
       this.usuarioService.restablecerPassword(this.usuarioSeleccionado.idUsuario, this.nuevaPassword).subscribe({
         next: () => {
           this.mostrarMensajeGlobal(`Contraseña de ${this.usuarioSeleccionado?.username} restablecida con éxito.`, 'success');
-          
           this.closePasswordModal();
           this.cdr.detectChanges();
         },

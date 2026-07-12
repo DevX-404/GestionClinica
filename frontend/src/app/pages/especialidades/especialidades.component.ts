@@ -14,12 +14,18 @@ export class EspecialidadesComponent implements OnInit {
   private especialidadService = inject(EspecialidadService);
   private cdr = inject(ChangeDetectorRef);
 
+  // DATOS
   especialidades: Especialidad[] = [];
   especialidadesFiltradas: Especialidad[] = [];
+  especialidadesPaginadas: Especialidad[] = []; // NUEVO: Para la paginación de la tabla
   
+  // CONTROLES DE LA TABLA
   searchTerm: string = '';
-  isLoading: boolean = false;
+  itemsPorPagina: number = 5;
+  paginaActual: number = 1;
   mostrandoInactivos: boolean = false;
+
+  isLoading: boolean = false;
 
   // Alertas fuera del modal
   globalMsg: string = '';
@@ -44,9 +50,7 @@ export class EspecialidadesComponent implements OnInit {
     this.especialidadService.listarTodas().subscribe({
       next: (data) => {
         this.especialidades = data;
-        console.log("DATOS QUE VIENEN DEL SERVIDOR:", data);
-        //this.especialidadesFiltradas = data;
-        this.filtrar(); // Así respeta si estamos viendo activos o inactivos
+        this.filtrar(); // Así respeta si estamos viendo activos o inactivos y actualiza tabla
         this.isLoading = false;
         this.cdr.detectChanges();
       },
@@ -58,9 +62,11 @@ export class EspecialidadesComponent implements OnInit {
     });
   }
 
+  // --- FILTRADO CORREGIDO CON PAGINACIÓN ---
   filtrar(): void {
-    const term = this.searchTerm.toLowerCase();
+    const term = this.searchTerm.toLowerCase().trim();
     const estadoFiltro = this.mostrandoInactivos ? 'INACTIVO' : 'ACTIVO';
+    
     this.especialidadesFiltradas = this.especialidades.filter(e => {
       // 1. Aseguramos que el estado coincida (limpiando espacios y forzando mayúsculas)
       const estadoBD = e.estado ? e.estado.trim().toUpperCase() : 'ACTIVO';
@@ -73,11 +79,52 @@ export class EspecialidadesComponent implements OnInit {
       // 3. Solo devolvemos la especialidad si cumple AMBAS condiciones
       return coincideEstado && coincideTexto;
     });
+
+    // Regresamos a la primera página tras buscar o cambiar de vista
+    this.paginaActual = 1;
+    this.actualizarTabla();
   }
+
   toggleVista(): void {
     this.mostrandoInactivos = !this.mostrandoInactivos;
-    this.filtrar(); // Volvemos a filtrar para actualizar la tabla
+    this.filtrar(); // Volvemos a filtrar para actualizar la tabla (esto recarga la paginación automáticamente)
   }
+
+  // --- LÓGICA DE PAGINACIÓN ---
+  actualizarTabla(): void {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    const fin = inicio + Number(this.itemsPorPagina);
+    this.especialidadesPaginadas = this.especialidadesFiltradas.slice(inicio, fin);
+  }
+
+  cambiarPaginacion(): void {
+    this.paginaActual = 1;
+    this.actualizarTabla();
+  }
+
+  paginaAnterior(): void {
+    if (this.paginaActual > 1) {
+      this.paginaActual--;
+      this.actualizarTabla();
+    }
+  }
+
+  paginaSiguiente(): void {
+    if ((this.paginaActual * this.itemsPorPagina) < this.especialidadesFiltradas.length) {
+      this.paginaActual++;
+      this.actualizarTabla();
+    }
+  }
+
+  calcularRangoInicio(): number {
+    return this.especialidadesFiltradas.length === 0 ? 0 : ((this.paginaActual - 1) * this.itemsPorPagina) + 1;
+  }
+
+  calcularRangoFin(): number {
+    const fin = this.paginaActual * this.itemsPorPagina;
+    return fin > this.especialidadesFiltradas.length ? this.especialidadesFiltradas.length : fin;
+  }
+  // --- FIN LÓGICA DE PAGINACIÓN ---
 
   restaurarEspecialidad(esp: Especialidad): void {
     if (confirm('¿Estás seguro de restaurar y volver a activar esta especialidad?')) {
@@ -115,7 +162,6 @@ export class EspecialidadesComponent implements OnInit {
   }
 
   guardarEspecialidad(): void {
-  
     const faltaNombre = !this.especialidadForm.nombre || this.especialidadForm.nombre.trim() === '';
     const faltaPrecio = !this.especialidadForm.precioConsulta || this.especialidadForm.precioConsulta <= 0;
 
@@ -139,7 +185,6 @@ export class EspecialidadesComponent implements OnInit {
       this.cdr.detectChanges();
       return;
     }
-    // --- FIN CÓDIGO NUEVO ---
 
     // Si pasa todas las validaciones, limpiamos el mensaje y continuamos
     this.errorMsg = '';
@@ -180,7 +225,8 @@ export class EspecialidadesComponent implements OnInit {
       });
     }
   }
-  // --- FUNCIÓN DE APOYO (Agrega esto justo debajo de guardarEspecialidad) ---
+
+  // --- FUNCIÓN DE APOYO ---
   private finalizarGuardado(mensaje: string): void {
     this.isSaving = false;
     this.closeModal();

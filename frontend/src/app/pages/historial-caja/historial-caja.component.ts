@@ -15,12 +15,18 @@ export class HistorialCajaComponent implements OnInit {
   private pagoService = inject(PagoService);
   private cdr = inject(ChangeDetectorRef);
 
+  // DATOS
   pagosFinalizados: Pago[] = [];
   pagosFiltrados: Pago[] = [];
+  pagosPaginados: Pago[] = []; // NUEVO: Para la paginación de la tabla
   
+  // CONTROLES DE LA TABLA Y BÚSQUEDA
   searchTerm: string = '';
-  isLoading: boolean = false;
   orden: string = 'LLEGADA_DESC'; 
+  itemsPorPagina: number = 5;
+  paginaActual: number = 1;
+
+  isLoading: boolean = false;
 
   // Modal Recibo
   isReceiptModalOpen: boolean = false;
@@ -49,6 +55,7 @@ export class HistorialCajaComponent implements OnInit {
     });
   }
 
+  // --- BUSCADOR Y ORDENAMIENTO CORREGIDOS ---
   aplicarFiltros(): void {
     let temp = [...this.pagosFinalizados];
 
@@ -72,7 +79,47 @@ export class HistorialCajaComponent implements OnInit {
     });
 
     this.pagosFiltrados = temp;
+
+    // Regresamos a la primera página tras buscar u ordenar y actualizamos tabla
+    this.paginaActual = 1;
+    this.actualizarTabla();
   }
+
+  // --- LÓGICA DE PAGINACIÓN ---
+  actualizarTabla(): void {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    const fin = inicio + Number(this.itemsPorPagina);
+    this.pagosPaginados = this.pagosFiltrados.slice(inicio, fin);
+  }
+
+  cambiarPaginacion(): void {
+    this.paginaActual = 1;
+    this.actualizarTabla();
+  }
+
+  paginaAnterior(): void {
+    if (this.paginaActual > 1) {
+      this.paginaActual--;
+      this.actualizarTabla();
+    }
+  }
+
+  paginaSiguiente(): void {
+    if ((this.paginaActual * this.itemsPorPagina) < this.pagosFiltrados.length) {
+      this.paginaActual++;
+      this.actualizarTabla();
+    }
+  }
+
+  calcularRangoInicio(): number {
+    return this.pagosFiltrados.length === 0 ? 0 : ((this.paginaActual - 1) * this.itemsPorPagina) + 1;
+  }
+
+  calcularRangoFin(): number {
+    const fin = this.paginaActual * this.itemsPorPagina;
+    return fin > this.pagosFiltrados.length ? this.pagosFiltrados.length : fin;
+  }
+  // --- FIN LÓGICA DE PAGINACIÓN ---
 
   openReceiptModal(pago: Pago): void {
     this.pagoSeleccionado = pago;
