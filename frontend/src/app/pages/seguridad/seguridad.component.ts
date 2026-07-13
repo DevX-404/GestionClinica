@@ -49,6 +49,26 @@ export class SeguridadComponent implements OnInit {
     'Seguridad y Usuarios', 'Auditoría del Sistema'
   ];
 
+  // --- INICIO: LÓGICA DE CONFIRMACIÓN ELEGANTE ---
+  isConfirmModalOpen: boolean = false;
+  confirmData: any = { titulo: '', mensaje: '', txtBtn: '', colorBtn: '', accion: null, accionCancelar: null };
+
+  abrirConfirmacion(titulo: string, mensaje: string, txtBtn: string, colorBtn: string, accion: () => void, accionCancelar?: () => void): void {
+    this.confirmData = { titulo, mensaje, txtBtn, colorBtn, accion, accionCancelar };
+    this.isConfirmModalOpen = true;
+  }
+
+  cerrarConfirmacion(): void {
+    if (this.confirmData.accionCancelar) this.confirmData.accionCancelar();
+    this.isConfirmModalOpen = false;
+  }
+
+  ejecutarConfirmacion(): void {
+    if (this.confirmData.accion) this.confirmData.accion();
+    this.isConfirmModalOpen = false;
+  }
+  // --- FIN: LÓGICA DE CONFIRMACIÓN ELEGANTE ---
+
   ngOnInit(): void {
     this.cargarUsuarios();
   }
@@ -189,34 +209,44 @@ export class SeguridadComponent implements OnInit {
 
   toggleEstado(usuario: Usuario): void {
     const accion = usuario.activo ? 'deshabilitar' : 'habilitar';
-    if (confirm(`¿Estás seguro de ${accion} el acceso para el usuario ${usuario.username}?`)) {
-      this.usuarioService.cambiarEstado(usuario.idUsuario).subscribe({
-        next: (userAcutalizado) => {
-          this.mostrarMensajeGlobal(`Estado actualizado correctamente.`, 'success');
-          // Refrescamos la lista para que se actualice la vista paginada automáticamente
-          this.cargarUsuarios();
-        },
-        error: () => {
-          this.mostrarMensajeGlobal('No se pudo cambiar el estado.', 'error');
-          this.cdr.detectChanges();
-        }
-      });
-    }
+    const colorBtn = usuario.activo ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700';
+    
+    this.abrirConfirmacion(
+      'Confirmar Acción',
+      `¿Estás seguro de ${accion} el acceso para el usuario ${usuario.username}?`,
+      'Sí, Proceder',
+      colorBtn,
+      () => {
+        this.usuarioService.cambiarEstado(usuario.idUsuario).subscribe({
+          next: () => {
+            this.mostrarMensajeGlobal(`Estado actualizado correctamente.`, 'success');
+            this.cargarUsuarios();
+          },
+          error: () => this.mostrarMensajeGlobal('No se pudo cambiar el estado.', 'error')
+        });
+      }
+    );
   }
 
   cambiarRolLocal(usuario: Usuario, event: any): void {
     const nuevoRol = event.target.value;
-    if (confirm(`¿Cambiar el rol de ${usuario.username} a ${nuevoRol}?`)) {
-      this.usuarioService.cambiarRol(usuario.idUsuario, nuevoRol).subscribe({
-        next: () => this.mostrarMensajeGlobal('Rol actualizado.', 'success'),
-        error: () => {
-          this.mostrarMensajeGlobal('Error al cambiar rol.', 'error');
-          this.cargarUsuarios(); // Recargamos para deshacer el cambio visual
-        }
-      });
-    } else {
-      this.cargarUsuarios(); // Deshacer visual
-    }
+    
+    this.abrirConfirmacion(
+      'Modificar Privilegios',
+      `¿Cambiar el rol de ${usuario.username} a ${nuevoRol}? Esto alterará sus accesos.`,
+      'Cambiar Rol',
+      'bg-brand-600 hover:bg-brand-700',
+      () => {
+        this.usuarioService.cambiarRol(usuario.idUsuario, nuevoRol).subscribe({
+          next: () => this.mostrarMensajeGlobal('Rol actualizado.', 'success'),
+          error: () => {
+            this.mostrarMensajeGlobal('Error al cambiar rol.', 'error');
+            this.cargarUsuarios(); 
+          }
+        });
+      },
+      () => this.cargarUsuarios() // Si el usuario CANCELA, revertimos el SELECT a la normalidad
+    );
   }
 
   // --- Reset Password ---

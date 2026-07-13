@@ -36,6 +36,26 @@ export class SolicitudesComponent implements OnInit {
   ticketSeleccionado: any = null;
   motivoRechazo: string = '';
 
+  // --- INICIO: LÓGICA DE CONFIRMACIÓN ELEGANTE ---
+  isConfirmModalOpen: boolean = false;
+  confirmData: any = { titulo: '', mensaje: '', txtBtn: '', colorBtn: '', accion: null, accionCancelar: null };
+
+  abrirConfirmacion(titulo: string, mensaje: string, txtBtn: string, colorBtn: string, accion: () => void, accionCancelar?: () => void): void {
+    this.confirmData = { titulo, mensaje, txtBtn, colorBtn, accion, accionCancelar };
+    this.isConfirmModalOpen = true;
+  }
+
+  cerrarConfirmacion(): void {
+    if (this.confirmData.accionCancelar) this.confirmData.accionCancelar();
+    this.isConfirmModalOpen = false;
+  }
+
+  ejecutarConfirmacion(): void {
+    if (this.confirmData.accion) this.confirmData.accion();
+    this.isConfirmModalOpen = false;
+  }
+  // --- FIN: LÓGICA DE CONFIRMACIÓN ELEGANTE ---
+
   ngOnInit(): void {
     this.cargarSolicitudes();
   }
@@ -85,18 +105,21 @@ export class SolicitudesComponent implements OnInit {
 
   // APROBAR Y REDIRIGIR AL MÓDULO DE MÉDICOS
   aprobarYRedirigir(ticket: any): void {
-    if(confirm(`¿Deseas marcar este ticket de ${ticket.nombreUsuario} como APROBADO y proceder a aplicar los cambios en el sistema?`)) {
-      this.solicitudService.responder(ticket.idSolicitud, 'APROBADA', 'Solicitud aprobada. Cambios aplicados en sistema.').subscribe({
-        next: () => {
-          this.mostrarMensajeGlobal('Ticket cerrado con éxito. Redirigiendo...', 'success');
-          // Redirección con un pequeño retraso para que vea el mensaje
-          setTimeout(() => {
-            this.router.navigate(['/medicos']);
-          }, 1500);
-        },
-        error: () => this.mostrarMensajeGlobal('No se pudo aprobar el ticket.', 'error')
-      });
-    }
+    this.abrirConfirmacion(
+      'Aprobar Solicitud',
+      `¿Deseas marcar este ticket de ${ticket.nombreUsuario} como APROBADO y proceder a aplicar los cambios en el sistema?`,
+      'Aprobar y Continuar',
+      'bg-brand-600 hover:bg-brand-700',
+      () => {
+        this.solicitudService.responder(ticket.idSolicitud, 'APROBADA', 'Solicitud aprobada. Cambios aplicados en sistema.').subscribe({
+          next: () => {
+            this.mostrarMensajeGlobal('Ticket cerrado con éxito. Redirigiendo...', 'success');
+            setTimeout(() => this.router.navigate(['/medicos']), 1500);
+          },
+          error: () => this.mostrarMensajeGlobal('No se pudo aprobar el ticket.', 'error')
+        });
+      }
+    );
   }
 
   // RECHAZAR CON MOTIVO

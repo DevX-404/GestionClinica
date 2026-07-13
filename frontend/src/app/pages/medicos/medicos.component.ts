@@ -72,6 +72,26 @@ export class MedicosComponent implements OnInit {
     });
   }
 
+  // --- INICIO: LÓGICA DE CONFIRMACIÓN ELEGANTE ---
+  isConfirmModalOpen: boolean = false;
+  confirmData: any = { titulo: '', mensaje: '', txtBtn: '', colorBtn: '', accion: null, accionCancelar: null };
+
+  abrirConfirmacion(titulo: string, mensaje: string, txtBtn: string, colorBtn: string, accion: () => void, accionCancelar?: () => void): void {
+    this.confirmData = { titulo, mensaje, txtBtn, colorBtn, accion, accionCancelar };
+    this.isConfirmModalOpen = true;
+  }
+
+  cerrarConfirmacion(): void {
+    if (this.confirmData.accionCancelar) this.confirmData.accionCancelar();
+    this.isConfirmModalOpen = false;
+  }
+
+  ejecutarConfirmacion(): void {
+    if (this.confirmData.accion) this.confirmData.accion();
+    this.isConfirmModalOpen = false;
+  }
+  // --- FIN: LÓGICA DE CONFIRMACIÓN ELEGANTE ---
+
   ngOnInit(): void {
     this.rolActual = localStorage.getItem('rol') || '';
     this.cargarEspecialidades();
@@ -242,25 +262,31 @@ export class MedicosComponent implements OnInit {
   cambiarEstado(medico: Medico): void {
     if (medico.idMedico) {
       if (medico.estado === 'ACTIVO') {
-        if(confirm(`¿Estás seguro de dar de baja al Dr. ${medico.nombres}? Su cuenta quedará deshabilitada.`)) {
-          this.medicoService.eliminar(medico.idMedico).subscribe({
-            next: () => {
-              this.mostrarMensajeGlobal('Médico deshabilitado y enviado a papelera.', 'success');
-              this.cargarMedicos();
-            },
-            error: () => this.mostrarMensajeGlobal('No se pudo procesar la baja del médico.', 'error')
-          });
-        }
+        this.abrirConfirmacion(
+          'Dar de Baja', 
+          `¿Estás seguro de dar de baja al Dr. ${medico.nombres}? Su cuenta quedará deshabilitada.`, 
+          'Desactivar', 
+          'bg-red-600 hover:bg-red-700', 
+          () => {
+            this.medicoService.eliminar(medico.idMedico!).subscribe({
+              next: () => { this.mostrarMensajeGlobal('Médico enviado a papelera.', 'success'); this.cargarMedicos(); },
+              error: () => this.mostrarMensajeGlobal('Error en la baja.', 'error')
+            });
+          }
+        );
       } else {
-        if(confirm(`¿Estás seguro de reincorporar al Dr. ${medico.nombres}?`)) {
-          this.medicoService.reactivar(medico.idMedico).subscribe({
-            next: () => {
-              this.mostrarMensajeGlobal('Médico reincorporado con éxito.', 'success');
-              this.cargarMedicos();
-            },
-            error: () => this.mostrarMensajeGlobal('No se pudo reincorporar al médico.', 'error')
-          });
-        }
+        this.abrirConfirmacion(
+          'Reincorporar Médico', 
+          `¿Estás seguro de reincorporar al Dr. ${medico.nombres}?`, 
+          'Reincorporar', 
+          'bg-green-600 hover:bg-green-700', 
+          () => {
+            this.medicoService.reactivar(medico.idMedico!).subscribe({
+              next: () => { this.mostrarMensajeGlobal('Médico reincorporado.', 'success'); this.cargarMedicos(); },
+              error: () => this.mostrarMensajeGlobal('Error al reincorporar.', 'error')
+            });
+          }
+        );
       }
     }
   }

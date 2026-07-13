@@ -39,6 +39,26 @@ export class PacientesComponent implements OnInit {
 
   constructor(private pacienteService: PacienteService, private cdr: ChangeDetectorRef) {}
 
+  // --- INICIO: LÓGICA DE CONFIRMACIÓN ELEGANTE ---
+  isConfirmModalOpen: boolean = false;
+  confirmData: any = { titulo: '', mensaje: '', txtBtn: '', colorBtn: '', accion: null, accionCancelar: null };
+
+  abrirConfirmacion(titulo: string, mensaje: string, txtBtn: string, colorBtn: string, accion: () => void, accionCancelar?: () => void): void {
+    this.confirmData = { titulo, mensaje, txtBtn, colorBtn, accion, accionCancelar };
+    this.isConfirmModalOpen = true;
+  }
+
+  cerrarConfirmacion(): void {
+    if (this.confirmData.accionCancelar) this.confirmData.accionCancelar();
+    this.isConfirmModalOpen = false;
+  }
+
+  ejecutarConfirmacion(): void {
+    if (this.confirmData.accion) this.confirmData.accion();
+    this.isConfirmModalOpen = false;
+  }
+  // --- FIN: LÓGICA DE CONFIRMACIÓN ELEGANTE ---
+
   ngOnInit(): void {
     this.rolActual = localStorage.getItem('rol') || '';
     this.cargarPacientes();
@@ -227,19 +247,31 @@ export class PacientesComponent implements OnInit {
   cambiarEstado(paciente: Paciente): void {
     if (paciente.idPaciente) {
       if (paciente.estado === 'ACTIVO') {
-        if(confirm(`¿Estás seguro de enviar a papelera el expediente de ${paciente.nombres}?`)) {
-          this.pacienteService.eliminarLogico(paciente.idPaciente).subscribe({
-            next: () => this.cargarPacientes(),
-            error: (err) => this.mostrarMensajeGlobal('No se pudo desactivar el paciente.', 'error')
-          });
-        }
+        this.abrirConfirmacion(
+          'Enviar a Papelera', 
+          `¿Estás seguro de enviar a papelera el expediente de ${paciente.nombres}?`, 
+          'Desactivar', 
+          'bg-red-600 hover:bg-red-700', 
+          () => {
+            this.pacienteService.eliminarLogico(paciente.idPaciente!).subscribe({
+              next: () => this.cargarPacientes(),
+              error: () => this.mostrarMensajeGlobal('Error al desactivar.', 'error')
+            });
+          }
+        );
       } else {
-        if(confirm(`¿Restaurar el expediente de ${paciente.nombres}?`)) {
-          this.pacienteService.reactivar(paciente.idPaciente).subscribe({
-            next: () => this.cargarPacientes(),
-            error: (err) => this.mostrarMensajeGlobal('No se pudo restaurar el paciente.', 'error')
-          });
-        }
+        this.abrirConfirmacion(
+          'Restaurar Expediente', 
+          `¿Restaurar el expediente de ${paciente.nombres}?`, 
+          'Restaurar', 
+          'bg-green-600 hover:bg-green-700', 
+          () => {
+            this.pacienteService.reactivar(paciente.idPaciente!).subscribe({
+              next: () => this.cargarPacientes(),
+              error: () => this.mostrarMensajeGlobal('Error al restaurar.', 'error')
+            });
+          }
+        );
       }
     }
   }
