@@ -111,6 +111,44 @@ public class PagoServiceImpl implements PagoService {
         return convertirADto(pagoGuardado);
     }
 
+    @Override
+    @Transactional
+    public void reembolsarYAnularPagos(Long idCita, String motivo, String fotoEvidencia) {
+        List<Pago> pagosDeLaCita = pagoRepository.findByCita_IdCita(idCita);
+
+        for (Pago pago : pagosDeLaCita) {
+            if ("PAGADO".equals(pago.getEstadoPago())) {
+                Pago reembolso = new Pago();
+                reembolso.setCita(pago.getCita());
+                reembolso.setFechaPago(LocalDate.now());
+                reembolso.setHoraPago(LocalTime.now());
+                reembolso.setMonto(pago.getMonto().negate()); 
+                reembolso.setConcepto("EXTORNO: " + pago.getConcepto());
+                reembolso.setEstadoPago("PAGADO"); 
+                reembolso.setMetodoPago(pago.getMetodoPago());
+                reembolso.setEvidenciaReembolso(fotoEvidencia);
+                reembolso.setMotivoAnulacion(motivo);
+                
+                Comprobante nc = new Comprobante();
+                nc.setTipoComprobante("NOTA_CREDITO");
+                nc.setNumeroComprobante("NC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+                nc.setFechaEmision(LocalDate.now());
+                nc.setTotal(reembolso.getMonto());
+                nc.setSubtotal(reembolso.getMonto());
+                nc.setIgv(BigDecimal.ZERO);
+                nc.setPago(reembolso);
+                reembolso.setComprobante(nc);
+
+                pagoRepository.save(reembolso);
+
+            } else if ("PENDIENTE".equals(pago.getEstadoPago())) {
+                pago.setEstadoPago("ANULADO");
+                pago.setMotivoAnulacion("Cita Cancelada");
+                pagoRepository.save(pago);
+            }
+        }
+    }
+
     // --- TRADUCCIÓN HACIA ANGULAR ---
     private PagoDTO convertirADto(Pago pago) {
         PagoDTO dto = new PagoDTO();

@@ -15,6 +15,10 @@ export class PacienteService {
     return this.http.get<Paciente[]>(this.apiUrl);
   }
 
+  listarInactivos(): Observable<Paciente[]> {
+    return this.http.get<Paciente[]>(`${this.apiUrl}/inactivos`);
+  }
+
   obtenerPorId(id: number): Observable<Paciente> {
     return this.http.get<Paciente>(`${this.apiUrl}/${id}`);
   }
@@ -24,10 +28,14 @@ export class PacienteService {
   }
 
   actualizar(id: number, paciente: Paciente): Observable<Paciente> {
-    return this.http.put<Paciente>(`${`${this.apiUrl}/${id}`}`, paciente);
+    return this.http.put<Paciente>(`${this.apiUrl}/${id}`, paciente);
   }
 
   eliminarLogico(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  reactivar(id: number): Observable<void> {
+    return this.http.patch<void>(`${this.apiUrl}/${id}/reactivar`, {});
   }
 }

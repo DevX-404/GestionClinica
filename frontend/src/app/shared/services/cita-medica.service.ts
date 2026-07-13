@@ -29,6 +29,10 @@ export class CitaMedicaService {
     return this.http.patch<any>(`${this.apiUrl}/${idCita}/estado?nuevoEstado=${nuevoEstado}`, {});
   }
 
+  reprogramarCita(idCita: number, fecha: string, hora: string): Observable<any> {
+    return this.http.patch<any>(`${this.apiUrl}/${idCita}/reprogramar?fecha=${fecha}&hora=${hora}`, {});
+  }
+
   validarHorario(idMedico: number, fecha: string, hora: string, tipoCita: string): Observable<{disponible: boolean}> {
     let params = new HttpParams()
       .set('idMedico', idMedico.toString())
@@ -37,5 +41,9 @@ export class CitaMedicaService {
       .set('tipoCita', tipoCita);
 
     return this.http.get<{disponible: boolean}>(`${this.apiUrl}/validar-horario`, { params });
+  }
+
+  cancelarConReembolso(idCita: number, motivo: string, evidenciaBase64: string): Observable<any> {
+    return this.http.patch<any>(`${this.apiUrl}/${idCita}/cancelar-con-reembolso?motivo=${motivo}`, { evidenciaBase64 });
   }
 }

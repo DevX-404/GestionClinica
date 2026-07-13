@@ -1,38 +1,34 @@
 <div class="mx-auto max-w-7xl p-4 md:p-6 2xl:p-10">
   
-  <!-- CABECERA PRINCIPAL -->
   <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <h2 class="text-2xl font-bold text-black dark:text-white">Gestión de Pacientes</h2>
       <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Registra y administra los expedientes clínicos de la clínica</p>
     </div>
-    <button (click)="openModal()" class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-6 py-3 font-medium text-white hover:bg-brand-600 transition text-sm shadow-theme-md">
-      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-      Nuevo Paciente
-    </button>
+    <div class="flex items-center gap-3">
+      <button *ngIf="rolActual === 'ADMINISTRADOR'" (click)="toggleVistaInactivos()" 
+              [ngClass]="verInactivos ? 'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400' : 'bg-white text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'"
+              class="flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-bold transition shadow-sm hover:shadow-md">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        {{ verInactivos ? 'Saliendo de Papelera' : 'Ver Eliminados' }}
+      </button>
+
+      <button *ngIf="!verInactivos" (click)="openModal()" class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-6 py-2.5 font-bold text-white hover:bg-brand-600 transition text-sm shadow-theme-md">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Nuevo Paciente
+      </button>
+    </div>
   </div>
 
-  <!-- MENSAJES GLOBALES -->
   @if (globalMsg) {
-  <div
-    [ngClass]="
-      globalMsgType === 'success'
-        ? 'bg-green-50 text-green-700 border-green-200'
-        : 'bg-red-50 text-red-700 border-red-200'
-    "
-    class="mb-4 rounded-lg border p-4 text-base font-medium shadow-sm transition-all"
-  >
+  <div [ngClass]="globalMsgType === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'" class="mb-4 rounded-lg border p-4 text-base font-medium shadow-sm transition-all">
     {{ globalMsg }}
   </div>
   }
 
-  <!-- CONTENEDOR PRINCIPAL TABLA TAILADMIN -->
-  <div class="rounded-2xl border border-gray-200 bg-white shadow-theme-xl dark:border-gray-800 dark:bg-white/[0.02] overflow-hidden">
+  <div [ngClass]="verInactivos ? 'border-red-200 dark:border-red-900/50' : 'border-gray-200 dark:border-gray-800'" class="rounded-2xl border bg-white shadow-theme-xl dark:bg-gray-900 overflow-hidden transition-all duration-300">
     
-    <!-- BARRA DE HERRAMIENTAS (Filtros, Buscador, Paginador Superior) -->
-    <div class="flex flex-wrap items-center justify-between gap-4 p-4 md:p-6 border-b border-gray-200 dark:border-gray-800">
-      
-      <!-- Selector de Cantidad de Entradas -->
+    <div class="flex flex-wrap items-center justify-between gap-4 p-4 md:p-6 border-b border-gray-200 dark:border-gray-800" [ngClass]="verInactivos ? 'bg-red-50/30 dark:bg-red-900/10' : ''">
       <div class="flex items-center gap-2">
         <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Mostrar</span>
         <select [(ngModel)]="pageSize" (change)="currentPage = 1" class="rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm outline-none transition focus:border-brand-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
@@ -44,54 +40,42 @@
         <span class="text-sm font-medium text-gray-500 dark:text-gray-400">entradas</span>
       </div>
 
-      <!-- Buscador y Filtro por Antigüedad -->
       <div class="flex items-center gap-3">
-        <!-- Filtro Recientes/Antiguos -->
         <select [(ngModel)]="sortOrder" (change)="currentPage = 1" class="rounded-lg border border-gray-300 bg-transparent px-4 py-2 text-sm font-medium outline-none transition focus:border-brand-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
           <option value="desc">Recién llegados</option>
           <option value="asc">Más antiguos</option>
         </select>
 
-        <!-- Buscador -->
         <div class="relative w-full max-w-xs">
           <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
           </span>
-  <input type="text" [(ngModel)]="searchTerm" (input)="currentPage = 1" placeholder="Buscar por Nombre o DNI..." class="w-full rounded-lg border border-gray-300 bg-transparent py-2.5 pl-12 pr-4 text-sm text-black outline-none transition focus:border-brand-500 dark:border-gray-700 dark:text-white dark:focus:border-brand-500" /> </div>
+          <input type="text" [(ngModel)]="searchTerm" (input)="currentPage = 1" placeholder="Buscar por Nombre o DNI..." class="w-full rounded-lg border border-gray-300 bg-transparent py-2.5 pl-12 pr-4 text-sm text-black outline-none transition focus:border-brand-500 dark:border-gray-700 dark:text-white" /> 
+        </div>
       </div>
-
     </div>
 
-    <!-- TABLA DE DATOS -->
     <div class="max-w-full overflow-x-auto">
       <table class="w-full table-auto text-left">
         <thead>
           <tr class="border-b border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.02]">
-            <th class="px-6 py-4 text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Documento/DNI</th>
-            <th class="px-6 py-4 text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Paciente</th>
-            <th class="px-6 py-4 text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Teléfono/Correo</th>
-            <th class="px-6 py-4 text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
-            <th class="px-6 py-4 text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Acciones</th>
+            <th class="px-6 py-4 text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Documento/DNI</th>
+            <th class="px-6 py-4 text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Paciente</th>
+            <th class="px-6 py-4 text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contacto</th>
+            <th class="px-6 py-4 text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
+            <th class="px-6 py-4 text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Acciones</th>
           </tr>
         </thead>
-
         <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
           
-          <!-- ESTADO DE CARGA -->
           @if (isLoading) {
-            <tr>
-              <td colspan="5" class="px-6 py-10 text-center text-base text-brand-500 font-medium animate-pulse">
-                Cargando datos del servidor...
-              </td>
-            </tr>
+            <tr><td colspan="5" class="px-6 py-10 text-center text-base text-brand-500 font-medium animate-pulse">Cargando datos del servidor...</td></tr>
           } @else {
-
-            <!-- ITERACIÓN SOBRE LA LISTA FILTRADA Y PAGINADA -->
             @for (p of filteredPacientes; track p.idPaciente) {
-              <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors">
+              <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors" [ngClass]="p.estado === 'INACTIVO' ? 'opacity-70 grayscale' : ''">
                 
                 <td class="px-6 py-4">
-                  <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ p.tipoDocumento }}</span>
+                  <span class="block text-xs font-bold text-gray-400 uppercase tracking-wide">{{ p.tipoDocumento }}</span>
                   <span class="text-sm font-medium text-black dark:text-white">{{ p.dni }}</span>
                 </td>
 
@@ -101,157 +85,163 @@
 
                 <td class="px-6 py-4">
                   <span class="block text-sm text-black dark:text-white font-medium">{{ p.telefono }}</span>
-                  <span class="block text-xs text-gray-500 dark:text-gray-400">{{ p.correo }}</span>
+                  <span class="block text-xs text-gray-500 dark:text-gray-400">{{ p.correo || 'Sin correo' }}</span>
                 </td>
 
                 <td class="px-6 py-4">
-                  <span [ngClass]="p.estado === 'ACTIVO' ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'" class="inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase">
+                  <span [ngClass]="p.estado === 'ACTIVO' ? 'bg-green-500/10 text-green-600 border border-green-200 dark:border-green-800/50' : 'bg-red-500/10 text-red-600 border border-red-200 dark:border-red-800/50'" class="inline-flex rounded-md px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
                     {{ p.estado }}
                   </span>
                 </td>
 
                 <td class="px-6 py-4 text-right">
-                  <div class="flex justify-end gap-3">
-                    <button (click)="openModal(p)" class="text-gray-400 hover:text-brand-500 transition" title="Editar">
-                      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                  <div class="flex justify-end gap-2">
+                    <button *ngIf="p.estado === 'ACTIVO'" (click)="openModal(p)" class="text-blue-500 bg-blue-50 border border-blue-100 hover:bg-blue-600 hover:text-white font-bold p-1.5 rounded transition dark:bg-blue-900/20 dark:border-blue-900/50" title="Editar Expediente">
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                     </button>
-                    <button (click)="cambiarEstado(p)" class="text-gray-400 hover:text-red-500 transition" title="Cambiar estado">
-                      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    
+                    <button (click)="cambiarEstado(p)" 
+                            [title]="p.estado === 'ACTIVO' ? 'Enviar a papelera' : 'Restaurar expediente'"
+                            [ngClass]="p.estado === 'ACTIVO' ? 'text-red-500 bg-red-50 border-red-100 hover:bg-red-600 hover:text-white dark:bg-red-900/20 dark:border-red-900/50' : 'text-green-500 bg-green-50 border-green-100 hover:bg-green-600 hover:text-white dark:bg-green-900/20 dark:border-green-900/50'"
+                            class="font-bold border p-1.5 rounded transition shadow-sm">
+                      
+                      <svg *ngIf="p.estado === 'ACTIVO'" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                      <svg *ngIf="p.estado === 'INACTIVO'" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                     </button>
                   </div>
                 </td>
 
               </tr>
             } @empty {
-              <!-- MENSAJE DE TABLA VACÍA -->
               <tr>
-                <td colspan="5" class="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
-                  <svg class="mx-auto mb-4 h-12 w-12 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/></svg>
-                  <p class="font-medium">No se encontraron pacientes que coincidan con la búsqueda.</p>
+                <td colspan="5" class="px-6 py-16 text-center text-gray-500 dark:text-gray-400 bg-gray-50/50 dark:bg-gray-800/30">
+                  <div class="flex flex-col items-center">
+                    <svg class="h-10 w-10 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/></svg>
+                    <p class="text-base font-bold text-gray-700 dark:text-gray-300">
+                      {{ verInactivos ? 'La papelera está vacía.' : 'No se encontraron pacientes.' }}
+                    </p>
+                    <p class="text-xs mt-1 text-gray-500">Intenta buscando por DNI o registrando uno nuevo.</p>
+                  </div>
                 </td>
               </tr>
             }
           }
-
         </tbody>
       </table>
     </div>
 
-    <!-- CONTROLES DE PAGINACIÓN INFERIOR -->
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 md:p-6 border-t border-gray-200 dark:border-gray-800">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 md:p-6 border-t border-gray-200 dark:border-gray-800" [ngClass]="verInactivos ? 'bg-red-50/30 dark:bg-red-900/10' : ''">
       <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
-        Mostrando {{ totalEntradas === 0 ? 0 : (currentPage - 1) * pageSize + 1 }} a 
-        {{ (currentPage * pageSize) > totalEntradas ? totalEntradas : (currentPage * pageSize) }} 
-        de {{ totalEntradas }} entradas
+        Mostrando {{ totalEntradas === 0 ? 0 : (currentPage - 1) * pageSize + 1 }} a {{ (currentPage * pageSize) > totalEntradas ? totalEntradas : (currentPage * pageSize) }} de {{ totalEntradas }} entradas
       </p>
-      
       <div class="flex gap-2">
-        <button (click)="prevPage()" [disabled]="currentPage === 1" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-700 dark:text-white dark:hover:bg-white/[0.02] transition">
-          Anterior
-        </button>
-        <button (click)="nextPage()" [disabled]="(currentPage * pageSize) >= totalEntradas" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-700 dark:text-white dark:hover:bg-white/[0.02] transition">
-          Siguiente
-        </button>
+        <button (click)="prevPage()" [disabled]="currentPage === 1" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-700 dark:text-white dark:hover:bg-white/[0.02] transition shadow-sm">Anterior</button>
+        <button (click)="nextPage()" [disabled]="(currentPage * pageSize) >= totalEntradas" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-700 dark:text-white dark:hover:bg-white/[0.02] transition shadow-sm">Siguiente</button>
       </div>
     </div>
-
   </div>
 
-  <!-- MODAL DE APERTURA/EDICIÓN (Mantenido intacto) -->
   @if (isModalOpen) {
-    <div class="fixed inset-0 z-99999 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-      <div class="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-xl dark:border-gray-800 dark:bg-gray-dark max-h-[90vh] overflow-y-auto">
+    <div class="fixed inset-0 z-[999999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div class="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-800 dark:bg-gray-900 max-h-[90vh] overflow-y-auto">
         
-        <div class="mb-6 flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-4">
-          <h3 class="text-xl font-bold text-black dark:text-white">{{ isEditing ? 'Modificar Historial de Paciente' : 'Apertura de Expediente de Paciente' }}</h3>
-          <button (click)="closeModal()" class="text-gray-400 hover:text-black dark:hover:text-white transition">
-            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-          </button>
+        <div class="mb-6 flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-4">
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ isEditing ? 'Actualizar Ficha de Paciente' : 'Crear Nuevo Expediente' }}</h3>
+          <button (click)="closeModal()" class="text-gray-400 hover:text-red-500 transition"><svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
         </div>
 
-        @if (errorMsg) { <div class="mb-4 rounded-lg bg-red-500/10 p-3 text-sm text-red-500 font-medium text-center border border-red-500/20">{{ errorMsg }}</div> }
-        @if (successMsg) { <div class="mb-4 rounded-lg bg-green-500/10 p-3 text-sm text-green-500 font-medium text-center border border-green-500/20">{{ successMsg }}</div> }
+        @if (errorMsg) { 
+          <div class="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 flex gap-3 items-start animate-fade-in dark:bg-red-900/20 dark:border-red-800/50">
+            <svg class="h-5 w-5 text-red-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <div>
+              <p class="text-sm font-bold text-red-800 dark:text-red-400">Verifique la información</p>
+              <p class="text-xs text-red-600 mt-1 dark:text-red-300 font-medium">{{ errorMsg }}</p>
+            </div>
+          </div> 
+        }
 
         <form (submit)="guardarPaciente()" class="space-y-4">
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo de Documento</label>
-              <select name="tipoDoc" [(ngModel)]="pacienteForm.tipoDocumento" (change)="cambioTipoDocumento()" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm outline-none transition focus:border-brand-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+              <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Tipo Documento <span class="text-red-500">*</span></label>
+              <select name="tipoDoc" [(ngModel)]="pacienteForm.tipoDocumento" (change)="cambioTipoDocumento()" class="w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:bg-white dark:border-gray-700 dark:bg-gray-800 dark:text-white">
                 <option value="DNI">DNI (Perú)</option>
                 <option value="PASAPORTE">Pasaporte</option>
                 <option value="CEX">Carnet de Extranjería</option>
               </select>
             </div>
             <div>
-              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Número de Documento</label>
+              <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">N° Documento <span class="text-red-500">*</span></label>
               <input type="text" name="dni" [(ngModel)]="pacienteForm.dni" [disabled]="isEditing"
                      [maxLength]="pacienteForm.tipoDocumento === 'DNI' ? 8 : 15"
                      (input)="validarDocumento($event)"
-                     [ngClass]="dniInvalido ? 'border-red-500 focus:border-red-500 dark:border-red-500' : 'border-gray-300 focus:border-brand-500 dark:border-gray-700'"
+                     [ngClass]="dniInvalido ? 'border-red-500 focus:border-red-500 ring-1 ring-red-500' : 'border-gray-300 focus:border-brand-500'"
                      placeholder="Ej: 74635241" 
-                     class="w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-black outline-none transition dark:text-white dark:bg-gray-900 disabled:opacity-50" />
-              @if (dniInvalido) {
-                <p class="mt-1 text-xs text-red-500 font-medium">El DNI debe tener exactamente 8 números.</p>
-              }
+                     class="w-full rounded-xl border bg-white px-4 py-2.5 text-sm text-gray-900 outline-none transition dark:text-white dark:bg-gray-800 disabled:bg-gray-100 disabled:text-gray-400 font-mono font-bold" />
+              @if (dniInvalido) { <p class="mt-1 text-[10px] text-red-500 font-bold">Faltan dígitos (Obligatorio 8 números).</p> }
             </div>
           </div>
 
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 pt-2">
             <div>
-              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Nombres</label>
-              <input type="text" name="nombres" [(ngModel)]="pacienteForm.nombres" placeholder="Nombres del paciente" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-black outline-none transition focus:border-brand-500 dark:border-gray-700 dark:text-white dark:bg-gray-900" />
+              <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Nombres <span class="text-red-500">*</span></label>
+              <input type="text" name="nombres" [(ngModel)]="pacienteForm.nombres" class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-brand-500 dark:border-gray-700 dark:text-white dark:bg-gray-800" />
             </div>
             <div>
-              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Apellido Paterno</label>
-              <input type="text" name="paterno" [(ngModel)]="pacienteForm.apellidoPaterno" placeholder="Apellido paterno" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-black outline-none transition focus:border-brand-500 dark:border-gray-700 dark:text-white dark:bg-gray-900" />
+              <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Ap. Paterno <span class="text-red-500">*</span></label>
+              <input type="text" name="paterno" [(ngModel)]="pacienteForm.apellidoPaterno" class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-brand-500 dark:border-gray-700 dark:text-white dark:bg-gray-800" />
             </div>
             <div>
-              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Apellido Materno</label>
-              <input type="text" name="materno" [(ngModel)]="pacienteForm.apellidoMaterno" placeholder="Apellido materno" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-black outline-none transition focus:border-brand-500 dark:border-gray-700 dark:text-white dark:bg-gray-900" />
+              <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Ap. Materno <span class="text-red-500">*</span></label>
+              <input type="text" name="materno" [(ngModel)]="pacienteForm.apellidoMaterno" class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-brand-500 dark:border-gray-700 dark:text-white dark:bg-gray-800" />
             </div>
           </div>
 
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 pt-2">
             <div>
-              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha de Nacimiento</label>
-              <input type="date" name="fechaNac" [(ngModel)]="pacienteForm.fechaNacimiento" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-black outline-none transition focus:border-brand-500 dark:border-gray-700 dark:text-white dark:bg-gray-900" />
+              <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Fecha Nacimiento <span class="text-red-500">*</span></label>
+              <input type="date" name="fechaNac" [(ngModel)]="pacienteForm.fechaNacimiento" (change)="validarFecha($event)"
+                     [ngClass]="fechaFuturaInvalida ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'"
+                     class="w-full rounded-xl border bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-brand-500 dark:border-gray-700 dark:text-white dark:bg-gray-800 font-medium" />
+              @if (fechaFuturaInvalida) { <p class="mt-1 text-[10px] text-red-500 font-bold">La fecha no puede ser en el futuro.</p> }
             </div>
             <div>
-              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Sexo Biológico</label>
-              <select name="sexo" [(ngModel)]="pacienteForm.sexo" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-black outline-none transition focus:border-brand-500 dark:border-gray-700 dark:text-white dark:bg-gray-900">
+              <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Sexo Biológico</label>
+              <select name="sexo" [(ngModel)]="pacienteForm.sexo" class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-brand-500 dark:border-gray-700 dark:text-white dark:bg-gray-800">
                 <option value="MASCULINO">Masculino</option>
                 <option value="FEMENINO">Femenino</option>
               </select>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 pt-2">
             <div>
-              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Teléfono</label>
-              <input type="text" name="telefono" [(ngModel)]="pacienteForm.telefono" 
-                     maxlength="9"
-                     (input)="validarTelefono($event)"
-                     [ngClass]="telefonoInvalido ? 'border-red-500 focus:border-red-500 dark:border-red-500' : 'border-gray-300 focus:border-brand-500 dark:border-gray-700'"
-                     placeholder="Ej: 987654321" 
-                     class="w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm text-black outline-none transition dark:text-white dark:bg-gray-900" />
-              @if (telefonoInvalido) {
-                <p class="mt-1 text-xs text-red-500 font-medium">El teléfono debe tener exactamente 9 números.</p>
-              }
+              <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Celular / Teléfono <span class="text-red-500">*</span></label>
+              <input type="text" name="telefono" [(ngModel)]="pacienteForm.telefono" maxlength="9" (input)="validarTelefono($event)"
+                     [ngClass]="telefonoInvalido ? 'border-red-500 focus:border-red-500 ring-1 ring-red-500' : 'border-gray-300 focus:border-brand-500'"
+                     placeholder="Ej: 987654321" class="w-full rounded-xl border bg-white px-4 py-2.5 text-sm text-gray-900 outline-none font-mono font-bold dark:border-gray-700 dark:text-white dark:bg-gray-800" />
+              @if (telefonoInvalido) { <p class="mt-1 text-[10px] text-red-500 font-bold">Faltan dígitos (Obligatorio 9 números).</p> }
             </div>
             <div>
-              <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Correo Electrónico</label>
-              <input type="email" name="correo" [(ngModel)]="pacienteForm.correo" placeholder="paciente@correo.com" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-black outline-none transition focus:border-brand-500 dark:border-gray-700 dark:text-white dark:bg-gray-900" />
+              <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Correo (Opcional)</label>
+              <input type="email" name="correo" [(ngModel)]="pacienteForm.correo" placeholder="paciente@correo.com" class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-brand-500 dark:border-gray-700 dark:text-white dark:bg-gray-800" />
             </div>
           </div>
 
-          <div>
-            <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Dirección Domiciliaria</label>
-            <input type="text" name="direccion" [(ngModel)]="pacienteForm.direccion" placeholder="Dirección actual de residencia" class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-black outline-none transition focus:border-brand-500 dark:border-gray-700 dark:text-white dark:bg-gray-900" />
+          <div class="pt-2">
+            <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Dirección Actual</label>
+            <input type="text" name="direccion" [(ngModel)]="pacienteForm.direccion" placeholder="Av. Los Incas 123..." class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-brand-500 dark:border-gray-700 dark:text-white dark:bg-gray-800" />
           </div>
 
-          <div class="flex justify-end gap-4 border-t border-gray-200 dark:border-gray-800 pt-4 mt-6">
-            <button type="button" (click)="closeModal()" class="rounded-lg border border-gray-300 px-5 py-2.5 font-medium text-gray-700 hover:bg-gray-50 text-sm transition dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/[0.02]">Cancelar</button>
-            <button type="submit" class="rounded-lg bg-brand-500 px-5 py-2.5 font-medium text-white hover:bg-brand-600 text-sm transition shadow-theme-md">Guardar Expediente</button>
+          <div class="flex justify-end gap-3 border-t border-gray-100 dark:border-gray-800 pt-5 mt-6">
+            <button type="button" (click)="closeModal()" class="rounded-xl border border-gray-300 px-6 py-2.5 font-bold text-gray-700 hover:bg-gray-50 text-sm transition dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 shadow-sm">Cancelar</button>
+            <button type="submit" [disabled]="!esFormularioValido" 
+                    [ngClass]="esFormularioValido ? 'bg-brand-600 hover:bg-brand-700 text-white shadow-md' : 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600'"
+                    class="rounded-xl px-8 py-2.5 font-bold text-sm transition-all flex items-center gap-2">
+              <svg *ngIf="esFormularioValido" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+              <svg *ngIf="!esFormularioValido" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+              Guardar Expediente
+            </button>
           </div>
         </form>
 

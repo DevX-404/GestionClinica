@@ -46,6 +46,12 @@ public class Pago {
 
     @Column(name = "hora_pago")
     private LocalTime horaPago;
+
+    @Column(columnDefinition = "TEXT")
+    private String evidenciaReembolso; 
+
+    @Column(length = 255)
+    private String motivoAnulacion;
     
     @PrePersist
     protected void onCreate() {

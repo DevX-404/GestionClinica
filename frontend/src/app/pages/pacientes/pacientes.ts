@@ -11,24 +11,20 @@ import { PacienteService } from '../../shared/services/paciente.service';
   templateUrl: './pacientes.html'
 })
 export class PacientesComponent implements OnInit {
-  // Lista de datos original de la base de datos
   pacientes: Paciente[] = [];
   
-  // --- VARIABLES PARA TAILADMIN DATATABLES ---
   searchTerm: string = '';
-  sortOrder: string = 'desc'; // 'desc' = Recién llegados, 'asc' = Antiguos
+  sortOrder: string = 'desc'; 
   pageSize: number = 5;
   currentPage: number = 1;
 
-  // Control del Modal
   isModalOpen: boolean = false;
   isEditing: boolean = false;
 
-  // Variables de validación estrictas
   dniInvalido: boolean = false;
   telefonoInvalido: boolean = false;
+  fechaFuturaInvalida: boolean = false;
 
-  // Objeto espejo para el formulario
   pacienteForm: Paciente = this.resetForm();
 
   errorMsg: string = '';
@@ -38,9 +34,19 @@ export class PacientesComponent implements OnInit {
   globalMsg: string = ''; 
   globalMsgType: 'success' | 'error' = 'success';
 
+  verInactivos: boolean = false;
+  rolActual: string = '';
+
   constructor(private pacienteService: PacienteService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
+    this.rolActual = localStorage.getItem('rol') || '';
+    this.cargarPacientes();
+  }
+
+  toggleVistaInactivos(): void {
+    this.verInactivos = !this.verInactivos;
+    this.currentPage = 1; 
     this.cargarPacientes();
   }
 
@@ -48,26 +54,24 @@ export class PacientesComponent implements OnInit {
     this.isLoading = true; 
     this.cdr.detectChanges();
 
-    this.pacienteService.listarTodos().subscribe({
+    const request = this.verInactivos ? this.pacienteService.listarInactivos() : this.pacienteService.listarTodos();
+
+    request.subscribe({
       next: (data) => {
         this.pacientes = data;
         this.isLoading = false; 
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Error al traer pacientes:', err);
         this.isLoading = false;
-        this.mostrarMensajeGlobal('Error al conectar con el servidor. Intenta de nuevo.', 'error');
+        this.mostrarMensajeGlobal('Error al conectar con el servidor.', 'error');
         this.cdr.detectChanges();
       }
     });
   }
 
-  // --- LÓGICA DE FILTRADO, ORDENAMIENTO Y PAGINACIÓN TAILADMIN ---
   get listaFiltrada(): Paciente[] {
     let result = this.pacientes;
-
-    // 1. Buscador
     if (this.searchTerm) {
       const term = this.searchTerm.toLowerCase().trim();
       result = result.filter(p => 
@@ -76,14 +80,11 @@ export class PacientesComponent implements OnInit {
         p.dni.includes(term)
       );
     }
-
-    // 2. Ordenar Antiguos vs Recientes
     result = result.sort((a, b) => {
       const idA = a.idPaciente || 0;
       const idB = b.idPaciente || 0;
       return this.sortOrder === 'desc' ? idB - idA : idA - idB;
     });
-
     return result;
   }
 
@@ -107,13 +108,13 @@ export class PacientesComponent implements OnInit {
       this.currentPage--;
     }
   }
-  // -------------------------------------------------------------
 
   openModal(paciente?: Paciente): void {
     this.errorMsg = '';
     this.successMsg = '';
     this.dniInvalido = false;
     this.telefonoInvalido = false;
+    this.fechaFuturaInvalida = false;
     this.isModalOpen = true;
 
     if (paciente) {
@@ -129,7 +130,6 @@ export class PacientesComponent implements OnInit {
     this.isModalOpen = false;
   }
 
-  // --- LÓGICA DE VALIDACIÓN EN TIEMPO REAL ---
   cambioTipoDocumento(): void {
     if (!this.isEditing) {
       this.pacienteForm.dni = '';
@@ -140,11 +140,11 @@ export class PacientesComponent implements OnInit {
   validarDocumento(event: any): void {
     const input = event.target;
     if (this.pacienteForm.tipoDocumento === 'DNI') {
-      let valor = input.value.replace(/[^0-9]/g, ''); // Fuerza solo números
-      if (valor.length > 8) valor = valor.substring(0, 8); // Bloquea si intentan pegar más de 8
+      let valor = input.value.replace(/[^0-9]/g, ''); 
+      if (valor.length > 8) valor = valor.substring(0, 8); 
       input.value = valor;
       this.pacienteForm.dni = valor;
-      this.dniInvalido = valor.length > 0 && valor.length < 8; // Pinta rojo si no llega a 8
+      this.dniInvalido = valor.length > 0 && valor.length < 8; 
     } else {
       this.dniInvalido = false;
     }
@@ -152,26 +152,40 @@ export class PacientesComponent implements OnInit {
 
   validarTelefono(event: any): void {
     const input = event.target;
-    let valor = input.value.replace(/[^0-9]/g, ''); // Fuerza solo números
-    if (valor.length > 9) valor = valor.substring(0, 9); // Bloquea si intentan pegar más de 9
+    let valor = input.value.replace(/[^0-9]/g, ''); 
+    if (valor.length > 9) valor = valor.substring(0, 9); 
     input.value = valor;
     this.pacienteForm.telefono = valor;
-    this.telefonoInvalido = valor.length > 0 && valor.length < 9; // Pinta rojo si no llega a 9
+    this.telefonoInvalido = valor.length > 0 && valor.length < 9; 
   }
-  // ---------------------------------------------
+
+  validarFecha(event: any): void {
+    const fechaSeleccionada = new Date(event.target.value);
+    const hoy = new Date();
+    fechaSeleccionada.setHours(0,0,0,0);
+    hoy.setHours(0,0,0,0);
+    this.fechaFuturaInvalida = fechaSeleccionada > hoy;
+  }
+
+  get esFormularioValido(): boolean {
+    const p = this.pacienteForm;
+    const docInvalido = p.tipoDocumento === 'DNI' ? (!p.dni || p.dni.length !== 8) : !p.dni;
+    const faltanCampos = !p.nombres || !p.apellidoPaterno || !p.apellidoMaterno || !p.fechaNacimiento || !p.telefono || p.telefono.length !== 9;
+    return !docInvalido && !faltanCampos && !this.fechaFuturaInvalida;
+  }
+
+  extraerMensajeError(err: any, mensajePorDefecto: string): string {
+    if (typeof err.error === 'string') {
+      return err.error; // Si es un texto plano, lo mostramos directo
+    } else if (err.error && typeof err.error === 'object') {
+      // Buscamos las propiedades más comunes que usa Spring Boot
+      return err.error.message || err.error.mensaje || err.error.details || err.error.error || JSON.stringify(err.error);
+    }
+    return mensajePorDefecto;
+  }
 
   guardarPaciente(): void {
-    // Escudo final antes de enviar al servidor
-    if (this.pacienteForm.tipoDocumento === 'DNI' && (!this.pacienteForm.dni || this.pacienteForm.dni.length !== 8)) {
-      this.dniInvalido = true;
-      this.errorMsg = 'Revisa los campos en rojo. El DNI debe tener exactamente 8 números.';
-      return;
-    }
-    if (!this.pacienteForm.telefono || this.pacienteForm.telefono.length !== 9) {
-      this.telefonoInvalido = true;
-      this.errorMsg = 'Revisa los campos en rojo. El teléfono debe tener exactamente 9 números.';
-      return;
-    }
+    if (!this.esFormularioValido) return; // Doble candado
 
     if (this.isEditing && this.pacienteForm.idPaciente) {
       this.pacienteService.actualizar(this.pacienteForm.idPaciente, this.pacienteForm).subscribe({
@@ -181,7 +195,7 @@ export class PacientesComponent implements OnInit {
           this.cargarPacientes();
         },
         error: (err) => {
-          this.errorMsg = 'No se pudo actualizar al paciente.';
+          this.errorMsg = this.extraerMensajeError(err, 'Ocurrió un error al actualizar los datos.');
           this.cdr.detectChanges();
         }
       });
@@ -193,14 +207,7 @@ export class PacientesComponent implements OnInit {
           this.cargarPacientes();
         },
         error: (err) => {
-          // CORRECCIÓN PARA DIFERENCIAR ERRORES (FECHA VS DNI)
-          if (err.status === 400 && err.error && err.error.message) {
-            this.errorMsg = err.error.message;
-          } else if (err.status === 400) {
-            this.errorMsg = 'Hay un error en los datos (revisa que la fecha tenga el formato correcto).';
-          } else {
-            this.errorMsg = 'Error al guardar la ficha del paciente.';
-          }
+          this.errorMsg = this.extraerMensajeError(err, 'Ocurrió un error al registrar al paciente.');
           this.cdr.detectChanges();
         }
       });
@@ -211,7 +218,6 @@ export class PacientesComponent implements OnInit {
     this.globalMsg = msg;
     this.globalMsgType = type;
     this.cdr.detectChanges(); 
-
     setTimeout(() => {
       this.globalMsg = '';
       this.cdr.detectChanges(); 
@@ -220,26 +226,29 @@ export class PacientesComponent implements OnInit {
 
   cambiarEstado(paciente: Paciente): void {
     if (paciente.idPaciente) {
-      this.pacienteService.eliminarLogico(paciente.idPaciente).subscribe({
-        next: () => this.cargarPacientes(),
-        error: (err) => console.error('Error al cambiar estado:', err)
-      });
+      if (paciente.estado === 'ACTIVO') {
+        if(confirm(`¿Estás seguro de enviar a papelera el expediente de ${paciente.nombres}?`)) {
+          this.pacienteService.eliminarLogico(paciente.idPaciente).subscribe({
+            next: () => this.cargarPacientes(),
+            error: (err) => this.mostrarMensajeGlobal('No se pudo desactivar el paciente.', 'error')
+          });
+        }
+      } else {
+        if(confirm(`¿Restaurar el expediente de ${paciente.nombres}?`)) {
+          this.pacienteService.reactivar(paciente.idPaciente).subscribe({
+            next: () => this.cargarPacientes(),
+            error: (err) => this.mostrarMensajeGlobal('No se pudo restaurar el paciente.', 'error')
+          });
+        }
+      }
     }
   }
 
   private resetForm(): Paciente {
     return {
-      tipoDocumento: 'DNI',
-      dni: '',
-      nombres: '',
-      apellidoPaterno: '',
-      apellidoMaterno: '',
-      fechaNacimiento: '',
-      sexo: 'MASCULINO',
-      direccion: '',
-      telefono: '',
-      correo: '',
-      estado: 'ACTIVO'
+      tipoDocumento: 'DNI', dni: '', nombres: '', apellidoPaterno: '',
+      apellidoMaterno: '', fechaNacimiento: '', sexo: 'MASCULINO',
+      direccion: '', telefono: '', correo: '', estado: 'ACTIVO'
     };
   }
 }

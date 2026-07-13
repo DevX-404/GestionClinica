@@ -10,5 +10,6 @@ public interface CitaMedicaService {
     CitaMedicaDTO programarCitaRapida(com.example.GestionClinica.dto.CitaRegistroRapidoDTO dto);
     List<CitaMedicaDTO> listarTodas();
     CitaMedicaDTO actualizarEstado(Long idCita, String nuevoEstado);
+    CitaMedicaDTO reprogramarCita(Long idCita, String nuevaFecha, String nuevaHora);
     List<CitaMedicaDTO> listarPorMedico(Long idMedico, LocalDate fecha);
 }

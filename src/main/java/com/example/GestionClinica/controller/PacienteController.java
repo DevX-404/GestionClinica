@@ -1,7 +1,7 @@
 package com.example.GestionClinica.controller;
 
 import com.example.GestionClinica.dto.PacienteDTO;
-import com.example.GestionClinica.service.PacienteService;
+import com.example.GestionClinica.service.PacienteServiceImpl;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,11 +16,16 @@ import java.util.List;
 public class PacienteController {
 
     @Autowired
-    private PacienteService pacienteService;
+    private PacienteServiceImpl pacienteService;
 
     @GetMapping
     public ResponseEntity<List<PacienteDTO>> listarPacientes() {
         return ResponseEntity.ok(pacienteService.listarTodos());
+    }
+
+    @GetMapping("/inactivos")
+    public ResponseEntity<List<PacienteDTO>> listarInactivos() {
+        return ResponseEntity.ok(pacienteService.listarInactivos());
     }
 
     @GetMapping("/{id}")
@@ -42,5 +47,11 @@ public class PacienteController {
     public ResponseEntity<Void> eliminarPaciente(@PathVariable Long id) {
         pacienteService.eliminarLogico(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/reactivar")
+    public ResponseEntity<Void> reactivarPaciente(@PathVariable Long id) {
+        pacienteService.reactivarPaciente(id);
+        return ResponseEntity.ok().build();
     }
 }

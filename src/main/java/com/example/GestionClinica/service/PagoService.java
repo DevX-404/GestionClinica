@@ -7,4 +7,5 @@ public interface PagoService {
     PagoDTO procesarPago(Long idPago, PagoDTO dto); // Cuando la recepcionista registra el abono
     List<PagoDTO> listarTodos();
     PagoDTO obtenerPorCita(Long idCita);
+    void reembolsarYAnularPagos(Long idCita, String motivo, String fotoEvidencia);
 }

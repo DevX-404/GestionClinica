@@ -22,7 +22,14 @@ public class PacienteServiceImpl implements PacienteService {
     @Transactional(readOnly = true)
     public List<PacienteDTO> listarTodos() {
         return pacienteRepository.findAll().stream()
-                .filter(p -> "ACTIVO".equals(p.getEstado())) // Solo listamos los activos
+                .filter(p -> "ACTIVO".equals(p.getEstado()))
+                .map(this::convertirADto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PacienteDTO> listarInactivos() {
+        return pacienteRepository.findByEstado("INACTIVO").stream()
                 .map(this::convertirADto)
                 .collect(Collectors.toList());
     }
@@ -31,7 +38,6 @@ public class PacienteServiceImpl implements PacienteService {
     @Transactional(readOnly = true)
     public PacienteDTO obtenerPorId(Long id) {
         Paciente paciente = pacienteRepository.findById(id)
-                .filter(p -> "ACTIVO".equals(p.getEstado()))
                 .orElseThrow(() -> new ResourceNotFoundException("Paciente no encontrado con el ID: " + id));
         return convertirADto(paciente);
     }
@@ -39,15 +45,11 @@ public class PacienteServiceImpl implements PacienteService {
     @Override
     @Transactional
     public PacienteDTO registrar(PacienteDTO dto) {
-        if (pacienteRepository.existsByDni(dto.getDni())) {
-            throw new IllegalArgumentException("El DNI ya se encuentra registrado en el sistema.");
-        }
+        validarDuplicados(dto, null);
+
         Paciente paciente = new Paciente();
         BeanUtils.copyProperties(dto, paciente);
-        paciente.setEstado("ACTIVO"); // Forzamos estado inicial
-        
-        // Aquí a futuro automatizaremos la creación de su Historia Clínica (Rúbrica Avance 2)
-        
+        paciente.setEstado("ACTIVO");
         return convertirADto(pacienteRepository.save(paciente));
     }
 
@@ -57,10 +59,7 @@ public class PacienteServiceImpl implements PacienteService {
         Paciente paciente = pacienteRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Paciente no encontrado con el ID: " + id));
         
-        // Si cambia de DNI, validar que el nuevo no exista
-        if (!paciente.getDni().equals(dto.getDni()) && pacienteRepository.existsByDni(dto.getDni())) {
-            throw new IllegalArgumentException("El nuevo DNI ya está registrado por otro paciente.");
-        }
+        validarDuplicados(dto, id);
 
         paciente.setTipoDocumento(dto.getTipoDocumento());
         paciente.setDni(dto.getDni());
@@ -82,12 +81,36 @@ public class PacienteServiceImpl implements PacienteService {
         Paciente paciente = pacienteRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Paciente no encontrado con el ID: " + id));
         
-        // REQUISITO DE RÚBRICA: No eliminación física, solo cambio de estado
         paciente.setEstado("INACTIVO");
         pacienteRepository.save(paciente);
     }
 
-    // Métodos Helpers para conversión manual limpia (evitamos meter librerías pesadas)
+    @Transactional
+    public void reactivarPaciente(Long id) {
+        Paciente paciente = pacienteRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Paciente no encontrado con el ID: " + id));
+        
+        paciente.setEstado("ACTIVO");
+        pacienteRepository.save(paciente);
+    }
+
+    private void validarDuplicados(PacienteDTO dto, Long idActual) {
+        List<Paciente> pacientes = pacienteRepository.findAll();
+        
+        boolean dniDuplicado = pacientes.stream().anyMatch(p -> p.getDni().equals(dto.getDni()) && !p.getIdPaciente().equals(idActual));
+        if (dniDuplicado) throw new IllegalArgumentException("El número de documento (" + dto.getDni() + ") ya pertenece a otro paciente.");
+
+        if (dto.getTelefono() != null && !dto.getTelefono().isEmpty()) {
+            boolean telDuplicado = pacientes.stream().anyMatch(p -> dto.getTelefono().equals(p.getTelefono()) && !p.getIdPaciente().equals(idActual));
+            if (telDuplicado) throw new IllegalArgumentException("El número de teléfono (" + dto.getTelefono() + ") ya está registrado en otra ficha.");
+        }
+
+        if (dto.getCorreo() != null && !dto.getCorreo().isEmpty()) {
+            boolean correoDuplicado = pacientes.stream().anyMatch(p -> dto.getCorreo().equals(p.getCorreo()) && !p.getIdPaciente().equals(idActual));
+            if (correoDuplicado) throw new IllegalArgumentException("El correo electrónico (" + dto.getCorreo() + ") ya se encuentra en uso.");
+        }
+    }
+
     private PacienteDTO convertirADto(Paciente paciente) {
         PacienteDTO dto = new PacienteDTO();
         BeanUtils.copyProperties(paciente, dto);

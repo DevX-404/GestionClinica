@@ -84,7 +84,10 @@
                   <span class="block text-xs font-bold text-gray-500">{{ p.numeroComprobante }}</span>
                 </td>
                 
-                <td class="px-6 py-4 text-sm font-bold text-green-600 text-right">S/ {{ p.monto | number:'1.2-2' }}</td>
+                <td class="px-6 py-4 text-sm font-bold text-right" 
+        [ngClass]="p.monto < 0 ? 'text-red-500' : 'text-green-600'">
+      {{ p.monto < 0 ? '- S/ ' : 'S/ ' }}{{ (p.monto < 0 ? p.monto * -1 : p.monto) | number:'1.2-2' }}
+    </td>
                 
                 <td class="px-6 py-4 text-center">
                   <div class="flex items-center justify-center">

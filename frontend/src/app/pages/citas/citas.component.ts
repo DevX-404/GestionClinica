@@ -22,12 +22,10 @@ export class CitasComponent implements OnInit {
   private horarioService = inject(HorarioMedicoService);
   private cdr = inject(ChangeDetectorRef);
   
-  // DATOS DE CITAS
   citas: any[] = [];
   citasFiltradas: any[] = []; 
-  citasPaginadas: any[] = []; // NUEVO: Para la paginación de la tabla
+  citasPaginadas: any[] = []; 
   
-  // CONTROLES DE LA TABLA
   searchTermCitas: string = ''; 
   cargandoCitas: boolean = false; 
   itemsPorPagina: number = 5;
@@ -41,7 +39,17 @@ export class CitasComponent implements OnInit {
   pasoActual: 1 | 2 = 1; 
   mostrarAlertaRegistro: boolean = false;
   validandoHorarioBackend: boolean = false;
+  errorModalMsg: string = ''; 
   
+  // NUEVAS VARIABLES PARA REPROGRAMAR
+  isReprogramarModalOpen: boolean = false;
+  citaAReprogramar: any = null;
+  reprogramarForm = { fecha: '', hora: '' };
+
+  isCancelModalOpen: boolean = false;
+  citaACancelar: any = null;
+  cancelForm = { motivo: '', fotoBase64: '', nombreFoto: '' };
+
   dniBusqueda: string = '';
   sugerenciasDni: any[] = [];
   pacienteSeleccionado: any = null;
@@ -68,16 +76,6 @@ export class CitasComponent implements OnInit {
   globalMsg: string = '';
   globalMsgType: 'success' | 'error' | 'warning' | 'info' = 'info';
 
-  mostrarMensajeGlobal(msg: string, type: 'success' | 'error' | 'warning' | 'info'): void {
-    this.globalMsg = msg;
-    this.globalMsgType = type;
-    this.cdr.detectChanges();
-    setTimeout(() => {
-      this.globalMsg = '';
-      this.cdr.detectChanges();
-    }, 5000);
-  }
-
   citaForm = {
     idPaciente: null as number | null,
     idEspecialidad: null as number | null,
@@ -95,11 +93,32 @@ export class CitasComponent implements OnInit {
     this.cargarCitas();
   }
 
-  formatearFechaLarga(fechaIso: string): string {
-    if(!fechaIso || !fechaIso.includes('-')) return fechaIso; 
-    const fecha = new Date(fechaIso + 'T00:00:00');
-    const opciones: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric' };
-    return fecha.toLocaleDateString('es-PE', opciones);
+  extraerMensajeError(err: any, defaultMsg: string): string {
+    if (typeof err.error === 'string') return err.error;
+    if (err.error && typeof err.error === 'object') {
+      return err.error.message || err.error.mensaje || err.error.error || JSON.stringify(err.error);
+    }
+    return defaultMsg;
+  }
+
+  mostrarMensajeGlobal(msg: string, type: 'success' | 'error' | 'warning' | 'info'): void {
+    this.globalMsg = msg;
+    this.globalMsgType = type;
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.globalMsg = '';
+      this.cdr.detectChanges();
+    }, 5000);
+  }
+
+  get formularioValido(): boolean {
+    if (this.esNuevoPaciente) {
+      if (!this.nuevoPacienteForm.nombres || !this.nuevoPacienteForm.apellidoPaterno || !this.nuevoPacienteForm.telefono || this.nuevoPacienteForm.telefono.length !== 9) return false;
+    } else {
+      if (!this.citaForm.idPaciente) return false;
+    }
+    if (!this.citaForm.idEspecialidad || !this.citaForm.idMedico || !this.citaForm.fecha || !this.citaForm.hora || !this.citaForm.motivoConsulta) return false;
+    return true;
   }
 
   cargarCitas(): void {
@@ -107,14 +126,10 @@ export class CitasComponent implements OnInit {
     this.cdr.detectChanges();
     this.citaService.listarTodas().subscribe({
       next: (data) => {
-        // Ordenamos las más recientes arriba
         const dataOrdenada = data.sort((a: any, b: any) => b.idCita - a.idCita);
         this.citas = dataOrdenada;
         this.citasFiltradas = dataOrdenada; 
-        
-        // INICIALIZAR LA PAGINACIÓN
         this.actualizarTabla();
-        
         this.cargandoCitas = false;
         this.cdr.detectChanges();
       },
@@ -128,75 +143,43 @@ export class CitasComponent implements OnInit {
     this.medicoService.listarTodos().subscribe(data => this.medicos = data);
   }
 
-  // --- BUSCADOR CORREGIDO ---
   filtrarCitas(): void {
     const term = this.searchTermCitas.toLowerCase().trim();
     if (!term) { 
       this.citasFiltradas = [...this.citas]; 
     } else {
-      // Ahora buscamos directamente dentro de las propiedades de la cita, 
-      // esto soluciona el problema de que el DNI completo no daba resultados.
       this.citasFiltradas = this.citas.filter(c => 
         (c.nombreCompletoPaciente && c.nombreCompletoPaciente.toLowerCase().includes(term)) ||
         (c.nombreCompletoMedico && c.nombreCompletoMedico.toLowerCase().includes(term)) ||
         (c.nombreEspecialidad && c.nombreEspecialidad.toLowerCase().includes(term)) ||
         (c.estado && c.estado.toLowerCase().includes(term)) ||
         (c.fecha && c.fecha.includes(term)) ||
-        (c.dniPaciente && c.dniPaciente.toLowerCase().includes(term)) // <-- ¡Aquí estaba el truco!
+        (c.dniPaciente && c.dniPaciente.toLowerCase().includes(term))
       );
     }
-    
-    // Regresamos a la primera página tras buscar y actualizamos tabla
     this.paginaActual = 1;
     this.actualizarTabla();
   }
 
-  // --- LÓGICA DE PAGINACIÓN ---
   actualizarTabla(): void {
     const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
     const fin = inicio + Number(this.itemsPorPagina);
     this.citasPaginadas = this.citasFiltradas.slice(inicio, fin);
   }
 
-  cambiarPaginacion(): void {
-    this.paginaActual = 1;
-    this.actualizarTabla();
-  }
-
-  paginaAnterior(): void {
-    if (this.paginaActual > 1) {
-      this.paginaActual--;
-      this.actualizarTabla();
-    }
-  }
-
-  paginaSiguiente(): void {
-    if ((this.paginaActual * this.itemsPorPagina) < this.citasFiltradas.length) {
-      this.paginaActual++;
-      this.actualizarTabla();
-    }
-  }
-
-  calcularRangoInicio(): number {
-    return this.citasFiltradas.length === 0 ? 0 : ((this.paginaActual - 1) * this.itemsPorPagina) + 1;
-  }
-
-  calcularRangoFin(): number {
-    const fin = this.paginaActual * this.itemsPorPagina;
-    return fin > this.citasFiltradas.length ? this.citasFiltradas.length : fin;
-  }
-  // --- FIN LÓGICA DE PAGINACIÓN ---
-
+  cambiarPaginacion(): void { this.paginaActual = 1; this.actualizarTabla(); }
+  paginaAnterior(): void { if (this.paginaActual > 1) { this.paginaActual--; this.actualizarTabla(); } }
+  paginaSiguiente(): void { if ((this.paginaActual * this.itemsPorPagina) < this.citasFiltradas.length) { this.paginaActual++; this.actualizarTabla(); } }
+  calcularRangoInicio(): number { return this.citasFiltradas.length === 0 ? 0 : ((this.paginaActual - 1) * this.itemsPorPagina) + 1; }
+  calcularRangoFin(): number { const fin = this.paginaActual * this.itemsPorPagina; return fin > this.citasFiltradas.length ? this.citasFiltradas.length : fin; }
 
   buscarDniRealTime(): void {
     this.mostrarAlertaRegistro = false;
     this.esNuevoPaciente = false;
-    
     const term = this.dniBusqueda.trim();
     if (term.length === 0) { this.sugerenciasDni = []; this.limpiarDatosPaciente(); return; }
     
     this.sugerenciasDni = this.pacientes.filter(p => p.dni && p.dni.startsWith(term));
-    
     if (term.length === 8 && this.sugerenciasDni.length === 0) {
       this.esNuevoPaciente = true;
       this.limpiarDatosPaciente();
@@ -208,25 +191,12 @@ export class CitasComponent implements OnInit {
     this.dniBusqueda = paciente.dni;
     this.citaForm.idPaciente = paciente.idPaciente;
     this.sugerenciasDni = [];
-    this.edadDesglosada = this.calcularEdadAniosMeses(paciente.fechaNacimiento);
     this.cdr.detectChanges();
   }
 
   limpiarDatosPaciente(): void {
     this.pacienteSeleccionado = null;
     this.citaForm.idPaciente = null;
-    this.edadDesglosada = '';
-  }
-
-  calcularEdadAniosMeses(fechaNacimientoStr: string): string {
-    if (!fechaNacimientoStr) return '';
-    const fechaNac = new Date(fechaNacimientoStr);
-    const hoy = new Date();
-    let anios = hoy.getFullYear() - fechaNac.getFullYear();
-    let meses = hoy.getMonth() - fechaNac.getMonth();
-    if (meses < 0 || (meses === 0 && hoy.getDate() < fechaNac.getDate())) { anios--; meses += 12; }
-    if (hoy.getDate() < fechaNac.getDate()) { meses--; if (meses < 0) { meses = 11; } }
-    return `${anios} años y ${meses} meses`;
   }
 
   buscarEspecialidadRealTime(): void {
@@ -254,7 +224,6 @@ export class CitasComponent implements OnInit {
     if (esp.precioConsulta) {
       this.precioEspecialidad = esp.precioConsulta;
       this.montoAdelanto30 = Number((this.precioEspecialidad * 0.30).toFixed(2));
-      this.citaForm.montoPagadoAdelanto = this.montoAdelanto30;
     } else {
       this.precioEspecialidad = 0;
       this.montoAdelanto30 = 0;
@@ -287,25 +256,10 @@ export class CitasComponent implements OnInit {
   }
 
   irAPagar(): void {
-    if (this.esNuevoPaciente) {
-      if (!this.nuevoPacienteForm.nombres || !this.nuevoPacienteForm.apellidoPaterno || !this.nuevoPacienteForm.telefono) {
-        this.mostrarMensajeGlobal('Complete los nombres, apellidos y teléfono del nuevo paciente.', 'warning');
-        return;
-      }
-    } else {
-      if (!this.citaForm.idPaciente) {
-        this.mostrarMensajeGlobal('Debe seleccionar un paciente registrado.', 'warning');
-        return;
-      }
-    }
-
-    if (!this.citaForm.idEspecialidad || !this.citaForm.idMedico || !this.citaForm.fecha || !this.citaForm.hora || !this.citaForm.motivoConsulta) {
-      this.mostrarMensajeGlobal('Por favor complete todos los datos obligatorios (*) antes de proceder.', 'warning');
-      return;
-    }
-
+    this.errorModalMsg = '';
+    
     if (this.horariosMedicoSeleccionado.length === 0) {
-      this.mostrarMensajeGlobal('Este médico no tiene turnos programados en el sistema.', 'warning');
+      this.errorModalMsg = 'Este médico no tiene turnos programados en el sistema.';
       return;
     }
 
@@ -313,41 +267,39 @@ export class CitasComponent implements OnInit {
     const turnoDelDia = this.horariosMedicoSeleccionado.find(h => h.diaSemana === fechaElegida);
     
     if (!turnoDelDia) {
-      this.mostrarMensajeGlobal(`El médico no tiene turno el día. Por favor, guíate de su agenda.`, 'error');
+      this.errorModalMsg = `El médico no asiste a la clínica en la fecha seleccionada. Guiate de su agenda lateral.`;
       return;
     }
 
     const horaElegidaArr = this.citaForm.hora.split(':');
     const minsElegidos = parseInt(horaElegidaArr[0]) * 60 + parseInt(horaElegidaArr[1]);
-
     const inicioArr = turnoDelDia.horaInicio.split(':');
     const minsInicio = parseInt(inicioArr[0]) * 60 + parseInt(inicioArr[1]);
-
     const finArr = turnoDelDia.horaFin.split(':');
     const minsFin = parseInt(finArr[0]) * 60 + parseInt(finArr[1]);
 
     if (minsElegidos < minsInicio || minsElegidos > minsFin) {
-      this.mostrarMensajeGlobal(`La hora elegida está fuera del turno del médico para este día.`, 'error');
+      this.errorModalMsg = `La hora elegida está fuera del turno de trabajo del médico para ese día.`;
       return;
     }
 
     this.validandoHorarioBackend = true;
     this.cdr.detectChanges();
 
-    this.citaService.validarHorario(this.citaForm.idMedico, this.citaForm.fecha, this.citaForm.hora, this.citaForm.tipoCita).subscribe({
+    this.citaService.validarHorario(this.citaForm.idMedico!, this.citaForm.fecha, this.citaForm.hora, this.citaForm.tipoCita).subscribe({
       next: (response: any) => {
         this.validandoHorarioBackend = false;
         if (response.disponible) {
            this.pasoActual = 2; 
            this.cdr.detectChanges();
         } else {
-           this.mostrarMensajeGlobal('¡ALERTA DE CHOQUE! El médico no está disponible. Ya tiene programada otra operación o paciente.', 'error');
+           this.errorModalMsg = '¡ALERTA DE CHOQUE! El médico ya tiene programada otra cita u operación en ese horario exacto.';
            this.cdr.detectChanges();
         }
       },
       error: () => {
         this.validandoHorarioBackend = false;
-        this.mostrarMensajeGlobal('Hubo un error de conexión con el servidor.', 'error');
+        this.errorModalMsg = 'Hubo un error de conexión con el servidor al validar el turno.';
         this.cdr.detectChanges();
       }
     });
@@ -361,36 +313,15 @@ export class CitasComponent implements OnInit {
   confirmarPagoYape(): void {
     const payloadRapido = {
       dniPaciente: this.dniBusqueda,
-
-      nombresPaciente: this.esNuevoPaciente
-          ? this.nuevoPacienteForm.nombres
-          : this.pacienteSeleccionado?.nombres,
-
-      apellidoPaterno: this.esNuevoPaciente
-          ? this.nuevoPacienteForm.apellidoPaterno
-          : this.pacienteSeleccionado?.apellidoPaterno,
-
-      apellidoMaterno: this.esNuevoPaciente
-          ? ''
-          : this.pacienteSeleccionado?.apellidoMaterno,
-
-      telefonoPaciente: this.esNuevoPaciente
-          ? this.nuevoPacienteForm.telefono
-          : this.pacienteSeleccionado?.telefono,
-
-      fechaNacimiento: this.esNuevoPaciente 
-          ? this.nuevoPacienteForm.fechaNacimiento 
-          : (this.pacienteSeleccionado?.fechaNacimiento || '2000-01-01'),
-
+      nombresPaciente: this.esNuevoPaciente ? this.nuevoPacienteForm.nombres : this.pacienteSeleccionado?.nombres,
+      apellidoPaterno: this.esNuevoPaciente ? this.nuevoPacienteForm.apellidoPaterno : this.pacienteSeleccionado?.apellidoPaterno,
+      apellidoMaterno: this.esNuevoPaciente ? '' : this.pacienteSeleccionado?.apellidoMaterno,
+      telefonoPaciente: this.esNuevoPaciente ? this.nuevoPacienteForm.telefono : this.pacienteSeleccionado?.telefono,
+      fechaNacimiento: this.esNuevoPaciente ? this.nuevoPacienteForm.fechaNacimiento : (this.pacienteSeleccionado?.fechaNacimiento || '2000-01-01'),
       idMedico: Number(this.citaForm.idMedico),
       idEspecialidad: Number(this.citaForm.idEspecialidad),
-
       fecha: this.citaForm.fecha,
-
-      hora: this.citaForm.hora.length === 5
-          ? `${this.citaForm.hora}:00`
-          : this.citaForm.hora,
-
+      hora: this.citaForm.hora.length === 5 ? `${this.citaForm.hora}:00` : this.citaForm.hora,
       motivoConsulta: this.citaForm.motivoConsulta,
       tipoCita: this.citaForm.tipoCita,
       montoPagadoAdelanto: this.montoAdelanto30
@@ -400,28 +331,138 @@ export class CitasComponent implements OnInit {
       next: () => {
         this.mostrarMensajeGlobal('¡Cita y Paciente registrados con éxito!', 'success');
         this.closeModal();
-        this.cargarCatalogos();
         this.cargarCitas();
       },
       error: (err) => {
-        console.error(err);
-        this.mostrarMensajeGlobal(
-          'Error al registrar la cita. Revisa la conexión.',
-          'error'
-        );
+        this.errorModalMsg = this.extraerMensajeError(err, 'Error al registrar la cita.');
+        this.regresarAPaso1(); 
       }
     });
   }
 
-  exportarVoucherPDF(): void {
-    this.mostrarMensajeGlobal('Preparando PDF...', 'info');
+  abrirModalCancelar(cita: any): void {
+    this.citaACancelar = cita;
+    this.cancelForm = { motivo: '', fotoBase64: '', nombreFoto: '' };
+    this.errorModalMsg = '';
+    this.isCancelModalOpen = true;
+  }
+
+  cerrarModalCancelar(): void {
+    this.isCancelModalOpen = false;
+    this.citaACancelar = null;
+  }
+
+  cargarEvidencia(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      this.cancelForm.nombreFoto = file.name;
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.cancelForm.fotoBase64 = e.target.result; // Convierte imagen a texto para enviarla a Java
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  confirmarCancelacion(): void {
+    if (!this.cancelForm.motivo || !this.cancelForm.fotoBase64) {
+      this.errorModalMsg = "Debe escribir un motivo y subir la captura de la transferencia.";
+      return;
+    }
+
+    this.citaService.cancelarConReembolso(this.citaACancelar.idCita, this.cancelForm.motivo, this.cancelForm.fotoBase64).subscribe({
+      next: () => {
+        this.mostrarMensajeGlobal('Cita cancelada y reembolso registrado en caja exitosamente.', 'success');
+        this.cerrarModalCancelar();
+        this.cargarCitas();
+      },
+      error: (err) => {
+        this.errorModalMsg = this.extraerMensajeError(err, 'No se pudo procesar la cancelación.');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  // LÓGICA DE REPROGRAMACIÓN
+  abrirReprogramar(cita: any): void {
+    this.citaAReprogramar = cita;
+    this.reprogramarForm.fecha = cita.fecha;
+    this.reprogramarForm.hora = cita.hora?.substring(0,5);
+    this.errorModalMsg = '';
+    
+    // Traemos los horarios del médico para que la secretaria vea su disponibilidad
+    this.cargandoHorarios = true;
+    this.horarioService.listarPorMedico(cita.idMedico).subscribe({
+      next: (data) => {
+        this.horariosMedicoSeleccionado = data.sort((a: any, b: any) => a.diaSemana.localeCompare(b.diaSemana));
+        this.cargandoHorarios = false;
+        this.cdr.detectChanges();
+      }
+    });
+    this.isReprogramarModalOpen = true;
+  }
+
+  cerrarReprogramar(): void {
+    this.isReprogramarModalOpen = false;
+    this.citaAReprogramar = null;
+  }
+
+  confirmarReprogramacion(): void {
+    this.errorModalMsg = '';
+    if (!this.reprogramarForm.fecha || !this.reprogramarForm.hora) {
+      this.errorModalMsg = 'Debe seleccionar una nueva fecha y hora.';
+      return;
+    }
+
+    const turnoDelDia = this.horariosMedicoSeleccionado.find(h => h.diaSemana === this.reprogramarForm.fecha);
+    if (!turnoDelDia) {
+      this.errorModalMsg = 'El médico no asiste en la fecha seleccionada. Revisar agenda lateral.';
+      return;
+    }
+
+    const horaElegidaArr = this.reprogramarForm.hora.split(':');
+    const minsElegidos = parseInt(horaElegidaArr[0]) * 60 + parseInt(horaElegidaArr[1]);
+    const inicioArr = turnoDelDia.horaInicio.split(':');
+    const minsInicio = parseInt(inicioArr[0]) * 60 + parseInt(inicioArr[1]);
+    const finArr = turnoDelDia.horaFin.split(':');
+    const minsFin = parseInt(finArr[0]) * 60 + parseInt(finArr[1]);
+
+    if (minsElegidos < minsInicio || minsElegidos > minsFin) {
+      this.errorModalMsg = 'La hora está fuera del turno de trabajo del médico para ese día.';
+      return;
+    }
+
+    this.validandoHorarioBackend = true;
+    
+    // Convertir hora a formato de backend ("HH:mm:00")
+    const horaFormateada = this.reprogramarForm.hora.length === 5 ? `${this.reprogramarForm.hora}:00` : this.reprogramarForm.hora;
+
+    this.citaService.reprogramarCita(this.citaAReprogramar.idCita, this.reprogramarForm.fecha, horaFormateada).subscribe({
+      next: () => {
+        this.mostrarMensajeGlobal('Cita reprogramada con éxito.', 'success');
+        this.validandoHorarioBackend = false;
+        this.cerrarReprogramar();
+        this.cargarCitas();
+      },
+      error: (err) => {
+        this.validandoHorarioBackend = false;
+        this.errorModalMsg = this.extraerMensajeError(err, 'No se pudo reprogramar la cita.');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  formatearFechaLargaGlobal(fechaIso: string): string {
+    if(!fechaIso || !fechaIso.includes('-')) return fechaIso; 
+    const fecha = new Date(fechaIso + 'T00:00:00');
+    return fecha.toLocaleDateString('es-PE', { weekday: 'long', month: 'long', day: 'numeric' });
   }
 
   openModal(): void {
     this.pasoActual = 1;
     this.dniBusqueda = '';
     this.sugerenciasDni = [];
-    this.mostrarAlertaRegistro = false;
+    this.errorModalMsg = '';
     this.limpiarDatosPaciente();
     
     this.especialidadBusqueda = '';

@@ -1,6 +1,5 @@
 <div class="mx-auto max-w-7xl p-4 md:p-6 2xl:p-10">
 
-  <!-- ENCABEZADO PRINCIPAL -->
   <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <h2 class="text-2xl font-bold text-black dark:text-white">Panel de Citas Médicas</h2>
@@ -16,10 +15,9 @@
     </div>
     }
 
-    <!-- BOTÓN NUEVA CITA -->
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
       <button (click)="openModal()"
-        class="flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-5 py-2.5 font-medium text-white hover:bg-brand-600 transition-colors shadow-sm">
+        class="flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-5 py-2.5 font-bold text-white hover:bg-brand-600 transition-colors shadow-sm">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
         </svg>
@@ -28,12 +26,10 @@
     </div>
   </div>
 
-  <!-- CONTENEDOR DATA-TABLE -->
   <div class="rounded-2xl border border-gray-200 bg-white shadow-theme-xl dark:border-gray-800 dark:bg-gray-900 overflow-hidden mb-6">
     
-    <!-- CONTROLES SUPERIORES (Paginación y Buscador) -->
     <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-center gap-4">
-      <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+      <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 font-medium">
         <span>Mostrar</span>
         <select 
           [(ngModel)]="itemsPorPagina" 
@@ -49,15 +45,14 @@
 
       <div class="relative w-full sm:w-72">
         <input type="text" [(ngModel)]="searchTermCitas" (input)="filtrarCitas()"
-          placeholder="Buscar por DNI, estado, doctor..."
-          class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white transition-all" />
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute left-3 top-2.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          placeholder="Buscar DNI, paciente, doctor..."
+          class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white transition-all font-medium" />
+        <svg class="h-4 w-4 absolute left-3 top-2.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
       </div>
     </div>
 
-    <!-- TABLA DE CITAS -->
     <div class="max-w-full overflow-x-auto">
       <table class="w-full table-auto text-left">
         <thead>
@@ -65,100 +60,101 @@
             <th class="px-6 py-4 text-sm font-bold text-gray-600 uppercase tracking-wider dark:text-gray-400">Paciente</th>
             <th class="px-6 py-4 text-sm font-bold text-gray-600 uppercase tracking-wider dark:text-gray-400">Especialidad</th>
             <th class="px-6 py-4 text-sm font-bold text-gray-600 uppercase tracking-wider dark:text-gray-400">Médico</th>
-            <th class="px-6 py-4 text-sm font-bold text-gray-600 uppercase tracking-wider dark:text-gray-400">Fecha y Hora</th>
+            <th class="px-6 py-4 text-sm font-bold text-gray-600 uppercase tracking-wider dark:text-gray-400">Turno</th>
             <th class="px-6 py-4 text-sm font-bold text-gray-600 uppercase tracking-wider dark:text-gray-400">Estado</th>
-            <th class="px-6 py-4 text-sm font-bold text-gray-600 uppercase tracking-wider dark:text-gray-400 text-right">Acciones</th>
+            <th class="px-6 py-4 text-sm font-bold text-gray-600 uppercase tracking-wider dark:text-gray-400 text-center">Acciones</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
 
           @if (cargandoCitas) {
           <tr>
-            <td colspan="6" class="px-6 py-10 text-center text-base text-brand-500 font-medium animate-pulse">Cargando citas médicas...</td>
+            <td colspan="6" class="px-6 py-10 text-center text-base text-brand-500 font-bold animate-pulse">Cargando la base de turnos...</td>
           </tr>
           } @else {
+            @for (cita of citasPaginadas; track cita.idCita) {
+            <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors" [ngClass]="cita.estado === 'CANCELADA' ? 'opacity-60 grayscale' : ''">
 
-          <!-- Iteramos sobre citasPaginadas en lugar de citasFiltradas -->
-          @for (cita of citasPaginadas; track cita.idCita) {
-          <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors">
+              <td class="px-6 py-4">
+                <span class="block text-sm font-bold text-gray-800 dark:text-white capitalize">{{ cita.nombreCompletoPaciente }}</span>
+                <span class="block text-xs font-semibold text-gray-500 mt-1">DNI: {{ cita.dniPaciente }}</span>
+              </td>
 
-            <!-- Paciente -->
-            <td class="px-6 py-4">
-              <span class="block text-sm font-bold text-gray-800 dark:text-white">{{ cita.nombreCompletoPaciente }}</span>
-              <span class="block text-xs font-medium text-gray-500 mt-1">DNI: {{ cita.dniPaciente }}</span>
-            </td>
+              <td class="px-6 py-4">
+                <span class="block text-sm font-bold text-gray-700 dark:text-gray-300">{{ cita.nombreEspecialidad }}</span>
+                <span class="inline-block mt-1 text-[10px] font-black px-2 py-0.5 rounded border uppercase tracking-wider shadow-sm bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700">
+                  {{ cita.tipoCita || 'CONSULTA' }}
+                </span>
+              </td>
 
-            <!-- Especialidad -->
-            <td class="px-6 py-4">
-              <span class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ cita.nombreEspecialidad }}</span>
-              <span class="inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 uppercase tracking-wide">
-                {{ cita.tipoCita || 'CONSULTA' }}
-              </span>
-            </td>
+              <td class="px-6 py-4 text-sm font-semibold text-brand-600 dark:text-brand-400">
+                Dr(a). {{ cita.nombreCompletoMedico }}
+              </td>
 
-            <!-- Médico -->
-            <td class="px-6 py-4 text-sm font-medium text-gray-600 dark:text-gray-300">
-              Dr(a). {{ cita.nombreCompletoMedico }}
-            </td>
+              <td class="px-6 py-4">
+                <span class="block text-sm font-black text-gray-800 dark:text-white">{{ cita.hora?.substring(0,5) }}</span>
+                <span class="block text-[11px] font-medium text-gray-500 mt-0.5">{{ cita.fecha }}</span>
+              </td>
 
-            <!-- Fecha y Hora -->
-            <td class="px-6 py-4">
-              <span class="block text-sm font-bold text-gray-800 dark:text-white">{{ cita.fecha }}</span>
-              <span class="block text-xs font-medium text-gray-500 mt-1">{{ cita.hora?.substring(0,5) }}</span>
-            </td>
+              <td class="px-6 py-4">
+                <span [ngClass]="{
+                        'bg-yellow-50 text-yellow-700 border-yellow-200': cita.estado === 'PENDIENTE_PAGO',
+                        'bg-blue-50 text-blue-700 border-blue-200': cita.estado === 'CONFIRMADA',
+                        'bg-purple-50 text-purple-700 border-purple-200': cita.estado === 'EN_ESPERA',
+                        'bg-green-50 text-green-700 border-green-200': cita.estado === 'ATENDIDA',
+                        'bg-red-50 text-red-700 border-red-200': cita.estado === 'CANCELADA'
+                      }" class="inline-flex rounded border px-2.5 py-1 text-[10px] font-black uppercase tracking-widest shadow-sm">
+                  {{ cita.estado ? cita.estado.replace('_', ' ') : 'N/A' }}
+                </span>
+              </td>
 
-            <!-- Estado -->
-            <td class="px-6 py-4">
-              <span [ngClass]="{
-                      'bg-yellow-50 text-yellow-600 border-yellow-200': cita.estado === 'PENDIENTE_PAGO',
-                      'bg-blue-50 text-blue-600 border-blue-200': cita.estado === 'CONFIRMADA',
-                      'bg-purple-50 text-purple-600 border-purple-200': cita.estado === 'EN_ESPERA',
-                      'bg-green-50 text-green-600 border-green-200': cita.estado === 'ATENDIDA',
-                      'bg-red-50 text-red-600 border-red-200': cita.estado === 'CANCELADA'
-                    }" class="inline-flex rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wide">
-                {{ cita.estado }}
-              </span>
-            </td>
+              <td class="px-6 py-4 text-center">
+                <div class="flex justify-center gap-2">
+                  <button *ngIf="cita.estado !== 'ATENDIDA' && cita.estado !== 'CANCELADA'" 
+                          (click)="abrirReprogramar(cita)"
+                          class="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg hover:bg-gray-50 hover:text-brand-600 shadow-sm transition dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700">
+                    Reprogramar
+                  </button>
+                  
+                  <button *ngIf="cita.estado !== 'ATENDIDA' && cita.estado !== 'CANCELADA'"
+          (click)="abrirModalCancelar(cita)"
+          class="px-3 py-1.5 bg-red-50 border border-red-100 text-red-600 text-xs font-bold rounded-lg hover:bg-red-600 hover:text-white shadow-sm transition dark:bg-red-900/20 dark:border-red-900/50 dark:text-red-400">
+    Cancelar
+  </button>
+                  
+                  <span *ngIf="cita.estado === 'ATENDIDA' || cita.estado === 'CANCELADA'" class="text-[10px] text-gray-400 font-bold uppercase tracking-wider italic">
+                    Proceso Cerrado
+                  </span>
+                </div>
+              </td>
 
-            <!-- Acciones -->
-            <td class="px-6 py-4 text-right">
-              <div class="flex justify-end gap-3 text-gray-400">
-                <button class="hover:text-brand-500 transition-colors" title="Editar">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                </button>
-                <button class="hover:text-red-500 transition-colors" title="Eliminar">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                </button>
-              </div>
-            </td>
-
-          </tr>
-          } @empty {
-          <tr>
-            <td colspan="6" class="px-6 py-10 text-center text-sm text-gray-400">No se encontraron resultados para tu búsqueda.</td>
-          </tr>
-          }
+            </tr>
+            } @empty {
+            <tr>
+              <td colspan="6" class="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400 bg-gray-50/50 dark:bg-gray-800/30">
+                <div class="flex flex-col items-center">
+                  <svg class="h-10 w-10 text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/></svg>
+                  <p class="text-base font-bold text-gray-700 dark:text-gray-300">No se encontraron turnos programados.</p>
+                </div>
+              </td>
+            </tr>
+            }
           }
         </tbody>
       </table>
     </div>
 
-    <!-- CONTROLES INFERIORES (Paginación Footer) -->
     <div class="p-4 border-t border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-center gap-4 bg-white dark:bg-gray-900 text-sm text-gray-600 dark:text-gray-400">
-      <div>
+      <div class="font-medium">
         Mostrando {{ calcularRangoInicio() }} a {{ calcularRangoFin() }} de {{ citasFiltradas.length }} entradas
       </div>
       <div class="flex gap-2">
-        <button 
-          (click)="paginaAnterior()" 
-          [disabled]="paginaActual === 1"
-          class="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-gray-700 dark:hover:bg-gray-800">
+        <button (click)="paginaAnterior()" [disabled]="paginaActual === 1"
+          class="px-4 py-2 border border-gray-200 font-bold rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-gray-700 dark:hover:bg-gray-800 shadow-sm">
           Anterior
         </button>
-        <button 
-          (click)="paginaSiguiente()" 
-          [disabled]="paginaActual * itemsPorPagina >= citasFiltradas.length"
-          class="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-gray-700 dark:hover:bg-gray-800">
+        <button (click)="paginaSiguiente()" [disabled]="paginaActual * itemsPorPagina >= citasFiltradas.length"
+          class="px-4 py-2 border border-gray-200 font-bold rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors dark:border-gray-700 dark:hover:bg-gray-800 shadow-sm">
           Siguiente
         </button>
       </div>
@@ -166,50 +162,61 @@
 
   </div>
 
-  <!-- INICIO MODAL (INTACTO) -->
   @if (isModalOpen) {
-  <div class="fixed inset-0 z-99999 flex justify-center overflow-y-auto bg-black/50 p-4 sm:p-6 backdrop-blur-xs">
+  <div class="fixed inset-0 z-[99999] flex justify-center overflow-y-auto bg-black/60 p-4 sm:p-6 backdrop-blur-sm">
 
-    <div class="w-full max-w-4xl my-auto rounded-2xl bg-white p-5 sm:p-6 shadow-2xl dark:bg-gray-900 relative">
+    <div class="w-full max-w-7xl my-auto rounded-2xl bg-white p-5 sm:p-7 shadow-2xl dark:bg-gray-900 relative border border-gray-200 dark:border-gray-800">
 
-      <div class="mb-4 flex items-center justify-between border-b pb-3 dark:border-gray-800">
+      <div class="mb-5 flex items-center justify-between border-b pb-4 dark:border-gray-800">
         <div>
-          <h3 class="text-xl font-bold text-gray-900 dark:text-white">Agendamiento de Turnos</h3>
-          <p class="text-xs text-gray-400">Paso {{ pasoActual }} de 2: {{ pasoActual === 1 ? 'Datos de la Cita' :
-            'Validación de Abono' }}</p>
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <svg class="h-6 w-6 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            Agendamiento de Turnos
+          </h3>
+          <p class="text-[11px] font-bold text-brand-500 uppercase tracking-widest mt-1">Paso {{ pasoActual }} de 2: {{ pasoActual === 1 ? 'Formulario Clínico' : 'Validación de Abono' }}</p>
         </div>
-        <button (click)="closeModal()"
-          class="text-gray-400 hover:text-gray-700 dark:hover:text-white text-2xl">&times;</button>
+        <button (click)="closeModal()" class="text-gray-400 hover:text-red-500 text-3xl font-light transition-colors">&times;</button>
       </div>
 
-      @if (pasoActual === 1) {
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      @if (errorModalMsg) {
+        <div class="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 flex gap-3 items-start animate-fade-in dark:bg-red-900/20 dark:border-red-800/50 shadow-sm">
+          <svg class="h-5 w-5 text-red-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+          <div>
+            <p class="text-sm font-bold text-red-800 dark:text-red-400">El sistema bloqueó la acción</p>
+            <p class="text-xs text-red-600 mt-1 dark:text-red-300 font-medium">{{ errorModalMsg }}</p>
+          </div>
+        </div> 
+      }
 
-        <div class="lg:col-span-2 space-y-3">
+      @if (pasoActual === 1) {
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
+
+        <div class="xl:col-span-8 space-y-4">
 
           @if (esNuevoPaciente) {
-            <div class="flex w-full border-l-4 border-blue-500 bg-blue-50 p-3 shadow-sm dark:bg-blue-500/10 rounded-r-lg animate-fade-in">
+            <div class="flex w-full border-l-4 border-blue-500 bg-blue-50 p-3.5 shadow-sm dark:bg-blue-500/10 rounded-r-lg animate-fade-in">
               <div class="w-full">
-                <p class="text-[11px] font-bold text-blue-700 dark:text-blue-400">
+                <p class="text-xs font-bold text-blue-800 dark:text-blue-400">
                   <svg class="w-4 h-4 inline-block mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                  Paciente no registrado. Complete los datos para proceder con el registro y la cita en un solo paso.
+                  Paciente no registrado. Al completar esta ficha, el sistema generará automáticamente su Historial Clínico.
                 </p>
               </div>
             </div>
           }
 
-          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
             <div class="relative">
-              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">DNI *</label>
-              <input type="text" [(ngModel)]="dniBusqueda" (input)="buscarDniRealTime()" placeholder="Buscar DNI..." maxlength="8"
-                class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+              <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Buscar DNI <span class="text-red-500">*</span></label>
+              <input type="text" [(ngModel)]="dniBusqueda" (input)="buscarDniRealTime()" placeholder="Escribe el DNI..." maxlength="8"
+                class="w-full rounded-xl border border-gray-300 bg-gray-50 p-2.5 text-sm font-mono font-bold focus:border-brand-500 focus:bg-white outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white transition-all shadow-sm" />
 
               @if (sugerenciasDni.length > 0) {
-                <div class="absolute left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                <div class="absolute left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800">
                   @for (p of sugerenciasDni; track p.idPaciente) {
-                    <button type="button" (click)="seleccionarPaciente(p)" class="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 font-medium">
-                      {{ p.dni }} - {{ p.nombres }} {{ p.apellidoPaterno }}
+                    <button type="button" (click)="seleccionarPaciente(p)" class="w-full px-4 py-3 text-left hover:bg-brand-50 border-b border-gray-100 last:border-0 dark:border-gray-700 dark:hover:bg-gray-700 transition-colors">
+                      <span class="text-sm font-bold text-gray-900 dark:text-white block">{{ p.nombres }} {{ p.apellidoPaterno }}</span>
+                      <span class="text-xs text-brand-600 font-mono mt-0.5 block">DNI: {{ p.dni }}</span>
                     </button>
                   }
                 </div>
@@ -218,47 +225,37 @@
 
             @if (!esNuevoPaciente) {
               <div>
-                <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Nombre Completo</label>
-                <input type="text" [value]="pacienteSeleccionado ? pacienteSeleccionado.nombres + ' ' + pacienteSeleccionado.apellidoPaterno : ''" disabled placeholder="Autollene" class="w-full rounded-lg border border-gray-200 bg-gray-100 p-2 text-sm text-gray-500 outline-none dark:border-gray-700 dark:bg-gray-800/50" />
+                <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Nombre del Paciente</label>
+                <input type="text" [value]="pacienteSeleccionado ? pacienteSeleccionado.nombres + ' ' + pacienteSeleccionado.apellidoPaterno : ''" disabled placeholder="Autollene" class="w-full rounded-xl border border-gray-200 bg-gray-100 p-2.5 text-sm font-bold text-gray-600 outline-none dark:border-gray-700 dark:bg-gray-800/50 shadow-inner" />
               </div>
             } @else {
-              <div class="col-span-1 sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3 animate-fade-in p-3 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/50 rounded-xl">
+              <div class="col-span-1 sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4 animate-fade-in p-4 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/50 rounded-xl shadow-sm">
                 <div>
-                  <label class="mb-1 block text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase">Nombres *</label>
-                  <input type="text" [(ngModel)]="nuevoPacienteForm.nombres" class="w-full rounded-lg border border-blue-200 bg-white p-2 text-sm focus:border-blue-500 outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white" />
+                  <label class="mb-1 block text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">Nombres <span class="text-red-500">*</span></label>
+                  <input type="text" [(ngModel)]="nuevoPacienteForm.nombres" class="w-full rounded-lg border border-blue-200 bg-white p-2 text-sm font-semibold text-gray-800 focus:border-brand-500 outline-none dark:bg-gray-800 dark:border-blue-800 dark:text-white" />
                 </div>
                 <div>
-                  <label class="mb-1 block text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase">Apellidos *</label>
-                  <input type="text" [(ngModel)]="nuevoPacienteForm.apellidoPaterno" class="w-full rounded-lg border border-blue-200 bg-white p-2 text-sm focus:border-blue-500 outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white" />
+                  <label class="mb-1 block text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">Apellidos <span class="text-red-500">*</span></label>
+                  <input type="text" [(ngModel)]="nuevoPacienteForm.apellidoPaterno" class="w-full rounded-lg border border-blue-200 bg-white p-2 text-sm font-semibold text-gray-800 focus:border-brand-500 outline-none dark:bg-gray-800 dark:border-blue-800 dark:text-white" />
                 </div>
                 <div>
-                  <label class="mb-1 block text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase">Teléfono *</label>
-                  <input type="text" [(ngModel)]="nuevoPacienteForm.telefono" placeholder="Ej. 999888777" class="w-full rounded-lg border border-blue-200 bg-white p-2 text-sm focus:border-blue-500 outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white" />
+                  <label class="mb-1 block text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">Celular <span class="text-red-500">*</span></label>
+                  <input type="text" [(ngModel)]="nuevoPacienteForm.telefono" maxlength="9" placeholder="9 dígitos" class="w-full rounded-lg border border-blue-200 bg-white p-2 text-sm font-mono font-bold text-gray-800 focus:border-brand-500 outline-none dark:bg-gray-800 dark:border-blue-800 dark:text-white" />
                 </div>
               </div>
             }
 
-            <div>
-              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Nombre Completo</label>
-              <input type="text"
-                [value]="pacienteSeleccionado ? pacienteSeleccionado.nombres + ' ' + pacienteSeleccionado.apellidoPaterno : ''"
-                disabled placeholder="Autollene"
-                class="w-full rounded-lg border border-gray-200 bg-gray-100 p-2 text-sm text-gray-500 outline-none dark:border-gray-700 dark:bg-gray-800/50" />
-            </div>
-
-            <div class="relative">
-              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Especialidad Clínica
-                *</label>
+            <div class="relative sm:col-span-2">
+              <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Especialidad Requerida <span class="text-red-500">*</span></label>
               <input type="text" [(ngModel)]="especialidadBusqueda" (input)="buscarEspecialidadRealTime()"
-                placeholder="Escribe especialidad"
-                class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+                placeholder="Escribe la especialidad (Ej. Cardiología)..."
+                class="w-full rounded-xl border border-gray-300 bg-gray-50 p-2.5 text-sm font-semibold text-gray-800 focus:border-brand-500 focus:bg-white outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white transition-all shadow-sm" />
 
               @if (sugerenciasEspecialidad.length > 0) {
-              <div
-                class="absolute left-0 right-0 z-50 mt-1 max-h-40 overflow-y-auto rounded-lg border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+              <div class="absolute left-0 right-0 z-50 mt-1 max-h-40 overflow-y-auto rounded-lg border bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800">
                 @for (e of sugerenciasEspecialidad; track e.idEspecialidad) {
                 <button type="button" (click)="seleccionarEspecialidad(e)"
-                  class="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 font-medium">
+                  class="w-full px-4 py-2 text-left text-sm font-bold hover:bg-brand-50 text-brand-700 dark:text-brand-400 border-b border-gray-100 last:border-0 dark:border-gray-700 dark:hover:bg-gray-700 transition-colors">
                   {{ e.nombre }}
                 </button>
                 }
@@ -267,32 +264,33 @@
             </div>
 
             <div>
-              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Tipo de Reserva *</label>
+              <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Tipo de Reserva <span class="text-red-500">*</span></label>
               <select [(ngModel)]="citaForm.tipoCita"
-                class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm focus:border-brand-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                class="w-full rounded-xl border border-gray-300 bg-white p-2.5 text-sm font-bold text-gray-700 outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white shadow-sm">
                 <option value="CONSULTA">Consulta Regular</option>
-                <option value="OPERACION">Procedimiento / Operación</option>
+                <option value="OPERACION">Procedimiento Quirúrgico</option>
               </select>
             </div>
 
             <div class="sm:col-span-2">
-              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Médico Disponible</label>
-              <div
-                class="max-h-32 overflow-y-auto rounded-xl border border-gray-100 bg-gray-50/50 p-2 dark:border-gray-800 dark:bg-white/[0.01]">
-                <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Médico Especialista <span class="text-red-500">*</span></label>
+              <div class="max-h-40 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50/50 p-3 dark:border-gray-700 dark:bg-gray-900 shadow-inner custom-scrollbar">
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   @for (m of medicosFiltradosPorEspecialidad; track m.idMedico) {
                   <div
-                    [ngClass]="citaForm.idMedico === m.idMedico ? 'border-brand-500 bg-brand-50/50' : 'border-gray-200 bg-white'"
-                    class="flex items-center justify-between rounded-lg border p-1.5 shadow-sm transition-all">
-                    <h5 class="text-xs font-bold text-gray-900 truncate">Dr. {{ m.nombres }}</h5>
-                    <button type="button" (click)="asignarMedico(m.idMedico)"
-                      [ngClass]="citaForm.idMedico === m.idMedico ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-700'"
-                      class="rounded-md px-2 py-1 text-[10px] font-semibold">
-                      {{ citaForm.idMedico === m.idMedico ? 'Seleccionado' : 'Elegir' }}
-                    </button>
+                    [ngClass]="citaForm.idMedico === m.idMedico ? 'border-brand-500 bg-brand-50 ring-1 ring-brand-500 dark:bg-brand-900/20' : 'border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700'"
+                    class="flex items-center justify-between rounded-xl border p-2.5 shadow-sm transition-all cursor-pointer hover:border-brand-300"
+                    (click)="asignarMedico(m.idMedico)">
+                    <h5 class="text-sm font-bold text-gray-900 dark:text-white truncate">Dr. {{ m.nombres }}</h5>
+                    <div [ngClass]="citaForm.idMedico === m.idMedico ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-500 dark:bg-gray-700'"
+                      class="rounded-lg px-2.5 py-1 text-xs font-bold transition-colors">
+                      {{ citaForm.idMedico === m.idMedico ? 'Elegido' : 'Seleccionar' }}
+                    </div>
                   </div>
                   } @empty {
-                  <div class="col-span-full py-2 text-center text-xs text-gray-400">Selecciona especialidad primero.
+                  <div class="col-span-full py-6 text-center text-sm font-medium text-gray-400">
+                    <svg class="h-8 w-8 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    Busque y seleccione una especialidad primero.
                   </div>
                   }
                 </div>
@@ -300,75 +298,78 @@
             </div>
 
             <div>
-              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Fecha Deseada *</label>
+              <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Fecha del Turno <span class="text-red-500">*</span></label>
               <input type="date" [(ngModel)]="citaForm.fecha"
-                class="w-full rounded-lg border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+                class="w-full rounded-xl border border-gray-300 bg-white p-2.5 text-sm font-bold text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:border-brand-500" />
             </div>
             <div>
-              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Hora *</label>
+              <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Hora <span class="text-red-500">*</span></label>
               <input type="time" [(ngModel)]="citaForm.hora"
-                class="w-full rounded-lg border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+                class="w-full rounded-xl border border-gray-300 bg-white p-2.5 text-sm font-bold text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:border-brand-500" />
             </div>
 
             <div class="sm:col-span-2">
-              <label class="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Motivo de la Consulta
-                *</label>
-              <textarea [(ngModel)]="citaForm.motivoConsulta" rows="2" placeholder="Síntomas..."
-                class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm focus:border-brand-500 outline-none"></textarea>
+              <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Motivo de la Consulta <span class="text-red-500">*</span></label>
+              <textarea [(ngModel)]="citaForm.motivoConsulta" rows="2" placeholder="Describa brevemente los síntomas o la razón de la visita..."
+                class="w-full rounded-xl border border-gray-300 bg-white p-3 text-sm font-medium text-gray-800 focus:border-brand-500 outline-none shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white"></textarea>
             </div>
 
           </div>
         </div>
 
-        <div class="lg:col-span-1 border-l border-gray-200 dark:border-gray-800 pl-0 lg:pl-6 flex flex-col pt-4 lg:pt-0">
+        <div class="xl:col-span-4 border-t xl:border-t-0 xl:border-l border-gray-200 dark:border-gray-800 pt-6 xl:pt-0 xl:pl-8 flex flex-col h-full">
 
-          <div
-            class="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-4 mb-4 flex-1">
-            <h4 class="text-sm font-bold text-blue-800 dark:text-blue-400 mb-2 flex items-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          <div class="bg-blue-50/80 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-2xl p-5 mb-5 flex-1 shadow-inner min-h-[300px]">
+            <h4 class="text-sm font-black text-blue-900 dark:text-blue-400 mb-4 flex items-center gap-2 border-b border-blue-200/50 dark:border-blue-800/50 pb-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
               </svg>
-              Agenda del Médico
+              Matriz de Horarios
             </h4>
 
             @if (cargandoHorarios) {
-            <p class="text-xs text-blue-600 animate-pulse">Consultando fechas...</p>
+            <div class="flex flex-col items-center justify-center py-12">
+              <span class="text-sm font-bold text-blue-600 animate-pulse">Sincronizando agenda...</span>
+            </div>
             } @else if (!citaForm.idMedico) {
-            <p class="text-xs text-blue-600/70 italic">Selecciona un médico para ver los días exactos que asiste a la
-              clínica.</p>
+            <p class="text-xs text-blue-600/70 font-medium text-center py-12 leading-relaxed">Selecciona un médico especialista en el panel izquierdo para cargar sus días de atención disponibles.</p>
             } @else if (horariosMedicoSeleccionado.length > 0) {
-            <ul class="space-y-2 max-h-40 overflow-y-auto pr-1">
+            <ul class="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
               @for (turno of horariosMedicoSeleccionado; track turno.idHorario) {
-              <li
-                class="flex flex-col text-xs bg-white dark:bg-gray-800 p-2 rounded shadow-sm border border-blue-50 dark:border-gray-700">
-                <span class="font-bold text-gray-800 dark:text-gray-100 capitalize">{{
-                  formatearFechaLarga(turno.diaSemana) }}</span>
-                <span class="text-brand-600 font-medium mt-1">Horario: {{ turno.horaInicio.substring(0,5) }} a {{
-                  turno.horaFin.substring(0,5) }}</span>
+              <li class="flex flex-col text-sm bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-blue-100 dark:border-gray-700 transition-all hover:border-blue-300">
+                <span class="font-black text-gray-900 dark:text-white capitalize mb-1">{{ formatearFechaLargaGlobal(turno.diaSemana) }}</span>
+                <div class="flex items-center gap-2 text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/10 px-2 py-1 rounded-md w-fit border border-brand-100 dark:border-brand-900/30">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  {{ turno.horaInicio.substring(0,5) }} a {{ turno.horaFin.substring(0,5) }}
+                </div>
               </li>
               }
             </ul>
             } @else {
-            <p class="text-xs text-red-500 font-medium">No tiene fechas programadas por el administrador.</p>
+            <div class="bg-red-50 border border-red-200 p-3 rounded-xl text-center mt-6">
+              <p class="text-xs font-bold text-red-600">Este médico no tiene turnos configurados para este mes.</p>
+            </div>
             }
           </div>
 
-          <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.02] border border-dashed border-gray-200 dark:border-gray-800 mb-4">
-            <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
+          <div class="rounded-2xl bg-gray-50 p-5 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 mb-6 shadow-sm">
+            <div class="flex justify-between text-xs font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">
               <span>Costo Especialidad:</span>
-              <span class="font-semibold">S/ {{ precioEspecialidad.toFixed(2) }}</span>
+              <span class="text-gray-800 dark:text-gray-200">S/ {{ precioEspecialidad.toFixed(2) }}</span>
             </div>
-            <div class="flex justify-between text-sm font-bold text-brand-600 pt-1 border-t border-gray-200">
-              <span>Adelanto (30%):</span>
-              <span>S/ {{ montoAdelanto30.toFixed(2) }}</span>
+            <div class="flex justify-between text-base font-black text-brand-600 dark:text-brand-400 pt-2 border-t border-gray-200 dark:border-gray-700">
+              <span>Separación (30%):</span>
+              <span class="text-xl">S/ {{ montoAdelanto30.toFixed(2) }}</span>
             </div>
           </div>
 
-          <button (click)="irAPagar()" [disabled]="validandoHorarioBackend"
-            [ngClass]="validandoHorarioBackend ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
-            class="w-full text-white py-3 rounded-lg text-sm font-bold transition-all shadow-md">
-            {{ validandoHorarioBackend ? 'Verificando ocupación...' : 'Validar Turno y Pagar' }}
+          <button (click)="irAPagar()" 
+            [disabled]="validandoHorarioBackend || !formularioValido"
+            [ngClass]="validandoHorarioBackend || !formularioValido ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-800 border-gray-200 dark:border-gray-700' : 'bg-brand-600 text-white hover:bg-brand-700 shadow-md transform active:scale-95'"
+            class="w-full py-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 border border-transparent">
+            <svg *ngIf="!formularioValido" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            <svg *ngIf="formularioValido && !validandoHorarioBackend" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            {{ validandoHorarioBackend ? 'Validando horario en servidor...' : (formularioValido ? 'Proceder a Caja y Pago' : 'Complete el Formulario') }}
           </button>
 
         </div>
@@ -378,36 +379,39 @@
 
       @if (pasoActual === 2) {
         @if (esNuevoPaciente) {
-          <div class="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-lg mb-4 text-center dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300">
-            <p class="text-xs font-semibold">
-              Creando nuevo paciente: <span class="font-bold">{{ nuevoPacienteForm.nombres }} {{ nuevoPacienteForm.apellidoPaterno }}</span><br>
-              Agendando cita para: <span class="font-bold">{{ citaForm.fecha }}</span>
+          <div class="bg-blue-50 border border-blue-200 text-blue-900 p-4 rounded-2xl mb-5 text-center dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300 shadow-sm">
+            <p class="text-sm font-medium">
+              El sistema creará el expediente del nuevo paciente: <br><span class="font-black text-lg">{{ nuevoPacienteForm.nombres }} {{ nuevoPacienteForm.apellidoPaterno }}</span>
             </p>
           </div>
         }
-      <div class="space-y-4 animate-fadeIn max-w-sm mx-auto">
-        <div class="text-center bg-brand-50 p-4 rounded-xl border border-brand-100">
-          <p class="text-[10px] font-semibold text-brand-600 uppercase tracking-wider">Monto de Separación</p>
-          <h4 class="text-3xl font-extrabold text-gray-900 mt-1">S/ {{ montoAdelanto30.toFixed(2) }}</h4>
+      <div class="space-y-6 animate-fade-in max-w-lg mx-auto py-6">
+        
+        <div class="text-center bg-brand-50 p-6 rounded-2xl border border-brand-200 shadow-inner dark:bg-brand-900/10 dark:border-brand-900/50">
+          <p class="text-xs font-black text-brand-600 uppercase tracking-widest mb-2">Total a Pagar Ahora</p>
+          <h4 class="text-5xl font-black text-gray-900 dark:text-white">S/ {{ montoAdelanto30.toFixed(2) }}</h4>
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
-          <label class="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 bg-white">
-            <input type="radio" name="payMethod" checked class="text-brand-500">
-            <span class="font-bold text-sm text-gray-800">Yape / Efectivo</span>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <label class="flex items-center justify-center gap-2 p-3 border-2 border-brand-500 bg-brand-50/50 rounded-xl cursor-pointer transition-all dark:bg-brand-900/20 dark:border-brand-500 shadow-sm">
+            <input type="radio" name="payMethod" checked class="text-brand-500 h-4 w-4">
+            <span class="font-black text-xs text-brand-700 dark:text-brand-400">Yape / Plin</span>
           </label>
-          <label class="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 bg-white">
-            <input type="radio" name="payMethod" class="text-brand-500">
-            <span class="font-bold text-sm text-gray-800">Tarjeta</span>
+          <label class="flex items-center justify-center gap-2 p-3 border-2 border-gray-200 bg-white rounded-xl cursor-pointer hover:border-brand-300 transition-all dark:bg-gray-800 dark:border-gray-700">
+            <input type="radio" name="payMethod" class="text-brand-500 h-4 w-4">
+            <span class="font-bold text-xs text-gray-700 dark:text-gray-300">Efectivo</span>
+          </label>
+          <label class="flex items-center justify-center gap-2 p-3 border-2 border-gray-200 bg-white rounded-xl cursor-pointer hover:border-brand-300 transition-all dark:bg-gray-800 dark:border-gray-700">
+            <input type="radio" name="payMethod" class="text-brand-500 h-4 w-4">
+            <span class="font-bold text-xs text-gray-700 dark:text-gray-300">POS / Tarjeta</span>
           </label>
         </div>
 
-        <div class="flex justify-between items-center mt-6 pt-4 border-t">
-          <button (click)="regresarAPaso1()" class="text-gray-500 hover:underline font-semibold text-xs">&larr;
-            Atrás</button>
+        <div class="flex justify-between items-center mt-10 pt-6 border-t border-gray-200 dark:border-gray-800">
+          <button (click)="regresarAPaso1()" class="text-gray-500 hover:text-brand-600 hover:underline font-bold text-sm transition-colors">&larr; Volver al Ticket</button>
           <button (click)="confirmarPagoYape()"
-            class="bg-emerald-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-emerald-700 shadow-md">
-            Confirmar Citas
+            class="bg-green-600 text-white font-black py-3.5 px-10 rounded-xl hover:bg-green-700 shadow-lg transition-transform active:scale-95 text-sm">
+            CONFIRMAR Y AGENDAR
           </button>
         </div>
       </div>
@@ -415,4 +419,127 @@
     </div>
   </div>
   }
+
+  @if (isReprogramarModalOpen) {
+    <div class="fixed inset-0 z-[999999] flex justify-center items-center overflow-y-auto bg-black/60 p-4 sm:p-6 backdrop-blur-sm">
+      <div class="w-full max-w-4xl rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-800 dark:bg-gray-900 animate-fade-in">
+        
+        <div class="mb-5 flex items-center justify-between border-b pb-4 dark:border-gray-800">
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <svg class="w-6 h-6 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            Reprogramar Cita Médica
+          </h3>
+          <button (click)="cerrarReprogramar()" class="text-gray-400 hover:text-red-500 text-2xl transition-colors">&times;</button>
+        </div>
+
+        @if (errorModalMsg) {
+          <div class="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 flex gap-3 items-start animate-fade-in dark:bg-red-900/20 dark:border-red-800/50 shadow-sm">
+            <svg class="h-5 w-5 text-red-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            <div><p class="text-sm font-bold text-red-800 dark:text-red-400">Verifique los datos</p><p class="text-xs text-red-600 mt-1 dark:text-red-300 font-medium">{{ errorModalMsg }}</p></div>
+          </div> 
+        }
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div class="space-y-5">
+            <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+              <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Paciente a Reprogramar</p>
+              <p class="text-base font-black text-gray-900 dark:text-white capitalize">{{ citaAReprogramar?.nombreCompletoPaciente }}</p>
+              <p class="text-sm font-medium text-gray-600 mt-1 dark:text-gray-400">Dr. {{ citaAReprogramar?.nombreCompletoMedico }}</p>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Nueva Fecha</label>
+                <input type="date" [(ngModel)]="reprogramarForm.fecha" class="w-full rounded-xl border border-gray-300 bg-white p-3 text-sm font-bold text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:border-brand-500" />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-bold text-gray-500 uppercase tracking-wider">Nueva Hora</label>
+                <input type="time" [(ngModel)]="reprogramarForm.hora" class="w-full rounded-xl border border-gray-300 bg-white p-3 text-sm font-bold text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:border-brand-500" />
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-blue-50/80 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-2xl p-5 shadow-inner">
+            <h4 class="text-sm font-black text-blue-900 dark:text-blue-400 mb-4 flex items-center gap-2 border-b border-blue-200/50 dark:border-blue-800/50 pb-2">
+              Agenda Disponible del Médico
+            </h4>
+            @if (cargandoHorarios) {
+              <div class="flex justify-center py-6"><span class="text-sm font-bold text-blue-600 animate-pulse">Cargando...</span></div>
+            } @else if (horariosMedicoSeleccionado.length > 0) {
+              <ul class="space-y-3 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                @for (turno of horariosMedicoSeleccionado; track turno.idHorario) {
+                <li class="flex flex-col text-sm bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-blue-100 dark:border-gray-700">
+                  <span class="font-black text-gray-900 dark:text-white capitalize mb-1">{{ formatearFechaLargaGlobal(turno.diaSemana) }}</span>
+                  <div class="flex items-center gap-2 text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/10 px-2 py-1 rounded-md w-fit border border-brand-100 dark:border-brand-900/30">
+                    {{ turno.horaInicio.substring(0,5) }} a {{ turno.horaFin.substring(0,5) }}
+                  </div>
+                </li>
+                }
+              </ul>
+            } @else {
+              <div class="bg-red-50 border border-red-200 p-3 rounded-xl text-center"><p class="text-xs font-bold text-red-600">No hay horarios registrados.</p></div>
+            }
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-8 pt-5 border-t border-gray-100 dark:border-gray-800">
+          <button (click)="cerrarReprogramar()" class="rounded-xl border border-gray-300 px-6 py-2.5 font-bold text-gray-700 hover:bg-gray-50 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">Cancelar</button>
+          <button (click)="confirmarReprogramacion()" 
+                  [disabled]="validandoHorarioBackend"
+                  class="bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 px-8 rounded-xl shadow-md transition-all flex items-center gap-2 text-sm disabled:opacity-50">
+            {{ validandoHorarioBackend ? 'Validando...' : 'Confirmar Reprogramación' }}
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  @if (isCancelModalOpen) {
+    <div class="fixed inset-0 z-[999999] flex justify-center items-center overflow-y-auto bg-black/60 p-4 sm:p-6 backdrop-blur-sm">
+      <div class="w-full max-w-lg rounded-2xl border border-red-200 bg-white p-6 shadow-2xl dark:border-red-900/50 dark:bg-gray-900 animate-fade-in">
+        
+        <div class="mb-4 text-center">
+          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20 mb-3">
+            <svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+          </div>
+          <h3 class="text-xl font-black text-gray-900 dark:text-white">Cancelar y Reembolsar</h3>
+          <p class="text-sm text-gray-500 mt-1">Se anulará el turno de <strong class="text-gray-800 dark:text-white capitalize">{{ citaACancelar?.nombreCompletoPaciente }}</strong>.</p>
+        </div>
+
+        @if (errorModalMsg) { <p class="text-center text-xs font-bold text-red-600 mb-4">{{ errorModalMsg }}</p> }
+
+        <div class="bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 p-4 rounded-xl mb-5 text-center">
+          <p class="text-xs font-bold text-red-800 dark:text-red-400 uppercase tracking-widest mb-1">Monto a Devolver (30%)</p>
+          <p class="text-xs text-red-600 dark:text-red-300 font-medium">El cobro pendiente del 70% será anulado automáticamente.</p>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="mb-1 block text-xs font-bold text-gray-500 uppercase">Motivo de Cancelación *</label>
+            <input type="text" [(ngModel)]="cancelForm.motivo" placeholder="Ej: Paciente de viaje, Error de registro..." class="w-full rounded-xl border border-gray-300 bg-white p-3 text-sm focus:border-red-500 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+          </div>
+          <div>
+            <label class="mb-1 block text-xs font-bold text-gray-500 uppercase">Evidencia de Extorno (Voucher) *</label>
+            <div class="flex items-center gap-3">
+              <label class="cursor-pointer bg-white border border-gray-300 text-gray-700 font-bold py-2 px-4 rounded-xl text-sm hover:bg-gray-50 shadow-sm dark:bg-gray-800 dark:border-gray-600 dark:text-white transition">
+                <span>Subir Captura</span>
+                <input type="file" (change)="cargarEvidencia($event)" accept="image/*" class="hidden">
+              </label>
+              <span class="text-xs text-gray-500 italic truncate">{{ cancelForm.nombreFoto || 'Ningún archivo seleccionado' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-8 pt-5 border-t border-gray-100 dark:border-gray-800">
+          <button (click)="cerrarModalCancelar()" class="rounded-xl border border-gray-300 px-6 py-2.5 font-bold text-gray-700 hover:bg-gray-50 text-sm dark:border-gray-700 dark:text-gray-300">Atrás</button>
+          <button (click)="confirmarCancelacion()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-xl shadow-md transition-all text-sm">
+            Efectuar Cancelación
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
 </div>

@@ -13,15 +13,23 @@ import java.util.stream.Collectors;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Service
 public class CitaMedicaServiceImpl implements CitaMedicaService {
 
-    @Autowired private CitaMedicaRepository citaRepository;
-    @Autowired private PacienteRepository pacienteRepository;
-    @Autowired private MedicoRepository medicoRepository;
-    @Autowired private EspecialidadRepository especialidadRepository;
-    @Autowired private PagoRepository pagoRepository;
+    @Autowired
+    private CitaMedicaRepository citaRepository;
+    @Autowired
+    private PacienteRepository pacienteRepository;
+    @Autowired
+    private MedicoRepository medicoRepository;
+    @Autowired
+    private EspecialidadRepository especialidadRepository;
+    @Autowired
+    private PagoRepository pagoRepository;
+    @Autowired 
+    private PagoService pagoService;
 
     @Transactional(readOnly = true)
     public boolean validarDisponibilidad(Long idMedico, LocalDate fecha, java.time.LocalTime hora, String tipoCita) {
@@ -48,10 +56,11 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
         cita.setHora(dto.getHora());
         cita.setMotivoConsulta(dto.getMotivoConsulta());
         cita.setTipoCita(tipo);
-        
-        String estadoInicial = (dto.getEstado() != null && !dto.getEstado().trim().isEmpty()) 
-                                ? dto.getEstado() : "PENDIENTE_PAGO";
-        cita.setEstado(estadoInicial); 
+
+        String estadoInicial = (dto.getEstado() != null && !dto.getEstado().trim().isEmpty())
+                ? dto.getEstado()
+                : "PENDIENTE_PAGO";
+        cita.setEstado(estadoInicial);
         CitaMedica citaGuardada = citaRepository.save(cita);
 
         BigDecimal precioTotal = esp.getPrecioConsulta() != null ? esp.getPrecioConsulta() : new BigDecimal("150.00");
@@ -63,7 +72,7 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
         pagoAdelanto.setFechaPago(LocalDate.now());
         pagoAdelanto.setMonto(adelanto);
         pagoAdelanto.setConcepto("ADELANTO_30");
-        
+
         if ("CONFIRMADA".equals(estadoInicial)) {
             pagoAdelanto.setEstadoPago("PAGADO");
             pagoAdelanto.setMetodoPago("YAPE");
@@ -75,10 +84,10 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
 
         Pago pagoSaldo = new Pago();
         pagoSaldo.setCita(citaGuardada);
-        pagoSaldo.setFechaPago(dto.getFecha()); 
+        pagoSaldo.setFechaPago(dto.getFecha());
         pagoSaldo.setMonto(saldo);
         pagoSaldo.setMetodoPago("POR DEFINIR");
-        pagoSaldo.setEstadoPago("PENDIENTE"); 
+        pagoSaldo.setEstadoPago("PENDIENTE");
         pagoSaldo.setConcepto("SALDO_70");
         pagoRepository.save(pagoSaldo);
 
@@ -96,10 +105,42 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
     public CitaMedicaDTO actualizarEstado(Long idCita, String nuevoEstado) {
         CitaMedica cita = citaRepository.findById(idCita)
                 .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada"));
+        
         if ("ATENDIDA".equalsIgnoreCase(nuevoEstado) && !"EN_ESPERA".equals(cita.getEstado())) {
             throw new IllegalArgumentException("La cita debe estar EN_ESPERA antes de ser atendida");
         }
+        
         cita.setEstado(nuevoEstado.toUpperCase());
+        return convertirADto(citaRepository.save(cita));
+    }
+
+    @Override
+    @Transactional
+    public CitaMedicaDTO reprogramarCita(
+            Long idCita,
+            String nuevaFecha,
+            String nuevaHora) {
+
+        CitaMedica cita = citaRepository.findById(idCita)
+                .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada"));
+
+        LocalDate fecha = LocalDate.parse(nuevaFecha);
+        LocalTime hora = LocalTime.parse(nuevaHora);
+
+        if (citaRepository.existeChoqueDeHorario(
+                cita.getMedico().getIdMedico(),
+                fecha,
+                hora,
+                cita.getTipoCita())) {
+
+            throw new IllegalArgumentException(
+                    "¡ALERTA DE CHOQUE! El médico ya tiene programada otra cita.");
+        }
+
+        cita.setFecha(fecha);
+        cita.setHora(hora);
+        cita.setEstado("CONFIRMADA");
+
         return convertirADto(citaRepository.save(cita));
     }
 
@@ -115,48 +156,41 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
     @Transactional(rollbackFor = Exception.class)
     public CitaMedicaDTO programarCitaRapida(com.example.GestionClinica.dto.CitaRegistroRapidoDTO dto) {
 
-        // 1. Buscar el paciente por DNI o crearlo
-        Paciente pac = pacienteRepository.findByDniActivo(dto.getDniPaciente())
-        .orElseGet(() -> {
-            Paciente nuevoPac = new Paciente();
-
-            nuevoPac.setTipoDocumento("DNI");
-            nuevoPac.setDni(dto.getDniPaciente());
-            nuevoPac.setNombres(dto.getNombresPaciente());
-            nuevoPac.setApellidoPaterno(dto.getApellidoPaterno());
-            nuevoPac.setTelefono(dto.getTelefonoPaciente());
-
-            // Validamos la fecha
-            if (dto.getFechaNacimiento() != null && !dto.getFechaNacimiento().isEmpty()) {
-                nuevoPac.setFechaNacimiento(LocalDate.parse(dto.getFechaNacimiento()));
-            } else {
-                nuevoPac.setFechaNacimiento(LocalDate.of(2000, 1, 1));
-            }
-
-            nuevoPac.setApellidoMaterno(dto.getApellidoMaterno() != null ? dto.getApellidoMaterno() : "");
-            
-            nuevoPac.setSexo("OTRO"); 
-            
-            nuevoPac.setDireccion("");
-            nuevoPac.setCorreo("");
-            nuevoPac.setEstado("ACTIVO");
-
-            return pacienteRepository.save(nuevoPac);
-        });
-
-        // 2. Obtener médico y especialidad
         Medico med = medicoRepository.findById(dto.getIdMedico())
                 .orElseThrow(() -> new ResourceNotFoundException("Médico no encontrado"));
         Especialidad esp = especialidadRepository.findById(dto.getIdEspecialidad())
                 .orElseThrow(() -> new ResourceNotFoundException("Especialidad no encontrada"));
 
-        // 3. Validar disponibilidad
         String tipo = dto.getTipoCita() != null ? dto.getTipoCita() : "CONSULTA";
         if (citaRepository.existeChoqueDeHorario(dto.getIdMedico(), dto.getFecha(), dto.getHora(), tipo)) {
-            throw new IllegalArgumentException("El médico no está disponible para ese horario.");
+            throw new IllegalArgumentException(
+                    "¡ALERTA DE CHOQUE! El médico ya tiene programada otra cita u operación en ese horario exacto.");
         }
 
-        // 4. Crear cita
+        Paciente pac = pacienteRepository.findByDniActivo(dto.getDniPaciente())
+                .orElseGet(() -> {
+                    Paciente nuevoPac = new Paciente();
+                    nuevoPac.setTipoDocumento("DNI");
+                    nuevoPac.setDni(dto.getDniPaciente());
+                    nuevoPac.setNombres(dto.getNombresPaciente());
+                    nuevoPac.setApellidoPaterno(dto.getApellidoPaterno());
+                    nuevoPac.setTelefono(dto.getTelefonoPaciente());
+
+                    if (dto.getFechaNacimiento() != null && !dto.getFechaNacimiento().isEmpty()) {
+                        nuevoPac.setFechaNacimiento(LocalDate.parse(dto.getFechaNacimiento()));
+                    } else {
+                        nuevoPac.setFechaNacimiento(LocalDate.of(2000, 1, 1));
+                    }
+
+                    nuevoPac.setApellidoMaterno(dto.getApellidoMaterno() != null ? dto.getApellidoMaterno() : "");
+                    nuevoPac.setSexo("OTRO");
+                    nuevoPac.setDireccion("");
+                    nuevoPac.setCorreo("");
+                    nuevoPac.setEstado("ACTIVO");
+
+                    return pacienteRepository.save(nuevoPac);
+                });
+
         CitaMedica cita = new CitaMedica();
         cita.setPaciente(pac);
         cita.setMedico(med);
@@ -168,9 +202,9 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
         cita.setEstado("CONFIRMADA");
         CitaMedica citaGuardada = citaRepository.save(cita);
 
-        // 5. Pagos
         BigDecimal precioTotal = esp.getPrecioConsulta() != null ? esp.getPrecioConsulta() : new BigDecimal("150.00");
-        BigDecimal adelanto = dto.getMontoPagadoAdelanto() != null ? dto.getMontoPagadoAdelanto() : precioTotal.multiply(new BigDecimal("0.30")).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal adelanto = dto.getMontoPagadoAdelanto() != null ? dto.getMontoPagadoAdelanto()
+                : precioTotal.multiply(new BigDecimal("0.30")).setScale(2, RoundingMode.HALF_UP);
         BigDecimal saldo = precioTotal.subtract(adelanto);
 
         Pago pagoAdelanto = new Pago();
@@ -199,13 +233,12 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
         dto.setIdCita(cita.getIdCita());
         dto.setIdPaciente(cita.getPaciente().getIdPaciente());
         String nombreCompleto = String.join(" ",
-        java.util.stream.Stream.of(
-                cita.getPaciente().getNombres(),
-                cita.getPaciente().getApellidoPaterno(),
-                cita.getPaciente().getApellidoMaterno()
-        )
-        .filter(s -> s != null && !s.isBlank())
-        .toList());
+                java.util.stream.Stream.of(
+                        cita.getPaciente().getNombres(),
+                        cita.getPaciente().getApellidoPaterno(),
+                        cita.getPaciente().getApellidoMaterno())
+                        .filter(s -> s != null && !s.isBlank())
+                        .toList());
 
         dto.setNombreCompletoPaciente(nombreCompleto);
         dto.setDniPaciente(cita.getPaciente().getDni());
