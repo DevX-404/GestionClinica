@@ -207,6 +207,43 @@
               <p class="text-xs text-gray-500 mt-2">Comunícate con recepción o con el administrador para que configuren
                 tu matriz de turnos.</p>
             </div>
+
+            <div class="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
+              <h4 class="text-base font-bold text-gray-800 dark:text-white mb-4">Mis Solicitudes Enviadas</h4>
+              @if(misSolicitudes.length === 0) {
+              <p class="text-sm text-gray-500 italic">No has enviado ninguna solicitud.</p>
+              } @else {
+              <div class="space-y-3">
+                @for(ticket of misSolicitudes; track ticket.idSolicitud) {
+                <div
+                  class="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm flex justify-between items-center">
+                  <div>
+                    <span class="text-xs font-black uppercase tracking-wider text-gray-500">{{ ticket.tipo.replace('_',
+                      ' ') }}</span>
+                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200 mt-1">{{ ticket.detalle }}</p>
+                    @if(ticket.respuestaAdmin) {
+                    <p class="text-xs text-brand-600 mt-2 bg-brand-50 p-2 rounded-lg dark:bg-brand-900/20">
+                      <strong>Respuesta HR:</strong> {{ ticket.respuestaAdmin }}</p>
+                    }
+                  </div>
+                  <div class="text-right">
+                    <span
+                      [ngClass]="{'bg-yellow-100 text-yellow-700': ticket.estado === 'PENDIENTE', 'bg-green-100 text-green-700': ticket.estado === 'APROBADA', 'bg-red-100 text-red-700': ticket.estado === 'RECHAZADA'}"
+                      class="px-3 py-1 rounded-full text-xs font-bold uppercase">
+                      {{ ticket.estado }}
+                    </span>
+                    <p class="text-[10px] text-gray-400 mt-2">{{ ticket.fechaSolicitud }}</p>
+                  </div>
+                </div>
+                }
+              </div>
+              }
+            </div>
+
+            <button (click)="abrirTicketModal()"
+              class="bg-white border border-blue-200 text-blue-600 text-sm font-bold py-2 px-5 rounded-xl hover:bg-blue-50 transition shadow-sm dark:bg-gray-800 dark:border-blue-900/50 dark:text-blue-400">
+              + Nuevo Ticket HR
+            </button>
           </div>
 
           <div *ngIf="activeTab === 'SEGURIDAD' && !isLoading" class="animate-fade-in space-y-8">
@@ -301,3 +338,30 @@
             </div>
           </div>
         </div>
+        @if(isTicketModalOpen) {
+    <div class="fixed inset-0 z-[999999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
+      <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Ticket de Recursos Humanos</h3>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Tipo de Solicitud</label>
+            <select [(ngModel)]="ticketForm.tipo" class="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-brand-500 outline-none dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+              <option value="VACACIONES">Vacaciones</option>
+              <option value="CAMBIO_TURNO">Cambio de Turno</option>
+              <option value="RENUNCIA">Cese / Renuncia</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Detalle o Motivo</label>
+            <textarea [(ngModel)]="ticketForm.detalle" rows="4" placeholder="Especifica las fechas o el motivo detallado..." class="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-brand-500 outline-none dark:bg-gray-800 dark:border-gray-700 dark:text-white"></textarea>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
+          <button (click)="cerrarTicketModal()" class="rounded-xl border border-gray-300 px-5 py-2 font-bold text-gray-700 hover:bg-gray-50 text-sm transition dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700">Cancelar</button>
+          <button (click)="enviarTicket()" class="bg-brand-600 text-white font-bold py-2 px-6 rounded-xl hover:bg-brand-700 shadow-md text-sm transition">Enviar Ticket</button>
+        </div>
+      </div>
+    </div>
+  }

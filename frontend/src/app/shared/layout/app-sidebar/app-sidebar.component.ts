@@ -119,6 +119,12 @@ export class AppSidebarComponent implements OnInit, AfterViewInit {
       roles: ['ADMINISTRADOR']
     },
     {
+      name: 'Gestión de Solicitudes',
+      icon: '<svg class="fill-current" width="22" height="22" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H6v-2h6v2zm4-4H6v-2h10v2zm0-4H6V7h10v2z"/></svg>',
+      path: '/solicitudes',
+      roles: ['ADMINISTRADOR']
+    },
+    {
       name: 'Auditoría del Sistema',
       // Icono de escudo/ojo que representa trazabilidad y seguridad
       icon: '<svg class="fill-current" width="22" height="22" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>',

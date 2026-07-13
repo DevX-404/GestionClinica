@@ -1,0 +1,123 @@
+<div class="mx-auto max-w-7xl p-4 md:p-6 2xl:p-10">
+
+  <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-2xl font-bold text-black dark:text-white flex items-center gap-2">
+        <svg class="h-6 w-6 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+        Bandeja de Recursos Humanos
+      </h2>
+      <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Audita y gestiona las solicitudes de vacaciones o cese del personal.</p>
+    </div>
+  </div>
+
+  @if (globalMsg) {
+    <div [ngClass]="globalMsgType === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'" class="mb-4 rounded-lg border p-4 text-sm font-bold shadow-sm transition-all flex items-center gap-3">
+      {{ globalMsg }}
+    </div>
+  }
+
+  <div class="rounded-2xl border border-gray-200 bg-white shadow-theme-xl dark:border-gray-800 dark:bg-gray-900 overflow-hidden mb-6">
+    
+    <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+        <select [(ngModel)]="filtroEstado" (change)="filtrar()" class="rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm outline-none transition focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white font-bold text-brand-600">
+          <option value="PENDIENTE">Tickets Pendientes</option>
+          <option value="APROBADA">Tickets Aprobados</option>
+          <option value="RECHAZADA">Tickets Rechazados</option>
+          <option value="TODOS">Historial Completo</option>
+        </select>
+      </div>
+
+      <div class="relative w-full sm:w-80">
+        <input type="text" [(ngModel)]="searchTerm" (input)="filtrar()" placeholder="Buscar empleado o tipo..." class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+        <svg class="h-4 w-4 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+      </div>
+    </div>
+
+    <div class="max-w-full overflow-x-auto">
+      <table class="w-full table-auto text-left">
+        <thead>
+          <tr class="border-b border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.02]">
+            <th class="px-6 py-4 text-sm font-bold text-gray-600 uppercase tracking-wider dark:text-gray-400">Colaborador</th>
+            <th class="px-6 py-4 text-sm font-bold text-gray-600 uppercase tracking-wider dark:text-gray-400 w-2/5">Tipo y Motivo</th>
+            <th class="px-6 py-4 text-sm font-bold text-gray-600 uppercase tracking-wider dark:text-gray-400">Estado</th>
+            <th class="px-6 py-4 text-sm font-bold text-gray-600 uppercase tracking-wider dark:text-gray-400 text-right">Resolución</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+          @if (isLoading) {
+            <tr><td colspan="4" class="px-6 py-10 text-center text-sm font-medium text-brand-500 animate-pulse">Cargando bandeja de entrada...</td></tr>
+          } @else {
+            @for (s of solicitudesPaginadas; track s.idSolicitud) {
+              <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-colors" [ngClass]="s.estado !== 'PENDIENTE' ? 'opacity-60 grayscale' : ''">
+                
+                <td class="px-6 py-4">
+                  <span class="block text-sm font-bold text-gray-900 dark:text-white capitalize">{{ s.nombreUsuario }}</span>
+                  <span class="block text-xs font-medium text-gray-500 mt-1 uppercase">{{ s.rolUsuario }}</span>
+                </td>
+
+                <td class="px-6 py-4">
+                  <span class="inline-block mb-1 text-[10px] font-black px-2 py-0.5 rounded border border-gray-200 bg-gray-100 text-gray-700 uppercase tracking-widest dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300">
+                    {{ s.tipo.replace('_', ' ') }}
+                  </span>
+                  <p class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ s.detalle }}</p>
+                  <p class="text-[10px] text-gray-400 mt-2 font-mono">Enviado: {{ s.fechaSolicitud }}</p>
+                </td>
+
+                <td class="px-6 py-4">
+                  <span [ngClass]="{'bg-yellow-50 text-yellow-700 border-yellow-200': s.estado === 'PENDIENTE', 'bg-green-50 text-green-700 border-green-200': s.estado === 'APROBADA', 'bg-red-50 text-red-700 border-red-200': s.estado === 'RECHAZADA'}" class="inline-flex rounded border px-2.5 py-1 text-[10px] font-black uppercase tracking-widest shadow-sm">
+                    {{ s.estado }}
+                  </span>
+                </td>
+
+                <td class="px-6 py-4 text-right">
+                  <div *ngIf="s.estado === 'PENDIENTE'" class="flex justify-end gap-2">
+                    <button (click)="abrirRechazo(s)" class="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 text-xs font-bold rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300">
+                      Rechazar
+                    </button>
+                    <button (click)="aprobarYRedirigir(s)" class="px-3 py-1.5 bg-brand-600 text-white text-xs font-bold rounded-lg hover:bg-brand-700 transition shadow-md flex items-center gap-1">
+                      Aprobar
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                    </button>
+                  </div>
+                  <div *ngIf="s.estado !== 'PENDIENTE'">
+                    <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">Motivo / Respuesta:</p>
+                    <p class="text-xs text-gray-700 dark:text-gray-300 italic">{{ s.respuestaAdmin || 'Sin comentarios.' }}</p>
+                  </div>
+                </td>
+
+              </tr>
+            } @empty {
+              <tr><td colspan="4" class="px-6 py-12 text-center text-sm text-gray-500 bg-gray-50/50 dark:bg-gray-800/30">Bandeja de entrada limpia. No hay tickets.</td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="!isLoading" class="p-4 border-t border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div class="text-sm font-medium text-gray-500">Mostrando {{ calcularRangoInicio() }} a {{ calcularRangoFin() }} de {{ solicitudesFiltradas.length }} entradas</div>
+      <div class="flex gap-2">
+        <button (click)="paginaAnterior()" [disabled]="paginaActual === 1" class="px-4 py-2 border rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-white dark:hover:bg-gray-800">Anterior</button>
+        <button (click)="paginaSiguiente()" [disabled]="paginaActual * itemsPorPagina >= solicitudesFiltradas.length" class="px-4 py-2 border rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-white dark:hover:bg-gray-800">Siguiente</button>
+      </div>
+    </div>
+  </div>
+
+  @if (isRejectModalOpen) {
+    <div class="fixed inset-0 z-[999999] flex justify-center items-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
+      <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900 border border-red-200 dark:border-red-900/50">
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Rechazar Solicitud</h3>
+        <p class="text-xs text-gray-500 mb-4">Escribe el motivo del rechazo. Este mensaje será visible en el perfil del empleado (<strong>{{ ticketSeleccionado?.nombreUsuario }}</strong>).</p>
+        
+        <textarea [(ngModel)]="motivoRechazo" rows="3" placeholder="Ej: No es posible otorgar vacaciones en este mes por alta demanda..." class="w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-red-500 outline-none dark:bg-gray-800 dark:border-gray-700 dark:text-white mb-5"></textarea>
+
+        <div class="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+          <button (click)="cerrarRechazo()" class="rounded-xl border border-gray-300 px-5 py-2 font-bold text-gray-700 hover:bg-gray-50 text-sm dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700">Cancelar</button>
+          <button (click)="confirmarRechazo()" class="bg-red-600 text-white font-bold py-2 px-6 rounded-xl hover:bg-red-700 shadow-md text-sm transition">Denegar Ticket</button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

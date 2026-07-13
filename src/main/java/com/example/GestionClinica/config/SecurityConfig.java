@@ -84,6 +84,9 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/notificaciones/**").authenticated()
 
+                        // 8. Solicitudes: Cualquier usuario puede crear y ver sus solicitudes
+                        .requestMatchers("/api/solicitudes/").authenticated()
+
                         // Cualquier otra petición requiere estar logueado
                         .anyRequest().authenticated());
 

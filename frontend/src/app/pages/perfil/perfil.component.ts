@@ -5,6 +5,7 @@ import { UsuarioService } from '../../shared/services/usuario.service';
 import { MedicoService } from '../../shared/services/medico.service';
 import { HorarioMedicoService } from '../../shared/services/horario-medico.service';
 import { AlertComponent } from '../../shared/components/ui/alert/alert.component';
+import { SolicitudService } from '../../shared/services/solicitud.service';
 
 @Component({
   selector: 'app-perfil',
@@ -17,6 +18,7 @@ export class PerfilComponent implements OnInit {
   private medicoService = inject(MedicoService);
   private horarioService = inject(HorarioMedicoService);
   private cdr = inject(ChangeDetectorRef);
+  private solicitudService = inject(SolicitudService);
 
   activeTab: 'DATOS' | 'CREDENCIALES' | 'AGENDA' | 'SEGURIDAD' = 'DATOS';
   
@@ -32,6 +34,10 @@ export class PerfilComponent implements OnInit {
   passwordActual: string = '';
   nuevaPassword: string = '';
   confirmarPassword: string = '';
+
+  misSolicitudes: any[] = [];
+  isTicketModalOpen: boolean = false;
+  ticketForm = { tipo: 'VACACIONES', detalle: '' };
   
   globalMsg: string = '';
   globalMsgType: 'success' | 'error' | 'warning' | 'info' = 'info';
@@ -42,10 +48,12 @@ export class PerfilComponent implements OnInit {
     this.cargarDatosUsuario();
   }
 
+
   cargarDatosUsuario(): void {
     this.usuarioService.obtenerPerfil(this.usernameLocal).subscribe({
       next: (usuario: any) => {
         this.usuarioActual = usuario;
+        this.cargarMisSolicitudes(usuario.idUsuario);
         
         // Si es médico, jalamos también su CMP, RNE y Horarios
         if (this.rolLocal === 'MEDICO') {
@@ -60,6 +68,33 @@ export class PerfilComponent implements OnInit {
         this.mostrarMensajeGlobal('Error al cargar la identidad del perfil.', 'error');
         this.cdr.detectChanges();
       }
+    });
+  }
+
+  cargarMisSolicitudes(idUsuario: number): void {
+    this.solicitudService.listarPorUsuario(idUsuario).subscribe(data => this.misSolicitudes = data);
+  }
+
+  abrirTicketModal(): void {
+    this.ticketForm = { tipo: 'VACACIONES', detalle: '' };
+    this.isTicketModalOpen = true;
+  }
+
+  cerrarTicketModal(): void { this.isTicketModalOpen = false; }
+
+  enviarTicket(): void {
+    if (!this.ticketForm.detalle.trim()) {
+      this.mostrarMensajeGlobal('Debes escribir un detalle o justificación.', 'warning');
+      return;
+    }
+    this.solicitudService.crear(this.usuarioActual.idUsuario, this.ticketForm).subscribe({
+      next: () => {
+        this.mostrarMensajeGlobal('Ticket enviado a Recursos Humanos.', 'success');
+        this.cargarMisSolicitudes(this.usuarioActual.idUsuario);
+        this.isTicketModalOpen = false;
+        this.cdr.detectChanges();
+      },
+      error: () => this.mostrarMensajeGlobal('Error al enviar solicitud.', 'error')
     });
   }
 
