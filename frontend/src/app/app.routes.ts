@@ -98,6 +98,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/solicitudes/solicitudes.component').then(m => m.SolicitudesComponent),
         title: 'Bandeja de Solicitudes'
       },
+      {
+        path: 'incidencias',
+        loadComponent: () => import('./pages/incidencias/incidencias.component').then(m => m.IncidenciasComponent),
+        title: 'Gestión de Incidencias'
+      },
       // Aquí agregaremos en los siguientes pasos los hijos de 'pacientes' y 'medicos'
       {
         path: 'ejemplo',

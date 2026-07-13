@@ -87,6 +87,9 @@ public class SecurityConfig {
                         // 8. Solicitudes: Cualquier usuario puede crear y ver sus solicitudes
                         .requestMatchers("/api/solicitudes/").authenticated()
 
+                        // Permitir el flujo de incidencias a cualquier cuenta autenticada
+                        .requestMatchers("/api/incidencias/**").authenticated()
+
                         // Cualquier otra petición requiere estar logueado
                         .anyRequest().authenticated());
 

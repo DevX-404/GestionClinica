@@ -1,0 +1,84 @@
+<button (click)="toggleModal()" title="Reportar un problema a TI"
+  class="fixed bottom-6 right-6 z-[9000] flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-white shadow-lg hover:bg-brand-700 hover:scale-110 transition-all hover:shadow-brand-500/30 hover:shadow-2xl">
+  <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+</button>
+
+@if (isOpen) {
+  <div class="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
+    <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+      
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <svg class="w-6 h-6 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01"></path></svg>
+          Soporte TI
+        </h3>
+        <button (click)="toggleModal()" class="text-gray-400 hover:text-red-500 text-2xl transition-colors">&times;</button>
+      </div>
+
+      <p class="text-xs text-gray-500 mb-5">El sistema capturará automáticamente tu pantalla actual para facilitar el diagnóstico. Por favor, sé específico.</p>
+
+      @if (successMsg) { <div class="mb-4 p-3 bg-green-50 text-green-700 text-sm font-bold rounded-lg border border-green-200 text-center">{{ successMsg }}</div> }
+      @if (errorMsg) { <div class="mb-4 p-3 bg-red-50 text-red-700 text-sm font-bold rounded-lg border border-red-200 text-center">{{ errorMsg }}</div> }
+
+      <div class="space-y-4" *ngIf="!successMsg">
+        <div>
+          <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Título corto *</label>
+          <input type="text" [(ngModel)]="incidenciaForm.titulo" placeholder="Ej: Error al imprimir receta..." class="w-full rounded-xl border border-gray-300 p-2.5 text-sm focus:border-brand-500 outline-none dark:bg-gray-800 dark:border-gray-700 dark:text-white" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Tipo</label>
+            <select [(ngModel)]="incidenciaForm.tipo" class="w-full rounded-xl border border-gray-300 p-2.5 text-sm focus:border-brand-500 outline-none dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+              <option value="ERROR_SISTEMA">Error de Sistema</option>
+              <option value="ERROR_INTERFAZ">Falla Visual</option>
+              <option value="SUGERENCIA">Sugerencia</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Impacto</label>
+            <select [(ngModel)]="incidenciaForm.nivelGravedad" class="w-full rounded-xl border border-gray-300 p-2.5 text-sm focus:border-brand-500 outline-none dark:bg-gray-800 dark:border-gray-700 dark:text-white font-bold"
+                    [ngClass]="{'text-green-600': incidenciaForm.nivelGravedad==='BAJA', 'text-yellow-600': incidenciaForm.nivelGravedad==='MEDIA', 'text-orange-500': incidenciaForm.nivelGravedad==='ALTA', 'text-red-600': incidenciaForm.nivelGravedad==='CRITICA'}">
+              <option value="BAJA">Baja</option>
+              <option value="MEDIA">Media</option>
+              <option value="ALTA">Alta</option>
+              <option value="CRITICA">Crítica (Bloqueante)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Descripción detallada *</label>
+          <textarea [(ngModel)]="incidenciaForm.descripcion" rows="3" placeholder="¿Qué intentabas hacer y qué sucedió?" class="w-full rounded-xl border border-gray-300 p-2.5 text-sm focus:border-brand-500 outline-none dark:bg-gray-800 dark:border-gray-700 dark:text-white"></textarea>
+        </div>
+
+        <div class="bg-gray-50 p-3 rounded-xl border border-gray-200 border-dashed dark:bg-gray-800 dark:border-gray-700">
+          <label class="flex justify-between items-center cursor-pointer">
+            <span class="text-xs font-bold text-gray-600 dark:text-gray-300">Adjuntar Capturas (Opcional)</span>
+            <span class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-[10px] font-bold hover:bg-gray-300 transition dark:bg-gray-700 dark:text-white">Subir Imagen</span>
+            <input type="file" multiple (change)="cargarEvidencia($event)" accept="image/*" class="hidden">
+          </label>
+          
+          @if(evidenciasBase64.length > 0) {
+            <div class="flex gap-2 mt-3 overflow-x-auto pb-1">
+              @for(img of evidenciasBase64; track $index) {
+                <div class="relative shrink-0">
+                  <img [src]="img" class="h-12 w-12 object-cover rounded-lg border border-gray-300 shadow-sm" />
+                  <button (click)="removerEvidencia($index)" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full h-4 w-4 flex items-center justify-center text-[10px] hover:bg-red-600">&times;</button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100 dark:border-gray-800" *ngIf="!successMsg">
+        <button (click)="toggleModal()" class="rounded-xl border border-gray-300 px-5 py-2 font-bold text-gray-700 hover:bg-gray-50 text-sm transition dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700">Cancelar</button>
+        <button (click)="enviarReporte()" [disabled]="isSubmitting" class="bg-brand-600 text-white font-bold py-2 px-6 rounded-xl hover:bg-brand-700 shadow-md text-sm transition disabled:opacity-50">
+          {{ isSubmitting ? 'Enviando...' : 'Crear Ticket' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+}
