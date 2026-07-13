@@ -154,6 +154,28 @@ public class MedicoServiceImpl implements MedicoService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<MedicoDTO> listarInactivos() {
+        return medicoRepository.findByEstado("INACTIVO").stream()
+                .map(this::convertirADto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void reactivarMedico(Long id) {
+        Medico medico = medicoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Médico no encontrado con el ID: " + id));
+        
+        medico.setEstado("ACTIVO");
+        medico.setEstadoDisponibilidad("DISPONIBLE");
+
+        if (medico.getUsuario() != null) {
+            medico.getUsuario().setActivo(true);
+        }
+        
+        medicoRepository.save(medico);
+    }
+
     private MedicoDTO convertirADto(Medico medico) {
         MedicoDTO dto = new MedicoDTO();
         BeanUtils.copyProperties(medico, dto);

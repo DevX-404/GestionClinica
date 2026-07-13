@@ -10,4 +10,6 @@ public interface MedicoService {
     MedicoDTO actualizar(Long id, MedicoDTO dto);
     void eliminarLogico(Long id);
     List<MedicoDTO> listarPorEspecialidad(Long idEspecialidad);
+    List<MedicoDTO> listarInactivos();
+    void reactivarMedico(Long id);
 }

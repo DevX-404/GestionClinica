@@ -21,16 +21,14 @@ export class MedicosComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
   private fb = inject(FormBuilder);
 
-  // DATOS
   medicos: Medico[] = [];
   medicosFiltrados: Medico[] = [];
-  medicosPaginados: Medico[] = []; // NUEVO: Para la paginación de la tabla
+  medicosPaginados: Medico[] = []; 
   especialidades: Especialidad[] = [];
   horarios: HorarioMedico[] = [];
   
-  // CONTROLES DE LA TABLA
   searchTerm: string = '';
-  filtroEstado: string = ''; // NUEVO: Para filtrar por disponibilidad
+  filtroEstado: string = ''; // 'DISPONIBLE' o 'NO_DISPONIBLE'
   itemsPorPagina: number = 5;
   paginaActual: number = 1;
 
@@ -57,6 +55,10 @@ export class MedicosComponent implements OnInit {
     horaFin: ''
   };
 
+  // NUEVO: Ver papelera (Exclusivo Admin)
+  verInactivos: boolean = false;
+  rolActual: string = '';
+
   constructor() {
     this.medicoForm = this.fb.group({
       idMedico: [null],
@@ -71,8 +73,14 @@ export class MedicosComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Es importante cargar primero las especialidades para poder cruzar los nombres en la tabla
+    this.rolActual = localStorage.getItem('rol') || '';
     this.cargarEspecialidades();
+    this.cargarMedicos();
+  }
+
+  toggleVistaInactivos(): void {
+    this.verInactivos = !this.verInactivos;
+    this.paginaActual = 1; 
     this.cargarMedicos();
   }
 
@@ -91,7 +99,6 @@ export class MedicosComponent implements OnInit {
     });
   }
 
-  // --- FUNCIÓN PARA OBTENER EL NOMBRE DE LA ESPECIALIDAD ---
   getNombreEspecialidad(idEspecialidad: number): string {
     const esp = this.especialidades.find(e => e.idEspecialidad === idEspecialidad);
     return esp ? esp.nombre : 'Sin Especialidad';
@@ -101,14 +108,13 @@ export class MedicosComponent implements OnInit {
     this.isLoading = true;
     this.cdr.detectChanges();
 
-    this.medicoService.listarTodos().subscribe({
+    const request = this.verInactivos ? this.medicoService.listarInactivos() : this.medicoService.listarTodos();
+
+    request.subscribe({
       next: (data) => {
-        // Orden de llegada: Los ID más altos (más recientes) arriba
         const dataOrdenada = data.sort((a, b) => (b.idMedico || 0) - (a.idMedico || 0));
-        
         this.medicos = dataOrdenada;
-        this.filtrar(); // Llamamos al filtro para que inicialice la tabla
-        
+        this.filtrar(); 
         this.isLoading = false;
         this.cdr.detectChanges();
       },
@@ -120,68 +126,45 @@ export class MedicosComponent implements OnInit {
     });
   }
 
-  // --- BUSCADOR Y FILTROS CORREGIDOS ---
+  // --- FILTRO CORREGIDO (Disponibles / Vacaciones) ---
   filtrar(): void {
     const term = this.searchTerm.toLowerCase().trim();
 
     this.medicosFiltrados = this.medicos.filter(m => {
       const nombreCompleto = `${m.nombres} ${m.apellidoPaterno} ${m.apellidoMaterno}`.toLowerCase();
       const cmp = (m.codigoColegiatura || '').toLowerCase();
-      const especialidad = this.getNombreEspecialidad(m.idEspecialidad).toLowerCase(); // Ahora cruzamos la especialidad
-      const estado = m.estadoDisponibilidad || '';
-
-      // Match Buscador de texto (Nombre, CMP o Especialidad)
-      const matchSearch = term === '' || 
-                          nombreCompleto.includes(term) || 
-                          cmp.includes(term) || 
-                          especialidad.includes(term);
+      const especialidad = this.getNombreEspecialidad(m.idEspecialidad).toLowerCase();
       
-      // Match Select de Disponibilidad
-      const matchEstado = this.filtroEstado === '' || estado === this.filtroEstado;
+      const estadoActual = (m.estadoDisponibilidad || '').toUpperCase();
+
+      const matchSearch = term === '' || nombreCompleto.includes(term) || cmp.includes(term) || especialidad.includes(term);
+      
+      // Lógica de Filtro por estado
+      let matchEstado = true;
+      if (this.filtroEstado === 'DISPONIBLE') {
+        matchEstado = estadoActual === 'DISPONIBLE';
+      } else if (this.filtroEstado === 'NO_DISPONIBLE') {
+        matchEstado = estadoActual !== 'DISPONIBLE'; // Atrapa Vacaciones, Licencia, etc.
+      }
 
       return matchSearch && matchEstado;
     });
 
-    // Resetear paginación al buscar
     this.paginaActual = 1;
     this.actualizarTabla();
   }
 
-  // --- LÓGICA DE PAGINACIÓN ---
   actualizarTabla(): void {
     const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
     const fin = inicio + Number(this.itemsPorPagina);
     this.medicosPaginados = this.medicosFiltrados.slice(inicio, fin);
   }
 
-  cambiarPaginacion(): void {
-    this.paginaActual = 1;
-    this.actualizarTabla();
-  }
-
-  paginaAnterior(): void {
-    if (this.paginaActual > 1) {
-      this.paginaActual--;
-      this.actualizarTabla();
-    }
-  }
-
-  paginaSiguiente(): void {
-    if ((this.paginaActual * this.itemsPorPagina) < this.medicosFiltrados.length) {
-      this.paginaActual++;
-      this.actualizarTabla();
-    }
-  }
-
-  calcularRangoInicio(): number {
-    return this.medicosFiltrados.length === 0 ? 0 : ((this.paginaActual - 1) * this.itemsPorPagina) + 1;
-  }
-
-  calcularRangoFin(): number {
-    const fin = this.paginaActual * this.itemsPorPagina;
-    return fin > this.medicosFiltrados.length ? this.medicosFiltrados.length : fin;
-  }
-  // --- FIN LÓGICA PAGINACIÓN ---
+  cambiarPaginacion(): void { this.paginaActual = 1; this.actualizarTabla(); }
+  paginaAnterior(): void { if (this.paginaActual > 1) { this.paginaActual--; this.actualizarTabla(); } }
+  paginaSiguiente(): void { if ((this.paginaActual * this.itemsPorPagina) < this.medicosFiltrados.length) { this.paginaActual++; this.actualizarTabla(); } }
+  calcularRangoInicio(): number { return this.medicosFiltrados.length === 0 ? 0 : ((this.paginaActual - 1) * this.itemsPorPagina) + 1; }
+  calcularRangoFin(): number { const fin = this.paginaActual * this.itemsPorPagina; return fin > this.medicosFiltrados.length ? this.medicosFiltrados.length : fin; }
 
   generarCMPAleatorio(): string {
     const numeroAleatorio = Math.floor(10000 + Math.random() * 90000); 
@@ -213,9 +196,7 @@ export class MedicosComponent implements OnInit {
   validarTelefono(event: any) {
     const input = event.target;
     let valorFiltrado = input.value.replace(/[^0-9]/g, '');
-    if (valorFiltrado.length > 9) {
-      valorFiltrado = valorFiltrado.substring(0, 9);
-    }
+    if (valorFiltrado.length > 9) valorFiltrado = valorFiltrado.substring(0, 9);
     input.value = valorFiltrado;
     this.medicoForm.controls['telefono'].setValue(valorFiltrado);
   }
@@ -229,10 +210,7 @@ export class MedicosComponent implements OnInit {
     
     let data = this.medicoForm.value;
     data.codigoColegiatura = this.cmpActual;
-    
-    if (!data.correo) {
-       data.correo = `${this.cmpActual.toLowerCase()}@clinica.com`; 
-    }
+    if (!data.correo) data.correo = `${this.cmpActual.toLowerCase()}@clinica.com`; 
 
     if (this.isEditing && data.idMedico) {
       this.medicoService.actualizar(data.idMedico, data).subscribe({
@@ -261,15 +239,29 @@ export class MedicosComponent implements OnInit {
     }
   }
   
-  eliminarMedico(id: number): void {
-    if (confirm('¿Estás seguro de dar de baja a este médico?')) {
-      this.medicoService.eliminar(id).subscribe({
-        next: () => {
-          this.mostrarMensajeGlobal('Médico deshabilitado del sistema.', 'success');
-          this.cargarMedicos();
-        },
-        error: () => this.mostrarMensajeGlobal('No se pudo procesar la baja del médico.', 'error')
-      });
+  cambiarEstado(medico: Medico): void {
+    if (medico.idMedico) {
+      if (medico.estado === 'ACTIVO') {
+        if(confirm(`¿Estás seguro de dar de baja al Dr. ${medico.nombres}? Su cuenta quedará deshabilitada.`)) {
+          this.medicoService.eliminar(medico.idMedico).subscribe({
+            next: () => {
+              this.mostrarMensajeGlobal('Médico deshabilitado y enviado a papelera.', 'success');
+              this.cargarMedicos();
+            },
+            error: () => this.mostrarMensajeGlobal('No se pudo procesar la baja del médico.', 'error')
+          });
+        }
+      } else {
+        if(confirm(`¿Estás seguro de reincorporar al Dr. ${medico.nombres}?`)) {
+          this.medicoService.reactivar(medico.idMedico).subscribe({
+            next: () => {
+              this.mostrarMensajeGlobal('Médico reincorporado con éxito.', 'success');
+              this.cargarMedicos();
+            },
+            error: () => this.mostrarMensajeGlobal('No se pudo reincorporar al médico.', 'error')
+          });
+        }
+      }
     }
   }
 
@@ -291,7 +283,7 @@ export class MedicosComponent implements OnInit {
 
     this.horarioService.listarPorMedico(idMedico).subscribe({
       next: (data) => {
-        // Ordenamos los turnos del más antiguo al más futuro
+        // Ordenamos los turnos cronológicamente (Del más cercano al más lejano)
         this.horarios = data.sort((a: any, b: any) => a.diaSemana.localeCompare(b.diaSemana));
         this.isLoadingHorarios = false;
         this.cdr.detectChanges();
@@ -313,9 +305,9 @@ export class MedicosComponent implements OnInit {
 
     const nuevoHorario: HorarioMedico = {
       idMedico: this.medicoSeleccionado!.idMedico!,
-      diaSemana: this.horarioForm.fechaTurno, // Inyectamos la fecha real aquí
-      horaInicio: this.horarioForm.horaInicio + ':00',
-      horaFin: this.horarioForm.horaFin + ':00'
+      diaSemana: this.horarioForm.fechaTurno,
+      horaInicio: this.horarioForm.horaInicio.length === 5 ? this.horarioForm.horaInicio + ':00' : this.horarioForm.horaInicio,
+      horaFin: this.horarioForm.horaFin.length === 5 ? this.horarioForm.horaFin + ':00' : this.horarioForm.horaFin
     };
 
     this.horarioService.registrar(nuevoHorario).subscribe({

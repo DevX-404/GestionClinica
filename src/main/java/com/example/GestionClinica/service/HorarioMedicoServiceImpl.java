@@ -26,7 +26,10 @@ public class HorarioMedicoServiceImpl implements HorarioMedicoService {
     @Override
     @Transactional(readOnly = true)
     public List<HorarioMedicoDTO> listarPorMedico(Long idMedico) {
+        String fechaHoy = java.time.LocalDate.now().toString();
+
         return horarioRepository.findHorariosActivosByMedico(idMedico).stream()
+                .filter(h -> h.getDiaSemana() != null && h.getDiaSemana().compareTo(fechaHoy) >= 0)
                 .map(this::convertirADto)
                 .collect(Collectors.toList());
     }

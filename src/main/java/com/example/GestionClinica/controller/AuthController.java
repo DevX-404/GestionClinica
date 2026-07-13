@@ -33,7 +33,6 @@ public class AuthController {
         return ResponseEntity.ok(usuarioRepository.save(usuario));
     }
 
-    // Login que consumirá el formulario de Angular
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> loginRequest) {
         String username = loginRequest.get("username");
@@ -42,25 +41,20 @@ public class AuthController {
         Usuario usuario = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
+        if (!usuario.isActivo()) {
+            return ResponseEntity.status(403).body("Su cuenta ha sido bloqueada. Por favor, comuníquese con el departamento de TI.");
+        }
+
         if (passwordEncoder.matches(password, usuario.getPassword())) {
             String token = tokenProvider.generarToken(usuario.getUsername(), usuario.getRol().name());
             
-            // --- MAGIA PARA OBTENER EL NOMBRE REAL ---
-            String nombreReal = usuario.getUsername(); // Por defecto queda el alias (Ej: Para el ADMIN)
-            
-            if (usuario.getRol() == Rol.MEDICO) {
-                Optional<Medico> medicoOpt = medicoRepository.findAll().stream()
-                        .filter(m -> m.getUsuario() != null && m.getUsuario().getIdUsuario().equals(usuario.getIdUsuario()))
-                        .findFirst();
-                if (medicoOpt.isPresent()) {
-                    // Concatenamos el Primer Nombre + Primer Apellido
-                    nombreReal = medicoOpt.get().getNombres() + " " + medicoOpt.get().getApellidoPaterno();
-                }
-            } 
+            String nombreReal = usuario.getNombreCompleto() != null && !usuario.getNombreCompleto().isEmpty() 
+                                ? usuario.getNombreCompleto() 
+                                : usuario.getUsername();
             
             Map<String, Object> response = new HashMap<>();
-            response.put("username", usuario.getUsername()); // NO TOCAR: La agenda lo necesita para filtrar
-            response.put("nombreReal", nombreReal); // <-- NUEVO: Mandamos el nombre real para el Navbar
+            response.put("username", usuario.getUsername());
+            response.put("nombreReal", nombreReal);
             response.put("rol", usuario.getRol().name());
             response.put("token", token);
             response.put("modulos", usuario.getModulosAcceso()); 

@@ -25,4 +25,12 @@ export class MedicoService {
   eliminar(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
+
+  listarInactivos(): Observable<Medico[]> {
+    return this.http.get<Medico[]>(`${this.apiUrl}/inactivos`);
+  }
+
+  reactivar(id: number): Observable<void> {
+    return this.http.patch<void>(`${this.apiUrl}/${id}/reactivar`, {});
+  }
 }

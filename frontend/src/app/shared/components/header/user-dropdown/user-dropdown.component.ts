@@ -33,21 +33,17 @@ export class UserDropdownComponent implements OnInit {
     }
   }
 
-  // Función para procesar el nombre dinámicamente
   extraerDatosUsuario(nombreCompleto: string): void {
-    // Limpiamos caracteres raros por si usamos el username (Ej: luis_bances -> luis bances)
     const nombreLimpio = nombreCompleto.replace(/[._-]/g, ' ').trim();
     const partes = nombreLimpio.split(' ').filter(p => p.length > 0);
     
     if (partes.length > 0) {
-      this.primerNombre = partes[0];
+      this.primerNombre = partes[0]; 
     }
 
-    if (partes.length > 1) {
-      // Tiene nombre y apellido (Ej: Luis Bances -> LB)
+    if (partes.length >= 2) {
       this.iniciales = (partes[0].charAt(0) + partes[1].charAt(0)).toUpperCase();
     } else if (partes.length === 1) {
-      // Es una sola palabra (Ej: Admin -> AD)
       this.iniciales = partes[0].substring(0, 2).toUpperCase(); 
     }
   }

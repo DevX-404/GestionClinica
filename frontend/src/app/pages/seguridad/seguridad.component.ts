@@ -132,15 +132,21 @@ export class SeguridadComponent implements OnInit {
     if (usuario) {
       this.isEditMode = true;
       this.usuarioForm = { ...usuario };
-      if (!this.usuarioForm.modulosAcceso) this.usuarioForm.modulosAcceso = [];
       
-      // LA LÓGICA DEL CANDADO: Si el usuario ya tiene nombre registrado, se bloquea la edición.
-      // Si el nombre viene nulo, indefinido o en blanco, se permite editar (para corregir los viejos).
+      if (!this.usuarioForm.modulosAcceso) {
+        this.usuarioForm.modulosAcceso = [];
+      } else if (typeof this.usuarioForm.modulosAcceso === 'string') {
+        this.usuarioForm.modulosAcceso = this.usuarioForm.modulosAcceso
+          .replace(/[\[\]]/g, '') 
+          .split(',')
+          .map((m: string) => m.trim());
+      }
+      
       this.bloquearNombreEnEdicion = !!this.usuarioForm.nombreCompleto && this.usuarioForm.nombreCompleto.trim().length > 0;
       
     } else {
       this.isEditMode = false;
-      this.bloquearNombreEnEdicion = false; // Al crear uno nuevo, obviamente se puede escribir
+      this.bloquearNombreEnEdicion = false;
       this.usuarioForm = { nombreCompleto: '', username: '', email: '', password: '', rol: 'RECEPCIONISTA', modulosAcceso: [] };
     }
     this.isUserModalOpen = true;

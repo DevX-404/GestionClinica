@@ -47,4 +47,15 @@ public class MedicoController {
     public ResponseEntity<List<MedicoDTO>> listarPorEspecialidad(@PathVariable Long idEspecialidad) {
         return ResponseEntity.ok(medicoService.listarPorEspecialidad(idEspecialidad));
     }
+
+    @GetMapping("/inactivos")
+    public ResponseEntity<List<MedicoDTO>> listarInactivos() {
+        return ResponseEntity.ok(medicoService.listarInactivos());
+    }
+
+    @PatchMapping("/{id}/reactivar")
+    public ResponseEntity<Void> reactivarMedico(@PathVariable Long id) {
+        medicoService.reactivarMedico(id);
+        return ResponseEntity.ok().build();
+    }
 }

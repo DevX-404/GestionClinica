@@ -12,7 +12,8 @@ public interface MedicoRepository extends JpaRepository<Medico, Long> {
     
     boolean existsByCodigoColegiatura(String codigoColegiatura);
 
-    // SEGUNDA CONSULTA JPQL REQUERIDA POR LA RÚBRICA
     @Query("SELECT m FROM Medico m WHERE m.specialty.idEspecialidad = :idEspecialidad AND m.estado = 'ACTIVO'")
     List<Medico> findMedicosByEspecialidad(@Param("idEspecialidad") Long idEspecialidad);
+
+    List<Medico> findByEstado(String estado);
 }
