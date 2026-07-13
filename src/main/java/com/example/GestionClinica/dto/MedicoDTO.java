@@ -9,6 +9,8 @@ public class MedicoDTO {
     
     @NotBlank(message = "El código de colegiatura es obligatorio")
     private String codigoColegiatura;
+
+    private String rne;
     
     @NotBlank(message = "El nombre es obligatorio")
     private String nombres;

@@ -22,6 +22,9 @@ public class Medico {
     @Column(length = 10, nullable = false, unique = true)
     private String codigoColegiatura;
 
+    @Column(length = 10, unique = true)
+    private String rne;
+    
     @NotBlank(message = "El nombre es obligatorio")
     @Size(max = 50)
     @Column(length = 50, nullable = false)

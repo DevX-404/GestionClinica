@@ -231,7 +231,6 @@ export class SeguridadComponent implements OnInit {
       this.errorPwdMsg = 'La contraseña debe tener al menos 6 caracteres.';
       return;
     }
-
     if (this.usuarioSeleccionado) {
       this.usuarioService.restablecerPassword(this.usuarioSeleccionado.idUsuario, this.nuevaPassword).subscribe({
         next: () => {

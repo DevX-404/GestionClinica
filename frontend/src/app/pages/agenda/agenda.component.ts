@@ -24,6 +24,12 @@ import { RecetaMedicaDTO, DetalleRecetaDTO } from '../../shared/models/receta-me
     ::ng-deep .fc .fc-toolbar-title { font-size: 1.25rem !important; font-weight: 700 !important; color: #111827; text-transform: capitalize; }
     ::ng-deep .fc .fc-button { padding: 0.4rem 1rem !important; font-weight: 600 !important; text-transform: capitalize !important; border-radius: 0.5rem !important; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important; transition: all 0.2s ease !important; }
     .dark ::ng-deep .fc { --fc-border-color: #374151; --fc-button-text-color: #d1d5db; --fc-button-bg-color: #1f2937; }
+    
+    /* ¡NUEVO! LÓGICA PARA QUE LAS CITAS NO SE SALGAN DEL CUADRO */
+    ::ng-deep .fc-event { border-radius: 6px !important; padding: 2px 4px !important; margin-bottom: 4px !important; border: none !important;}
+    ::ng-deep .fc-event-main { overflow: hidden; }
+    ::ng-deep .fc-event-title { font-size: 0.75rem !important; font-weight: 600 !important; white-space: normal !important; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.2; }
+    ::ng-deep .fc-daygrid-more-link { font-weight: bold; font-size: 0.75rem; color: #3b82f6 !important; padding-top: 2px; }
   `]
 })
 export class AgendaComponent implements OnInit {
@@ -109,6 +115,8 @@ export class AgendaComponent implements OnInit {
     headerToolbar: { left: 'title', center: '', right: 'prev,next dayGridMonth,timeGridWeek,timeGridDay' },
     buttonText: { month: 'Mes', week: 'Semana', day: 'Día' },
     allDaySlot: false,
+    dayMaxEvents: 3,
+    eventDisplay: 'block',
     events: [],
     eventClick: this.handleEventClick.bind(this),
     dateClick: this.handleDateClick.bind(this)

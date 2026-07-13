@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { DropdownComponent } from '../../ui/dropdown/dropdown.component';
 import { DropdownItemComponent } from '../../ui/dropdown/dropdown-item/dropdown-item.component';
+import { UsuarioService } from '../../../services/usuario.service';
+import { NotificacionService } from '../../../services/notificacion.service';
 
 @Component({
   selector: 'app-notification-dropdown',
@@ -12,58 +14,56 @@ import { DropdownItemComponent } from '../../ui/dropdown/dropdown-item/dropdown-
 export class NotificationDropdownComponent implements OnInit {
   // Control del dropdown
   isOpen = false;
-  notifying = true;
+  notifying = false;
 
-  // Notificaciones por rol
-  rol: string = '';
   notificaciones: any[] = [];
 
-  ngOnInit(): void {
-    this.rol = localStorage.getItem('rol') || '';
-    this.cargarNotificacionesPorRol();
+  private usuarioService = inject(UsuarioService);
+  private notificacionService = inject(NotificacionService);
 
-    this.notifying = this.notificaciones.length > 0;
+  ngOnInit(): void {
+    this.cargarDatosReales();
+  }
+
+  cargarDatosReales(): void {
+    const username = localStorage.getItem('username');
+    if (username) {
+      // 1. Buscamos la identidad de quien inició sesión
+      this.usuarioService.obtenerPerfil(username).subscribe({
+        next: (usuario: any) => {
+          if (usuario && usuario.idUsuario) {
+            // 2. Traemos sus notificaciones reales
+            this.notificacionService.listarMisNotificaciones(usuario.idUsuario).subscribe({
+              next: (data) => {
+                this.notificaciones = data;
+                // Si existe al menos 1 no leída, prende la alarma naranja
+                this.notifying = this.notificaciones.some(n => !n.leido);
+              }
+            });
+          }
+        }
+      });
+    }
   }
 
   toggleDropdown(): void {
     this.isOpen = !this.isOpen;
-    this.notifying = false;
   }
 
   closeDropdown(): void {
     this.isOpen = false;
   }
 
-  cargarNotificacionesPorRol(): void {
-    if (this.rol === 'MEDICO') {
-      this.notificaciones = [
-        {
-          titulo: 'Cita en 30 min',
-          mensaje: 'Paciente Juan Pérez'
-        },
-        {
-          titulo: 'Cita Cancelada',
-          mensaje: 'Se liberó tu horario de las 10:00 AM'
+  // Se activa cuando el usuario hace clic en una notificación específica
+  marcarLeida(n: any): void {
+    if (!n.leido) {
+      this.notificacionService.marcarComoLeida(n.idNotificacion).subscribe({
+        next: () => {
+          n.leido = true; // Se pinta de gris (leída)
+          this.notifying = this.notificaciones.some(notif => !notif.leido); // Recalcula la alarma
         }
-      ];
-    } else if (this.rol === 'ADMINISTRADOR') {
-      this.notificaciones = [
-        {
-          titulo: 'Alerta de Pagos',
-          mensaje: '3 pagos pendientes hoy'
-        },
-        {
-          titulo: 'Nuevo Médico',
-          mensaje: 'Aprobar cuenta del Dr. Salazar'
-        }
-      ];
-    } else if (this.rol === 'RECEPCIONISTA') {
-      this.notificaciones = [
-        {
-          titulo: 'Nuevo Paciente',
-          mensaje: 'Ficha creada con éxito'
-        }
-      ];
+      });
     }
+    this.closeDropdown(); // Opcional: cierra el dropdown tras hacer clic
   }
 }

@@ -28,10 +28,9 @@ public class MedicoServiceImpl implements MedicoService {
     private EspecialidadRepository specialtyRepository;
 
     @Autowired
-    private UsuarioRepository usuarioRepository; // <-- Añadido
-
+    private UsuarioRepository usuarioRepository; 
     @Autowired
-    private PasswordEncoder passwordEncoder; // <-- Añadido
+    private PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional(readOnly = true)
@@ -86,7 +85,9 @@ public class MedicoServiceImpl implements MedicoService {
         // --- LÍNEA NUEVA: Le damos acceso por defecto a sus módulos de trabajo ---
         nuevoUsuario.setModulosAcceso(java.util.List.of("Citas Médicas", "Pacientes"));
         
-        medico.setUsuario(nuevoUsuario); // Vinculamos ambas entidades
+        medico.setUsuario(nuevoUsuario);
+
+        medico.setRne(dto.getRne());
 
         return convertirADto(medicoRepository.save(medico));
     }
@@ -123,6 +124,8 @@ public class MedicoServiceImpl implements MedicoService {
         }
         medico.setCorreo(dto.getCorreo());
 
+        medico.setRne(dto.getRne());
+
         return convertirADto(medicoRepository.save(medico));
     }
 
@@ -157,6 +160,7 @@ public class MedicoServiceImpl implements MedicoService {
         if (medico.getSpecialty() != null) {
             dto.setIdEspecialidad(medico.getSpecialty().getIdEspecialidad());
             dto.setNombreEspecialidad(medico.getSpecialty().getNombre());
+            dto.setRne(medico.getRne());
         }
         return dto;
     }

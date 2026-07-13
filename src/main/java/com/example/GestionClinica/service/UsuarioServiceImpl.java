@@ -31,6 +31,14 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public UsuarioDTO obtenerPorUsername(String username) {
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado en el sistema"));
+        return convertirADto(usuario);
+    }
+
+    @Override
     @Transactional
     public UsuarioDTO cambiarEstado(Long idUsuario) {
         Usuario usuario = usuarioRepository.findById(idUsuario)
@@ -46,6 +54,20 @@ public class UsuarioServiceImpl implements UsuarioService {
     public void restablecerPassword(Long idUsuario, String nuevaPassword) {
         Usuario usuario = usuarioRepository.findById(idUsuario)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        
+        usuario.setPassword(passwordEncoder.encode(nuevaPassword));
+        usuarioRepository.save(usuario);
+    }
+
+    @Override
+    @Transactional
+    public void cambiarPasswordPerfil(String username, String passwordActual, String nuevaPassword) {
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        
+        if (!passwordEncoder.matches(passwordActual, usuario.getPassword())) {
+            throw new IllegalArgumentException("La contraseña actual ingresada es incorrecta.");
+        }
         
         usuario.setPassword(passwordEncoder.encode(nuevaPassword));
         usuarioRepository.save(usuario);

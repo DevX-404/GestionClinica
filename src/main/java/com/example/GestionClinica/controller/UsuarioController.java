@@ -23,6 +23,11 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.listarTodos());
     }
 
+    @GetMapping("/perfil/{username}")
+    public ResponseEntity<UsuarioDTO> obtenerPerfilPropio(@PathVariable String username) {
+        return ResponseEntity.ok(usuarioService.obtenerPorUsername(username));
+    }
+
     @PatchMapping("/{id}/estado")
     public ResponseEntity<UsuarioDTO> cambiarEstado(@PathVariable Long id) {
         return ResponseEntity.ok(usuarioService.cambiarEstado(id));
@@ -36,6 +41,12 @@ public class UsuarioController {
     @PostMapping("/{id}/reset-password")
     public ResponseEntity<Void> restablecerPassword(@PathVariable Long id, @Valid @RequestBody ResetPasswordDTO dto) {
         usuarioService.restablecerPassword(id, dto.getNuevaPassword());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/perfil/{username}/cambiar-password")
+    public ResponseEntity<Void> cambiarPasswordPerfil(@PathVariable String username, @Valid @RequestBody com.example.GestionClinica.dto.CambioPasswordDTO dto) {
+        usuarioService.cambiarPasswordPerfil(username, dto.getPasswordActual(), dto.getNuevaPassword());
         return ResponseEntity.ok().build();
     }
 

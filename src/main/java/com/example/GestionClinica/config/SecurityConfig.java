@@ -77,6 +77,13 @@ public class SecurityConfig {
                         // 6. Asegurarnos de que los Horarios estén libres para agendar
                         .requestMatchers("/api/horarios/**").hasAnyRole("ADMINISTRADOR", "MEDICO", "RECEPCIONISTA")
 
+                        // 7. Usuarios: Cualquier logueado puede gestionar su propio perfil (GET o POST)
+                        .requestMatchers("/api/usuarios/perfil/**").authenticated()
+                       // Pero SOLO el administrador gestiona el resto de las cuentas
+                        .requestMatchers("/api/usuarios/**").hasRole("ADMINISTRADOR")
+
+                        .requestMatchers("/api/notificaciones/**").authenticated()
+
                         // Cualquier otra petición requiere estar logueado
                         .anyRequest().authenticated());
 

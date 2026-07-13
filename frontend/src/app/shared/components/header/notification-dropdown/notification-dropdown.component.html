@@ -27,45 +27,52 @@
         </svg>
       </button>
     </div>
-    <ul class="flex flex-col h-auto overflow-y-auto custom-scrollbar">
-      <!-- Example notification items, repeat as needed -->
-      <ul class="flex flex-col h-auto overflow-y-auto custom-scrollbar">
-  <li *ngFor="let n of notificaciones">
-    <app-dropdown-item
-      (itemClick)="closeDropdown()"
-      [className]="'w-full text-left text-sm text-gray-700 hover:text-gray-900 flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5'"
-    >
-
-      <span
-        class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-bold"
-      >
-        🔔
-      </span>
-
-      <span class="block">
-        <span
-          class="block mb-1 font-medium text-gray-800 dark:text-white"
+    <ul class="flex flex-col h-auto overflow-y-auto custom-scrollbar max-h-96">
+      <li *ngFor="let n of notificaciones">
+        <app-dropdown-item
+          (itemClick)="marcarLeida(n)"
+          [className]="'w-full text-left text-sm flex gap-3 border-b border-gray-100 p-3 px-4.5 py-3 dark:border-gray-800 transition-colors cursor-pointer ' + 
+            (n.leido ? 'bg-white hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800' : 'bg-blue-50/50 hover:bg-blue-50 dark:bg-gray-800 dark:hover:bg-gray-700')"
         >
-          {{ n.titulo }}
-        </span>
+          <span class="flex items-center justify-center w-10 h-10 rounded-full shrink-0"
+                [ngClass]="{
+                  'bg-blue-100 text-blue-600': n.tipo === 'INFO',
+                  'bg-green-100 text-green-600': n.tipo === 'SUCCESS',
+                  'bg-yellow-100 text-yellow-600': n.tipo === 'WARNING',
+                  'bg-red-100 text-red-600': n.tipo === 'ERROR',
+                  'bg-gray-100 text-gray-600': !n.tipo
+                }">
+            <ng-container *ngIf="n.tipo === 'INFO'">ℹ️</ng-container>
+            <ng-container *ngIf="n.tipo === 'SUCCESS'">✅</ng-container>
+            <ng-container *ngIf="n.tipo === 'WARNING'">⚠️</ng-container>
+            <ng-container *ngIf="n.tipo === 'ERROR'">🚨</ng-container>
+            <ng-container *ngIf="!n.tipo">🔔</ng-container>
+          </span>
 
-        <span
-          class="block text-theme-sm text-gray-500 dark:text-gray-400"
-        >
-          {{ n.mensaje }}
-        </span>
-      </span>
+          <span class="block w-full">
+            <span class="block mb-0.5" [ngClass]="n.leido ? 'text-gray-600 font-semibold dark:text-gray-300' : 'text-gray-900 font-bold dark:text-white'">
+              {{ n.titulo }}
+            </span>
+            <span class="block text-xs line-clamp-2" [ngClass]="n.leido ? 'text-gray-400 dark:text-gray-500' : 'text-gray-600 dark:text-gray-300'">
+              {{ n.mensaje }}
+            </span>
+            <span class="block text-[10px] mt-1 text-gray-400">
+              {{ n.fechaCreacion | date:'dd/MM/yyyy h:mm a' }}
+            </span>
+          </span>
 
-    </app-dropdown-item>
-  </li>
+          <span *ngIf="!n.leido" class="h-2 w-2 bg-brand-500 rounded-full mt-2 shrink-0"></span>
 
-  <li *ngIf="notificaciones.length === 0">
-    <div class="p-4 text-center text-gray-500">
-      No hay notificaciones
-    </div>
-  </li>
-</ul>
-      <!-- Repeat <li> for more notifications as needed -->
+        </app-dropdown-item>
+      </li>
+
+      <li *ngIf="notificaciones.length === 0">
+        <div class="p-6 text-center text-gray-500 flex flex-col items-center">
+          <svg class="h-10 w-10 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+          <span class="text-sm font-medium">Estás al día</span>
+          <span class="text-xs">No hay notificaciones nuevas</span>
+        </div>
+      </li>
     </ul>
     <a routerLink="/"
       class="block px-4 py-2 mt-3 text-sm font-medium text-center text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700">

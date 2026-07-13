@@ -14,6 +14,10 @@ export class UsuarioService {
     return this.http.get<Usuario[]>(this.apiUrl);
   }
 
+  obtenerPerfil(username: string): Observable<Usuario> {
+    return this.http.get<Usuario>(`${this.apiUrl}/perfil/${username}`);
+  }
+  
   cambiarEstado(idUsuario: number): Observable<Usuario> {
     return this.http.patch<Usuario>(`${this.apiUrl}/${idUsuario}/estado`, {});
   }
@@ -24,6 +28,10 @@ export class UsuarioService {
 
   restablecerPassword(idUsuario: number, nuevaPassword: string): Observable<void> {
     return this.http.post<void>(`${this.apiUrl}/${idUsuario}/reset-password`, { nuevaPassword });
+  }
+
+  cambiarPasswordPerfil(username: string, passwordActual: string, nuevaPassword: string): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/perfil/${username}/cambiar-password`, { passwordActual, nuevaPassword });
   }
 
   crear(usuario: any): Observable<any> {

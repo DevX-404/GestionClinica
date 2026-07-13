@@ -28,88 +28,102 @@
         </div>
       </div>
 
-      <div class="xl:col-span-5 2xl:col-span-4 flex flex-col gap-5 h-[700px] overflow-y-auto custom-scrollbar pr-2">
+      <div class="xl:col-span-5 2xl:col-span-4 flex flex-col h-[700px]">
         
-        <div class="sticky top-0 bg-gray-50/90 dark:bg-gray-dark/90 backdrop-blur-sm z-10 py-3 border-b border-gray-200 dark:border-gray-800 mb-2 flex justify-between items-center px-1">
+        <div class="bg-gray-50/90 dark:bg-gray-dark/90 backdrop-blur-sm z-10 py-4 px-2 border-b border-gray-200 dark:border-gray-800 mb-2 flex justify-between items-center rounded-t-2xl">
            <div>
              <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-               <svg *ngIf="!verHistorialDelDia" class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-               <svg *ngIf="verHistorialDelDia" class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-               {{ verHistorialDelDia ? 'Historial del Día' : 'Turnos Activos' }}
+               <svg *ngIf="!verHistorialDelDia" class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+               <svg *ngIf="verHistorialDelDia" class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+               {{ verHistorialDelDia ? 'Historial del Día' : 'Turnos Pendientes' }}
              </h3>
-             <p class="text-xs text-gray-500 mt-0.5">{{ verHistorialDelDia ? 'Pacientes que ya fueron atendidos' : 'Pacientes por atender' }}</p>
+             <p class="text-xs text-gray-500 mt-1">{{ verHistorialDelDia ? 'Pacientes que ya fueron atendidos hoy' : 'Pacientes en sala de espera o por llegar' }}</p>
            </div>
            
            <button (click)="verHistorialDelDia = !verHistorialDelDia" 
-                   class="p-2.5 rounded-xl border border-gray-200 bg-white shadow-sm hover:bg-gray-50 hover:text-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors">
-             <svg *ngIf="!verHistorialDelDia" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-             <svg *ngIf="verHistorialDelDia" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                   class="p-2.5 rounded-xl border border-gray-200 bg-white shadow-sm hover:bg-gray-50 hover:text-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+                   title="Alternar vista">
+             <svg *ngIf="!verHistorialDelDia" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+             <svg *ngIf="verHistorialDelDia" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
            </button>
         </div>
 
-        <div *ngIf="listaCitasMostrar.length === 0" class="text-center py-12 px-6 rounded-2xl border border-gray-200 bg-white shadow-theme-sm dark:border-gray-800 dark:bg-gray-900 flex flex-col items-center justify-center mt-4">
-           <svg class="w-12 h-12 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-           <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">
-             {{ verHistorialDelDia ? 'Aún no has atendido a nadie hoy.' : 'No hay pacientes programados.' }}
-           </p>
-        </div>
+        <div class="flex-1 overflow-y-auto custom-scrollbar pr-3 pl-4 sm:pl-6 pb-6 relative">
+          
+          <div *ngIf="listaCitasMostrar.length > 0" class="absolute left-[26px] sm:left-[34px] top-4 bottom-4 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
 
-        <div *ngIf="listaCitasMostrar.length > 0">
-          <div *ngFor="let cita of listaCitasMostrar" 
-               [id]="'cita-card-' + cita.idCita"
-               class="rounded-2xl border bg-white p-5 shadow-theme-sm dark:bg-gray-900 transition-all relative overflow-hidden group mb-4"
-               [ngClass]="citaSeleccionadaId === cita.idCita ? 'border-brand-500 ring-2 ring-brand-500/20 shadow-theme-md dark:border-brand-400' : 'border-gray-200 dark:border-gray-800 hover:border-brand-300'">
+          <div *ngIf="listaCitasMostrar.length === 0" class="text-center py-16 px-6 flex flex-col items-center justify-center mt-4">
+             <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-full mb-4">
+               <svg class="w-10 h-10 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+             </div>
+             <p class="text-sm font-bold text-gray-700 dark:text-gray-300">
+               {{ verHistorialDelDia ? 'Aún no has atendido a nadie hoy.' : 'No hay pacientes en sala de espera.' }}
+             </p>
+             <p class="text-xs text-gray-500 mt-2">Selecciona un día en el calendario para ver su programación.</p>
+          </div>
+
+          <div *ngIf="listaCitasMostrar.length > 0" class="space-y-8 pt-4 pb-8">
             
-            <div class="absolute left-0 top-0 bottom-0 w-1.5"
-                 [ngClass]="{
-                   'bg-purple-500': cita.estado === 'EN_ESPERA',
-                   'bg-yellow-400': cita.estado === 'PENDIENTE' || cita.estado === 'PENDIENTE_PAGO',
-                   'bg-brand-500': cita.estado === 'CONFIRMADA',
-                   'bg-green-500': cita.estado === 'ATENDIDA',
-                   'bg-red-500': cita.estado === 'CANCELADA'
-                 }">
-            </div>
-
-            <div class="pl-2">
-              <div class="flex justify-between items-start">
-                <div>
-                  <span [ngClass]="{
-                    'bg-purple-100 text-purple-800 border-purple-200': cita.estado === 'EN_ESPERA',
-                    'bg-yellow-100 text-yellow-800 border-yellow-200': cita.estado === 'PENDIENTE' || cita.estado === 'PENDIENTE_PAGO',
-                    'bg-brand-50 text-brand-600 border-brand-200': cita.estado === 'CONFIRMADA',
-                    'bg-green-100 text-green-800 border-green-200': cita.estado === 'ATENDIDA',
-                    'bg-red-100 text-red-800 border-red-200': cita.estado === 'CANCELADA'
-                  }" class="inline-flex border rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider mb-2">
-                    {{ cita.estado ? cita.estado.replace('_', ' ') : 'N/A' }}
-                  </span>
-                  <h4 class="text-base font-bold text-gray-900 dark:text-white capitalize leading-tight">
-                    {{ cita.paciente?.nombres || cita.nombreCompletoPaciente }}
-                  </h4>
-                </div>
-                <div class="text-right">
-                  <p class="text-sm font-black text-brand-600 dark:text-brand-400">{{ cita.hora ? cita.hora.substring(0,5) : '--:--' }}</p>
-                  <p class="text-[10px] font-semibold text-gray-500 uppercase mt-0.5">{{ cita.fecha }}</p>
-                </div>
+            <div *ngFor="let cita of listaCitasMostrar" class="relative group animate-fade-in">
+              
+              <div class="absolute -left-[30px] sm:-left-[38px] mt-5 h-5 w-5 rounded-full border-4 border-white dark:border-gray-900 shadow-sm z-10 transition-transform group-hover:scale-110"
+                   [ngClass]="{
+                     'bg-emerald-500': cita.estado === 'EN_ESPERA',
+                     'bg-blue-500': cita.estado === 'CONFIRMADA',
+                     'bg-yellow-400': cita.estado === 'PENDIENTE_PAGO',
+                     'bg-purple-500': cita.estado === 'ATENDIDA',
+                     'bg-red-500': cita.estado === 'CANCELADA'
+                   }">
               </div>
 
-              <div class="max-h-0 opacity-0 group-hover:max-h-40 group-hover:opacity-100 transition-all duration-300 overflow-hidden">
-                <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg mt-4 p-3 border border-gray-100 dark:border-gray-700/50">
-                  <p class="text-[10px] font-bold text-brand-500 uppercase tracking-wide mb-1 flex items-center gap-1">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    Info del Paciente
+              <div [id]="'cita-card-' + cita.idCita"
+                   class="rounded-2xl border bg-white p-6 md:p-7 shadow-sm dark:bg-gray-800 transition-all ml-4 sm:ml-6"
+                   [ngClass]="citaSeleccionadaId === cita.idCita ? 'border-brand-500 ring-1 ring-brand-500 shadow-md dark:border-brand-400' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
+                
+                <div class="flex justify-between items-start mb-5">
+                  <div class="flex-1 pr-4">
+                    <span [ngClass]="{
+                      'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-800/50': cita.estado === 'EN_ESPERA',
+                      'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-800/50': cita.estado === 'CONFIRMADA',
+                      'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-800/50': cita.estado === 'PENDIENTE' || cita.estado === 'PENDIENTE_PAGO',
+                      'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-800/50': cita.estado === 'ATENDIDA',
+                      'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-800/50': cita.estado === 'CANCELADA'
+                    }" class="inline-flex border px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest mb-3">
+                      {{ cita.estado ? cita.estado.replace('_', ' ') : 'N/A' }}
+                    </span>
+                    <h4 class="text-lg font-black text-gray-900 dark:text-white capitalize leading-tight">
+                      {{ cita.paciente?.nombres || cita.nombreCompletoPaciente }}
+                    </h4>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mt-1.5 flex items-center gap-1.5">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                      DNI: {{ cita.paciente?.dni || cita.dniPaciente || 'N/A' }}
+                    </p>
+                  </div>
+                  
+                  <div class="text-right flex flex-col items-end">
+                    <span class="text-xl font-black text-brand-600 dark:text-brand-400 tracking-tight">{{ cita.hora ? cita.hora.substring(0,5) : '--:--' }}</span>
+                    <span class="text-[10px] font-bold text-gray-400 uppercase mt-0.5">Hora Aprox.</span>
+                  </div>
+                </div>
+
+                <hr class="border-gray-100 dark:border-gray-700 mb-5">
+
+                <div class="mb-6">
+                  <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Motivo Principal</p>
+                  <p class="text-sm font-medium text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-3">
+                    {{ cita.motivoConsulta || 'Consulta general de rutina.' }}
                   </p>
-                  <p class="text-xs text-gray-700 dark:text-gray-300"><span class="font-bold">DNI:</span> {{ cita.paciente?.dni || cita.dniPaciente || 'N/A' }}</p>
-                  <p class="text-xs text-gray-700 dark:text-gray-300 mt-1 line-clamp-2"><span class="font-bold">Motivo:</span> {{ cita.motivoConsulta || 'Consulta general.' }}</p>
                 </div>
+
+                <button (click)="seleccionarCita(cita)" 
+                        class="w-full rounded-xl border py-3 text-sm font-bold transition-all flex items-center justify-center gap-2 bg-brand-50 text-brand-600 border-brand-200 hover:bg-brand-500 hover:text-white hover:border-brand-500 dark:bg-brand-500/10 dark:border-brand-500/30 dark:text-brand-400 dark:hover:bg-brand-600 dark:hover:text-white shadow-sm">
+                  Abrir Expediente y Atender
+                  <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+
               </div>
-
-              <button (click)="seleccionarCita(cita)" 
-                      class="w-full mt-4 rounded-lg border py-2.5 text-sm font-bold transition-all flex items-center justify-center gap-2 bg-brand-50 text-brand-600 border-brand-200 hover:bg-brand-500 hover:text-white dark:bg-gray-800 dark:border-gray-700 dark:text-brand-400 dark:hover:bg-brand-600 dark:hover:text-white">
-                Leer Expediente / Atender
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-              </button>
-
             </div>
+
           </div>
         </div>
       </div>
