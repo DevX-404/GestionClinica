@@ -14,6 +14,7 @@ export class LoginComponent {
   // Propiedades para capturar las credenciales
   usernameTxt: string = '';
   passwordTxt: string = '';
+  mantenerSesion: boolean = false;
 
   // Manejo de estados de la UI
   errorMsg: string = '';
@@ -22,9 +23,8 @@ export class LoginComponent {
   constructor(private authService: AuthService, private router: Router, private cdr: ChangeDetectorRef) { }
 
   onLogin(event: Event): void {
-    event.preventDefault(); // Evitar que la página se recargue por defecto
+    event.preventDefault(); 
 
-    // Validación básica en el cliente
     if (!this.usernameTxt || !this.passwordTxt) {
       this.errorMsg = 'Por favor, completa todos los campos, causha.';
       return;
@@ -38,23 +38,25 @@ export class LoginComponent {
       password: this.passwordTxt
     };
 
-    // Consumir el endpoint de Spring Boot
-    this.authService.login(credentials).subscribe({
+    // Enviamos el estado del checkbox al servicio
+    this.authService.login(credentials, this.mantenerSesion).subscribe({
       next: (res) => {
         this.loading = false;
         this.router.navigate(['/dashboard']);
       },
-      error: (err) => { // ← CORREGIDO: Usar => en vez de ->
-        this.loading = false; // Ahora sí se ejecutará y apagará el spinner
+      error: (err) => { 
+        this.loading = false; 
 
-        if (err.status === 401 || err.status === 404) {
+        // ¡MAGIA! Ahora imprimimos exactamente el mensaje que nos envía Java (Bloqueo o Intentos restantes)
+        if (err.error && typeof err.error === 'string') {
+          this.errorMsg = err.error;
+        } else if (err.status === 401 || err.status === 404) {
           this.errorMsg = 'Usuario o contraseña incorrectos.';
         } else {
           this.errorMsg = 'Hubo un problema al conectar con el servidor de la clínica.';
         }
-        console.error('Error de autenticación:', err);
 
-        this.cdr.detectChanges(); // Asegura que la UI se actualice con el nuevo estado de error y loading
+        this.cdr.detectChanges(); 
       }
     });
   }

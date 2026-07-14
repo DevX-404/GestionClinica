@@ -43,8 +43,8 @@ export class PerfilComponent implements OnInit {
   globalMsgType: 'success' | 'error' | 'warning' | 'info' = 'info';
 
   ngOnInit(): void {
-    this.usernameLocal = localStorage.getItem('username') || '';
-    this.rolLocal = localStorage.getItem('rol') || 'USUARIO';
+    this.usernameLocal = localStorage.getItem('username') || sessionStorage.getItem('username') || '';
+    this.rolLocal = localStorage.getItem('rol') || sessionStorage.getItem('rol') || 'USUARIO';
     this.cargarDatosUsuario();
   }
 

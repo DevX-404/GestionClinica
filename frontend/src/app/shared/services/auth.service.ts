@@ -4,7 +4,7 @@ import { Observable, tap } from 'rxjs';
 import { Router } from '@angular/router';
 
 export interface LoginRequest {
-  username: string; // Puede ser el correo institucional
+  username: string; 
   password: string;
 }
 
@@ -19,37 +19,42 @@ export interface AuthResponse {
 @Injectable({
   providedIn: 'root'
 })
-
 export class AuthService {
   private http = inject(HttpClient);
   private router = inject(Router);
   private apiUrl = 'http://localhost:8080/api/auth';
 
-
-  login(credentials: LoginRequest): Observable<AuthResponse> {
+  // Le agregamos el parámetro "mantenerSesion"
+  login(credentials: LoginRequest, mantenerSesion: boolean): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials).pipe(
       tap(response => {
-        // Almacenar datos esenciales de la sesión de forma segura
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('username', response.username);
-        localStorage.setItem('rol', response.rol.toUpperCase()); // Actualizar componentes que usen estos datos
-        localStorage.setItem('nombreReal', response.nombreReal);
-        localStorage.setItem('modulos', JSON.stringify(response.modulos || []));
+        localStorage.clear();
+        sessionStorage.clear();
+
+        const storage = mantenerSesion ? localStorage : sessionStorage;
+
+        storage.setItem('token', response.token);
+        storage.setItem('username', response.username);
+        storage.setItem('rol', response.rol.toUpperCase()); 
+        storage.setItem('nombreReal', response.nombreReal);
+        storage.setItem('modulos', JSON.stringify(response.modulos || []));
       })
     );
   }
 
   logout(): void {
     localStorage.clear();
+    sessionStorage.clear();
     this.router.navigate(['/login']);
   }
 
+  // Buscamos en ambos storages
   getToken(): string | null {
-    return localStorage.getItem('token');
+    return localStorage.getItem('token') || sessionStorage.getItem('token');
   }
 
   getRole(): string | null {
-    return localStorage.getItem('rol');
+    return localStorage.getItem('rol') || sessionStorage.getItem('rol');
   }
 
   isAuthenticated(): boolean {

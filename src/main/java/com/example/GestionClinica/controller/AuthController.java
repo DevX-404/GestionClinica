@@ -38,16 +38,29 @@ public class AuthController {
         String username = loginRequest.get("username");
         String password = loginRequest.get("password");
 
-        Usuario usuario = usuarioRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        // 1. MANEJO ELEGANTE DE ERROR: Si el usuario no existe, evitamos el Error 500
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByUsername(username);
+        if (usuarioOpt.isEmpty()) {
+            return ResponseEntity.status(401).body("Usuario o contraseña incorrectos.");
+        }
+        
+        Usuario usuario = usuarioOpt.get();
 
+        // 2. Verificamos si la cuenta está bloqueada
         if (!usuario.isActivo()) {
-            return ResponseEntity.status(403).body("Su cuenta ha sido bloqueada. Por favor, comuníquese con el departamento de TI.");
+            return ResponseEntity.status(403).body("⛔ Su cuenta ha sido bloqueada. Por favor, comuníquese con el departamento de TI.");
         }
 
+        // 3. Comprobamos la contraseña
         if (passwordEncoder.matches(password, usuario.getPassword())) {
-            String token = tokenProvider.generarToken(usuario.getUsername(), usuario.getRol().name());
             
+            // Reseteamos intentos fallidos al entrar con éxito
+            if (usuario.getIntentosFallidos() > 0) {
+                usuario.setIntentosFallidos(0);
+                usuarioRepository.save(usuario);
+            }
+
+            String token = tokenProvider.generarToken(usuario.getUsername(), usuario.getRol().name());
             String nombreReal = usuario.getNombreCompleto() != null && !usuario.getNombreCompleto().isEmpty() 
                                 ? usuario.getNombreCompleto() 
                                 : usuario.getUsername();
@@ -60,8 +73,21 @@ public class AuthController {
             response.put("modulos", usuario.getModulosAcceso()); 
             
             return ResponseEntity.ok(response);
+            
         } else {
-            return ResponseEntity.status(401).body("Contraseña incorrecta");
+            // FUERZA BRUTA: Sumamos intentos fallidos
+            int intentos = usuario.getIntentosFallidos() + 1;
+            usuario.setIntentosFallidos(intentos);
+            
+            if (intentos >= 3) {
+                usuario.setActivo(false); // BLOQUEO
+                usuarioRepository.save(usuario);
+                return ResponseEntity.status(403).body("⛔ Has superado los 3 intentos permitidos. Por seguridad, tu cuenta ha sido bloqueada. Contacta a TI.");
+            }
+            
+            usuarioRepository.save(usuario);
+            int intentosRestantes = 3 - intentos;
+            return ResponseEntity.status(401).body("Contraseña incorrecta. Te quedan " + intentosRestantes + " intentos antes de bloquear la cuenta.");
         }
     }
 }

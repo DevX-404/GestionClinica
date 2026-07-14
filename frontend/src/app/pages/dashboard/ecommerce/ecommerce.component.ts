@@ -3,12 +3,13 @@ import { CommonModule, CurrencyPipe } from '@angular/common';
 import { DashboardService, DashboardMetrics } from '../../../shared/services/dashboard.service';
 import { CitaMedicaService } from '../../../shared/services/cita-medica.service';
 import { PagoService } from '../../../shared/services/pago.service';
+import { MedicoService } from '../../../shared/services/medico.service'; // <-- NUEVO INYECTADO
 import { RouterModule } from '@angular/router';
 import { NgApexchartsModule } from 'ng-apexcharts';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs'; // <-- 'of' INYECTADO
 
 @Component({
-  selector: 'app-ecommerce', // Mantenemos el selector para no romper rutas
+  selector: 'app-ecommerce',
   standalone: true,
   imports: [CommonModule, RouterModule, NgApexchartsModule],
   templateUrl: './ecommerce.component.html',
@@ -18,13 +19,11 @@ export class EcommerceComponent implements OnInit {
   private dashboardService = inject(DashboardService);
   private citaService = inject(CitaMedicaService);
   private pagoService = inject(PagoService);
+  private medicoService = inject(MedicoService); // <-- NUEVO
   private cdr = inject(ChangeDetectorRef);
   
-  metrics: DashboardMetrics = {
-    totalPacientes: 0, totalMedicos: 0, citasHoy: 0, citasPendientesHoy: 0, ingresosHoy: 0
-  };
+  metrics: DashboardMetrics = { totalPacientes: 0, totalMedicos: 0, citasHoy: 0, citasPendientesHoy: 0, ingresosHoy: 0 };
   
-  // Métricas extra calculadas en frontend
   citasAtendidasHoyMedico: number = 0;
   citasPendientesMedico: number = 0;
   totalCajaHoy: number = 0;
@@ -33,33 +32,38 @@ export class EcommerceComponent implements OnInit {
   rolActual: string = '';
   usernameActual: string = '';
 
-  // Configuración de Gráficos
   chartEspecialidades: any;
   chartMetodosPago: any;
   chartEficaciaMedico: any;
 
   ngOnInit(): void {
-    this.rolActual = localStorage.getItem('rol')?.toUpperCase() || 'ADMINISTRADOR';
-    this.usernameActual = localStorage.getItem('username')?.toLowerCase() || '';
+    this.rolActual = localStorage.getItem('rol') || sessionStorage.getItem('rol') || 'ADMINISTRADOR';
+    this.usernameActual = localStorage.getItem('username') || sessionStorage.getItem('username') || '';
     this.cargarDatosReales();
   }
 
   cargarDatosReales(): void {
-    // Usamos forkJoin para traer toda la data real al mismo tiempo
     forkJoin({
       metricas: this.dashboardService.obtenerMetricas(),
       citas: this.citaService.listarTodas(),
-      pagos: this.pagoService.listarTodos()
+      pagos: this.pagoService.listarTodos(),
+      // Si el rol es médico, nos traemos la lista para ubicar su ID exacto
+      medicos: this.rolActual === 'MEDICO' ? this.medicoService.listarTodos() : of([]) 
     }).subscribe({
       next: (res) => {
         this.metrics = res.metricas;
-        const hoy = new Date().toISOString().split('T')[0];
+        
+        // ¡LA CURA A LA ZONA HORARIA! Construimos la fecha 100% en hora local peruana
+        const d = new Date();
+        const anio = d.getFullYear();
+        const mes = String(d.getMonth() + 1).padStart(2, '0');
+        const dia = String(d.getDate()).padStart(2, '0');
+        const hoy = `${anio}-${mes}-${dia}`; 
 
         // ==========================================
         // LÓGICA PARA ADMINISTRADOR
         // ==========================================
         if (this.rolActual === 'ADMINISTRADOR') {
-          // Gráfico: Demanda por Especialidad (Histórico)
           const conteoEspecialidades: { [key: string]: number } = {};
           res.citas.forEach((c: any) => {
             const esp = c.nombreEspecialidad || 'General';
@@ -81,16 +85,20 @@ export class EcommerceComponent implements OnInit {
         // LÓGICA PARA MÉDICO
         // ==========================================
         if (this.rolActual === 'MEDICO') {
-          // Filtramos solo las citas de ESTE médico para HOY
-          const misCitasHoy = res.citas.filter((c: any) => 
-            c.fecha === hoy && c.usernameMedico?.toLowerCase() === this.usernameActual
-          );
+          // Buscamos el ID real del Médico cruzando su correo (A prueba de balas)
+          const miFicha = res.medicos.find(m => m.correo?.toLowerCase() === this.usernameActual.toLowerCase());
+          
+          let misCitasHoy: any[] = [];
+          if (miFicha) {
+             misCitasHoy = res.citas.filter((c: any) => 
+               c.fecha === hoy && c.idMedico === miFicha.idMedico
+             );
+          }
 
           this.citasAtendidasHoyMedico = misCitasHoy.filter((c: any) => c.estado === 'ATENDIDA').length;
           this.citasPendientesMedico = misCitasHoy.filter((c: any) => c.estado === 'EN_ESPERA' || c.estado === 'CONFIRMADA').length;
           const canceladas = misCitasHoy.filter((c: any) => c.estado === 'CANCELADA').length;
 
-          // Gráfico: Eficacia Diaria
           this.chartEficaciaMedico = {
             series: [{ name: "Pacientes", data: [this.citasAtendidasHoyMedico, this.citasPendientesMedico, canceladas] }],
             chart: { type: "bar", height: 300, toolbar: { show: false }, fontFamily: 'inherit' },
@@ -106,14 +114,12 @@ export class EcommerceComponent implements OnInit {
         // LÓGICA PARA RECEPCIONISTA
         // ==========================================
         if (this.rolActual === 'RECEPCIONISTA') {
-          // Filtrar ingresos solo de HOY que estén PAGADOS
           const pagosHoy = res.pagos.filter((p: any) => 
             p.fechaPago === hoy && (p.estadoPago === 'PAGADO' || p.estadoPago === 'COMPLETADO')
           );
           
           this.totalCajaHoy = pagosHoy.reduce((sum, p) => sum + Number(p.monto), 0);
 
-          // Gráfico: Métodos de Pago Preferidos
           const conteoMetodos: { [key: string]: number } = { 'EFECTIVO': 0, 'YAPE': 0, 'PLIN': 0, 'TARJETA': 0 };
           pagosHoy.forEach((p: any) => {
             const metodo = p.metodoPago || 'EFECTIVO';

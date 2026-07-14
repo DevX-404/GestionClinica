@@ -147,10 +147,10 @@ export class AgendaComponent implements OnInit {
 
   cargarCitasDelDia(): void {
     this.isLoading = true;
-    const usernameLogueado = localStorage.getItem('username')?.toLowerCase() || '';
+    const usernameLogueado = localStorage.getItem('username') || sessionStorage.getItem('username') || '';
 
     this.citaService.listarTodas().subscribe((data: any[]) => {
-      const rolActual = localStorage.getItem('rol') || 'RECEPCIONISTA';
+      const rolActual = localStorage.getItem('rol') || sessionStorage.getItem('rol') || 'RECEPCIONISTA';
       const citasDelMedico = data.filter((c: any) => {
         if (rolActual === 'ADMINISTRADOR') return true;
         const esMismoMedico = c.usernameMedico && c.usernameMedico.toLowerCase() === usernameLogueado;

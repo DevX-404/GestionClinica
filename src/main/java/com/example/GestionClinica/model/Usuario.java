@@ -36,6 +36,9 @@ public class Usuario {
 
     private boolean activo = true;
 
+    @Column(nullable = false, columnDefinition = "integer default 0")
+    private int intentosFallidos = 0;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "usuario_modulos", joinColumns = @JoinColumn(name = "id_usuario"))
     @Column(name = "modulo")

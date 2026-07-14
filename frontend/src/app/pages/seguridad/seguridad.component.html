@@ -201,9 +201,9 @@
             @for (modulo of modulosDisponibles; track modulo) {
               <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-1.5 rounded transition-colors">
                 <input type="checkbox" 
-                       [checked]="usuarioForm.modulosAcceso.includes(modulo)"
-                       (change)="toggleModulo(modulo)"
-                       class="rounded border-gray-300 text-brand-500 focus:ring-brand-500 bg-white dark:bg-gray-900" />
+       [checked]="usuarioForm.modulosAcceso.includes(modulo)"
+       (change)="toggleModulo(modulo)"
+       class="rounded border-gray-300 text-brand-500 focus:ring-brand-500 bg-white dark:bg-gray-900" />
                 {{ modulo }}
               </label>
             }

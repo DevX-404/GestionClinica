@@ -17,13 +17,12 @@ export class SeguridadComponent implements OnInit {
   // DATOS
   usuarios: Usuario[] = [];
   usuariosFiltrados: Usuario[] = [];
-  usuariosPaginados: Usuario[] = []; // NUEVO: Para la paginación de la tabla
+  usuariosPaginados: Usuario[] = []; 
   
   // CONTROLES DE LA TABLA
   searchTerm: string = '';
   itemsPorPagina: number = 5;
   paginaActual: number = 1;
-
   isLoading: boolean = false;
 
   // Alertas
@@ -40,59 +39,44 @@ export class SeguridadComponent implements OnInit {
   isUserModalOpen: boolean = false;
   isEditMode: boolean = false;
   bloquearNombreEnEdicion: boolean = false;
-  usuarioForm: any = { username: '', email: '', password: '', rol: 'RECEPCIONISTA', modulosAcceso: [] };
+  usuarioForm: any = { nombreCompleto: '', username: '', email: '', password: '', rol: 'RECEPCIONISTA', modulosAcceso: [] };
 
-  // Lista de módulos para los Checkboxes
   modulosDisponibles = [
     'Dashboard', 'Agenda Médica', 'Pacientes', 'Citas Médicas', 'Historia Clínica', 
     'Recetas Médicas', 'Personal Médico', 'Pagos y Facturación', 'Reportes Globales', 
     'Seguridad y Usuarios', 'Auditoría del Sistema'
   ];
 
-  // --- INICIO: LÓGICA DE CONFIRMACIÓN ELEGANTE ---
+  // CONFIRMACIÓN ELEGANTE
   isConfirmModalOpen: boolean = false;
   confirmData: any = { titulo: '', mensaje: '', txtBtn: '', colorBtn: '', accion: null, accionCancelar: null };
-
-  abrirConfirmacion(titulo: string, mensaje: string, txtBtn: string, colorBtn: string, accion: () => void, accionCancelar?: () => void): void {
-    this.confirmData = { titulo, mensaje, txtBtn, colorBtn, accion, accionCancelar };
-    this.isConfirmModalOpen = true;
-  }
-
-  cerrarConfirmacion(): void {
-    if (this.confirmData.accionCancelar) this.confirmData.accionCancelar();
-    this.isConfirmModalOpen = false;
-  }
-
-  ejecutarConfirmacion(): void {
-    if (this.confirmData.accion) this.confirmData.accion();
-    this.isConfirmModalOpen = false;
-  }
-  // --- FIN: LÓGICA DE CONFIRMACIÓN ELEGANTE ---
 
   ngOnInit(): void {
     this.cargarUsuarios();
   }
 
   cargarUsuarios(): void {
-    this.isLoading = true;
-    this.cdr.detectChanges();
+    // El setTimeout engaña a Angular para que no lance NG0100 al mostrar el spinner
+    setTimeout(() => {
+      this.isLoading = true;
+      this.cdr.markForCheck();
+    });
 
     this.usuarioService.listarTodos().subscribe({
       next: (data) => {
         this.usuarios = data;
-        this.filtrar(); // Inicializa el filtrado y la paginación
+        this.filtrar(); 
         this.isLoading = false;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
       error: () => {
         this.isLoading = false;
         this.mostrarMensajeGlobal('Error al cargar la lista de usuarios.', 'error');
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       }
     });
   }
 
-  // --- FILTRADO CORREGIDO CON PAGINACIÓN ---
   filtrar(): void {
     const term = this.searchTerm.toLowerCase().trim();
     if (!term) {
@@ -102,65 +86,47 @@ export class SeguridadComponent implements OnInit {
         u.username.toLowerCase().includes(term) ||
         u.email.toLowerCase().includes(term) ||
         u.rol.toLowerCase().includes(term) ||
-        (u.nombreCompleto && u.nombreCompleto.toLowerCase().includes(term)) // Búsqueda extra por nombre
+        (u.nombreCompleto && u.nombreCompleto.toLowerCase().includes(term))
       );
     }
-    
-    // Regresamos a la primera página tras buscar y actualizamos tabla
     this.paginaActual = 1;
     this.actualizarTabla();
   }
 
-  // --- LÓGICA DE PAGINACIÓN ---
   actualizarTabla(): void {
     const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
     const fin = inicio + Number(this.itemsPorPagina);
     this.usuariosPaginados = this.usuariosFiltrados.slice(inicio, fin);
   }
 
-  cambiarPaginacion(): void {
-    this.paginaActual = 1;
-    this.actualizarTabla();
-  }
-
-  paginaAnterior(): void {
-    if (this.paginaActual > 1) {
-      this.paginaActual--;
-      this.actualizarTabla();
-    }
-  }
-
-  paginaSiguiente(): void {
-    if ((this.paginaActual * this.itemsPorPagina) < this.usuariosFiltrados.length) {
-      this.paginaActual++;
-      this.actualizarTabla();
-    }
-  }
-
-  calcularRangoInicio(): number {
-    return this.usuariosFiltrados.length === 0 ? 0 : ((this.paginaActual - 1) * this.itemsPorPagina) + 1;
-  }
-
-  calcularRangoFin(): number {
-    const fin = this.paginaActual * this.itemsPorPagina;
-    return fin > this.usuariosFiltrados.length ? this.usuariosFiltrados.length : fin;
-  }
-  // --- FIN LÓGICA PAGINACIÓN ---
+  cambiarPaginacion(): void { this.paginaActual = 1; this.actualizarTabla(); }
+  paginaAnterior(): void { if (this.paginaActual > 1) { this.paginaActual--; this.actualizarTabla(); } }
+  paginaSiguiente(): void { if ((this.paginaActual * this.itemsPorPagina) < this.usuariosFiltrados.length) { this.paginaActual++; this.actualizarTabla(); } }
+  calcularRangoInicio(): number { return this.usuariosFiltrados.length === 0 ? 0 : ((this.paginaActual - 1) * this.itemsPorPagina) + 1; }
+  calcularRangoFin(): number { const fin = this.paginaActual * this.itemsPorPagina; return fin > this.usuariosFiltrados.length ? this.usuariosFiltrados.length : fin; }
 
   // --- CRUD Modal Lógica ---
   openUserModal(usuario?: any): void {
     if (usuario) {
       this.isEditMode = true;
-      this.usuarioForm = { ...usuario };
       
-      if (!this.usuarioForm.modulosAcceso) {
-        this.usuarioForm.modulosAcceso = [];
-      } else if (typeof this.usuarioForm.modulosAcceso === 'string') {
-        this.usuarioForm.modulosAcceso = this.usuarioForm.modulosAcceso
-          .replace(/[\[\]]/g, '') 
-          .split(',')
-          .map((m: string) => m.trim());
+      // PARCHE ANTIFALLOS NG0100: Preparamos y limpiamos la data ANTES de asignarla al form
+      let modulosParseados: string[] = [];
+      if (usuario.modulosAcceso) {
+        if (typeof usuario.modulosAcceso === 'string') {
+          modulosParseados = usuario.modulosAcceso
+            .replace(/[\[\]]/g, '')
+            .split(',')
+            .map((m: string) => m.trim());
+        } else if (Array.isArray(usuario.modulosAcceso)) {
+          modulosParseados = [...usuario.modulosAcceso];
+        }
       }
+
+      this.usuarioForm = { 
+        ...usuario,
+        modulosAcceso: modulosParseados // Asignamos un Array puro y duro
+      };
       
       this.bloquearNombreEnEdicion = !!this.usuarioForm.nombreCompleto && this.usuarioForm.nombreCompleto.trim().length > 0;
       
@@ -169,6 +135,8 @@ export class SeguridadComponent implements OnInit {
       this.bloquearNombreEnEdicion = false;
       this.usuarioForm = { nombreCompleto: '', username: '', email: '', password: '', rol: 'RECEPCIONISTA', modulosAcceso: [] };
     }
+    
+    // Abrimos el modal al final de la función para que Angular dibuje el HTML con la data ya limpia
     this.isUserModalOpen = true;
   }
 
@@ -245,7 +213,7 @@ export class SeguridadComponent implements OnInit {
           }
         });
       },
-      () => this.cargarUsuarios() // Si el usuario CANCELA, revertimos el SELECT a la normalidad
+      () => this.cargarUsuarios() // Revertir si cancela
     );
   }
 
@@ -272,23 +240,37 @@ export class SeguridadComponent implements OnInit {
         next: () => {
           this.mostrarMensajeGlobal(`Contraseña de ${this.usuarioSeleccionado?.username} restablecida con éxito.`, 'success');
           this.closePasswordModal();
-          this.cdr.detectChanges();
         },
         error: () => {
           this.errorPwdMsg = 'No se pudo restablecer la contraseña en el servidor.';
-          this.cdr.detectChanges();
         }
       });
     }
   }
 
+  // --- CONFIRMACIÓN ELEGANTE ---
+  abrirConfirmacion(titulo: string, mensaje: string, txtBtn: string, colorBtn: string, accion: () => void, accionCancelar?: () => void): void {
+    this.confirmData = { titulo, mensaje, txtBtn, colorBtn, accion, accionCancelar };
+    this.isConfirmModalOpen = true;
+  }
+
+  cerrarConfirmacion(): void {
+    if (this.confirmData.accionCancelar) this.confirmData.accionCancelar();
+    this.isConfirmModalOpen = false;
+  }
+
+  ejecutarConfirmacion(): void {
+    if (this.confirmData.accion) this.confirmData.accion();
+    this.isConfirmModalOpen = false;
+  }
+
   mostrarMensajeGlobal(msg: string, type: 'success' | 'error'): void {
     this.globalMsg = msg;
     this.globalMsgType = type;
-    this.cdr.detectChanges();
+    this.cdr.markForCheck();
     setTimeout(() => {
       this.globalMsg = '';
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
     }, 4000);
   }
 }

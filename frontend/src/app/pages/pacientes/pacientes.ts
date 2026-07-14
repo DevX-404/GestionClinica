@@ -60,7 +60,7 @@ export class PacientesComponent implements OnInit {
   // --- FIN: LÓGICA DE CONFIRMACIÓN ELEGANTE ---
 
   ngOnInit(): void {
-    this.rolActual = localStorage.getItem('rol') || '';
+    this.rolActual = localStorage.getItem('rol') || sessionStorage.getItem('rol') || '';
     this.cargarPacientes();
   }
 

@@ -160,34 +160,43 @@ export class AppSidebarComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    const rolActual = localStorage.getItem('rol')?.toUpperCase() ?? 'RECEPCIONISTA';
-    const modulosStr = localStorage.getItem('modulos');
-    const modulosPermitidos: string[] = modulosStr ? JSON.parse(modulosStr) : [];
 
-    // Filtro original por Roles
-    let navs = this.menuMaestro.filter(item => item.roles.includes(rolActual));
-    let others = this.menuOtrosMaestro.filter(item => item.roles.includes(rolActual));
+  const rolGuardado =
+    localStorage.getItem('rol') ||
+    sessionStorage.getItem('rol');
 
-    // NUEVO: Filtro súper estricto basado en los checkboxes de los módulos asignados
-    // (Solo aplicamos si el usuario tiene una lista de módulos configurada en DB)
-    if (modulosPermitidos && modulosPermitidos.length > 0) {
-      navs = navs.filter(item => modulosPermitidos.includes(item.name));
-      
-      // Mantenemos "Mi Perfil" visible para todos, y verificamos el resto
-      others = others.filter(item => item.name === 'Mi Perfil' || modulosPermitidos.includes(item.name));
-    }
+  const modulosGuardados =
+    localStorage.getItem('modulos') ||
+    sessionStorage.getItem('modulos');
 
-    this.navItems = navs;
-    this.othersItems = others;
+  const rolActual = rolGuardado?.toUpperCase() ?? 'RECEPCIONISTA';
 
-    this.router.events
-      .pipe(filter(event => event instanceof NavigationEnd))
-      .subscribe((event: any) => {
-        this.checkActiveRoute(event.urlAfterRedirects);
-      });
+  const modulosPermitidos: string[] =
+    modulosGuardados ? JSON.parse(modulosGuardados) : [];
 
-    this.checkActiveRoute(this.router.url);
+  let navs = this.menuMaestro.filter(item => item.roles.includes(rolActual));
+  let others = this.menuOtrosMaestro.filter(item => item.roles.includes(rolActual));
+
+  if (modulosPermitidos.length > 0) {
+    navs = navs.filter(item => modulosPermitidos.includes(item.name));
+
+    others = others.filter(item =>
+      item.name === 'Mi Perfil' ||
+      modulosPermitidos.includes(item.name)
+    );
   }
+
+  this.navItems = navs;
+  this.othersItems = others;
+
+  this.router.events
+    .pipe(filter(event => event instanceof NavigationEnd))
+    .subscribe((event: any) => {
+      this.checkActiveRoute(event.urlAfterRedirects);
+    });
+
+  this.checkActiveRoute(this.router.url);
+}
 
   ngAfterViewInit(): void {
     this.calculateSubMenuHeights();

@@ -20,9 +20,9 @@ export class UserDropdownComponent implements OnInit {
   constructor(private router: Router) {}
 
   ngOnInit(): void {
-    const sessionNombreReal = localStorage.getItem('nombreReal');
-    const sessionUser = localStorage.getItem('username');
-    const sessionRol = localStorage.getItem('rol');
+    const sessionNombreReal = localStorage.getItem('nombreReal') || sessionStorage.getItem('nombreReal');
+    const sessionUser = localStorage.getItem('username') || sessionStorage.getItem('username');
+    const sessionRol = localStorage.getItem('rol') || sessionStorage.getItem('rol');
 
     const nombreParaMostrar = sessionNombreReal || sessionUser || 'Usuario';
     this.nombreUsuario = nombreParaMostrar;
