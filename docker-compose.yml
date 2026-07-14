@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # 1. CONTENEDOR DE BASE DE DATOS
+  db:
+    image: postgres:15-alpine
+    container_name: clinica-db
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:-clinic_db}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-123456}
+    ports:
+      - "5432:5432" # Lo exponemos por si quieres conectarte con DBeaver
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # 2. CONTENEDOR DEL BACKEND (SPRING BOOT)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clinica-backend
+    restart: always
+    environment:
+      # Aquí está la magia: le decimos a Java que el host no es "localhost", sino el contenedor "db"
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-clinic_db}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-123456}
+      - SERVER_PORT=8080
+      - JWT_SECRET=${JWT_SECRET:-GestionClinicaJWTSecretKey2026MuySeguraParaProduccion}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+  # 3. CONTENEDOR DEL FRONTEND (ANGULAR + NGINX)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: clinica-frontend
+    restart: always
+    ports:
+      - "80:80" # Tu web estará disponible directamente en http://localhost
+    depends_on:
+      - backend
+
+# Para que la base de datos no se borre si apagas Docker
+volumes:
+  postgres_data:
