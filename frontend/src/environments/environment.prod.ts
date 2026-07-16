@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: '/api' 
+  apiUrl: 'https://gestionclinica-production-4fde.up.railway.app/api' 
 };
