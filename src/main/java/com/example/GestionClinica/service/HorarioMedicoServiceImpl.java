@@ -26,7 +26,8 @@ public class HorarioMedicoServiceImpl implements HorarioMedicoService {
     @Override
     @Transactional(readOnly = true)
     public List<HorarioMedicoDTO> listarPorMedico(Long idMedico) {
-        String fechaHoy = java.time.LocalDate.now().toString();
+        // Aseguramos que "hoy" siempre se calcule con la hora de Lima/Perú
+        String fechaHoy = java.time.LocalDate.now(java.time.ZoneId.of("America/Lima")).toString();
 
         return horarioRepository.findHorariosActivosByMedico(idMedico).stream()
                 .filter(h -> h.getDiaSemana() != null && h.getDiaSemana().compareTo(fechaHoy) >= 0)
