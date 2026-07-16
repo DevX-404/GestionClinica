@@ -176,9 +176,13 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
                     nuevoPac.setApellidoPaterno(dto.getApellidoPaterno());
                     nuevoPac.setTelefono(dto.getTelefonoPaciente());
 
-                    if (dto.getFechaNacimiento() != null && !dto.getFechaNacimiento().isEmpty()) {
-                        nuevoPac.setFechaNacimiento(LocalDate.parse(dto.getFechaNacimiento()));
-                    } else {
+                    try {
+                        if (dto.getFechaNacimiento() != null && !dto.getFechaNacimiento().isEmpty()) {
+                            nuevoPac.setFechaNacimiento(LocalDate.parse(dto.getFechaNacimiento()));
+                        } else {
+                            nuevoPac.setFechaNacimiento(LocalDate.of(2000, 1, 1));
+                        }
+                    } catch (Exception e) {
                         nuevoPac.setFechaNacimiento(LocalDate.of(2000, 1, 1));
                     }
 
@@ -187,6 +191,8 @@ public class CitaMedicaServiceImpl implements CitaMedicaService {
                     nuevoPac.setDireccion("");
                     nuevoPac.setCorreo("");
                     nuevoPac.setEstado("ACTIVO");
+                    
+                    nuevoPac.setFechaRegistro(LocalDate.now()); 
 
                     return pacienteRepository.save(nuevoPac);
                 });

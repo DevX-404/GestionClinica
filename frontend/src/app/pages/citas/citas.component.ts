@@ -187,6 +187,7 @@ export class CitasComponent implements OnInit {
   }
 
   seleccionarPaciente(paciente: any): void {
+    this.esNuevoPaciente = false;
     this.pacienteSeleccionado = paciente;
     this.dniBusqueda = paciente.dni;
     this.citaForm.idPaciente = paciente.idPaciente;
