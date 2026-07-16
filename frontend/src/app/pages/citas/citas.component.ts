@@ -311,33 +311,70 @@ export class CitasComponent implements OnInit {
   }
 
   confirmarPagoYape(): void {
-    const payloadRapido = {
-      dniPaciente: this.dniBusqueda,
-      nombresPaciente: this.esNuevoPaciente ? this.nuevoPacienteForm.nombres : this.pacienteSeleccionado?.nombres,
-      apellidoPaterno: this.esNuevoPaciente ? this.nuevoPacienteForm.apellidoPaterno : this.pacienteSeleccionado?.apellidoPaterno,
-      apellidoMaterno: this.esNuevoPaciente ? '' : this.pacienteSeleccionado?.apellidoMaterno,
-      telefonoPaciente: this.esNuevoPaciente ? this.nuevoPacienteForm.telefono : this.pacienteSeleccionado?.telefono,
-      fechaNacimiento: this.esNuevoPaciente ? this.nuevoPacienteForm.fechaNacimiento : (this.pacienteSeleccionado?.fechaNacimiento || '2000-01-01'),
-      idMedico: Number(this.citaForm.idMedico),
-      idEspecialidad: Number(this.citaForm.idEspecialidad),
-      fecha: this.citaForm.fecha,
-      hora: this.citaForm.hora.length === 5 ? `${this.citaForm.hora}:00` : this.citaForm.hora,
-      motivoConsulta: this.citaForm.motivoConsulta,
-      tipoCita: this.citaForm.tipoCita,
-      montoPagadoAdelanto: this.montoAdelanto30
-    };
-
-    this.citaService.programarCitaRapida(payloadRapido).subscribe({
-      next: () => {
-        this.mostrarMensajeGlobal('¡Cita y Paciente registrados con éxito!', 'success');
-        this.closeModal();
-        this.cargarCitas();
-      },
-      error: (err) => {
-        this.errorModalMsg = this.extraerMensajeError(err, 'Error al registrar la cita.');
-        this.regresarAPaso1(); 
+    if (this.esNuevoPaciente) {
+      // =========================================================
+      // CAMINO 1: PACIENTE NUEVO (Usa el endpoint de Cita Rápida)
+      // =========================================================
+      let fn = this.nuevoPacienteForm.fechaNacimiento;
+      if (Array.isArray(fn)) {
+        fn = `${fn[0]}-${String(fn[1]).padStart(2, '0')}-${String(fn[2]).padStart(2, '0')}`;
       }
-    });
+
+      const payloadRapido = {
+        dniPaciente: this.dniBusqueda,
+        nombresPaciente: this.nuevoPacienteForm.nombres,
+        apellidoPaterno: this.nuevoPacienteForm.apellidoPaterno,
+        apellidoMaterno: '', // Opcional para nuevos
+        telefonoPaciente: this.nuevoPacienteForm.telefono,
+        fechaNacimiento: fn || '2000-01-01',
+        idMedico: Number(this.citaForm.idMedico),
+        idEspecialidad: Number(this.citaForm.idEspecialidad),
+        fecha: this.citaForm.fecha,
+        hora: this.citaForm.hora.length === 5 ? `${this.citaForm.hora}:00` : this.citaForm.hora,
+        motivoConsulta: this.citaForm.motivoConsulta,
+        tipoCita: this.citaForm.tipoCita,
+        montoPagadoAdelanto: this.montoAdelanto30
+      };
+
+      this.citaService.programarCitaRapida(payloadRapido).subscribe({
+        next: () => {
+          this.mostrarMensajeGlobal('¡Paciente nuevo registrado y cita programada con éxito!', 'success');
+          this.closeModal();
+          this.cargarCitas();
+        },
+        error: (err) => {
+          this.errorModalMsg = this.extraerMensajeError(err, 'Error al registrar la cita rápida.');
+          this.regresarAPaso1(); 
+        }
+      });
+
+    } else {
+      // =========================================================
+      // CAMINO 2: PACIENTE REGISTRADO (Usa el endpoint Normal)
+      // =========================================================
+      const payloadNormal = {
+        idPaciente: this.citaForm.idPaciente, // Mandamos el ID directo, sin buscar DNIs
+        idMedico: Number(this.citaForm.idMedico),
+        idEspecialidad: Number(this.citaForm.idEspecialidad),
+        fecha: this.citaForm.fecha,
+        hora: this.citaForm.hora.length === 5 ? `${this.citaForm.hora}:00` : this.citaForm.hora,
+        motivoConsulta: this.citaForm.motivoConsulta,
+        tipoCita: this.citaForm.tipoCita,
+        estado: 'CONFIRMADA' // IMPORTANTE: Como ya pasó por la pantalla de Yape, nace confirmada
+      };
+
+      this.citaService.programarCita(payloadNormal).subscribe({
+        next: () => {
+          this.mostrarMensajeGlobal('¡Cita programada con éxito para el paciente registrado!', 'success');
+          this.closeModal();
+          this.cargarCitas();
+        },
+        error: (err) => {
+          this.errorModalMsg = this.extraerMensajeError(err, 'Error al programar la cita normal.');
+          this.regresarAPaso1(); 
+        }
+      });
+    }
   }
 
   abrirModalCancelar(cita: any): void {
