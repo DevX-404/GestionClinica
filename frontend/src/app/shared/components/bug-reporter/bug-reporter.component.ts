@@ -33,12 +33,20 @@ export class BugReporterComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    // Al cargar, buscamos el ID del usuario en silencio para tenerlo listo
-    const username = localStorage.getItem('username');
+    const username = localStorage.getItem('username') || sessionStorage.getItem('username');
+    
     if (username) {
       this.usuarioService.obtenerPerfil(username).subscribe({
-        next: (user: any) => this.idUsuarioActual = user.idUsuario
+        next: (user: any) => {
+          this.idUsuarioActual = user.idUsuario;
+        },
+        error: (err) => {
+          console.error("Error al obtener perfil para reporte:", err);
+          this.errorMsg = "No se pudo validar tu identidad para enviar el reporte.";
+        }
       });
+    } else {
+      this.errorMsg = "Debes iniciar sesión para reportar un error.";
     }
   }
 
