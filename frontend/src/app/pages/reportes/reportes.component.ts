@@ -7,6 +7,11 @@ import { forkJoin } from 'rxjs';
 import { CitaMedicaService } from '../../shared/services/cita-medica.service';
 import { PagoService } from '../../shared/services/pago.service';
 
+import * as XLSX from 'xlsx-js-style';
+import { saveAs } from 'file-saver';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
 @Component({
   selector: 'app-reportes',
   standalone: true,
@@ -233,11 +238,84 @@ export class ReportesComponent implements OnInit {
     }, 4000);
   }
 
+  // ==========================================
+  // EXPORTAR A PDF
+  // ==========================================
   exportarPDF() {
-    alert('Preparando motor PDF para reporte corporativo...');
+    const doc = new jsPDF();
+
+    // 1. Título del Reporte
+    doc.setFontSize(18);
+    doc.setTextColor(17, 24, 39); // Gris oscuro
+    doc.text('Reporte Gerencial - CixClinic', 14, 22);
+
+    // 2. Resumen de Métricas
+    doc.setFontSize(11);
+    doc.setTextColor(107, 114, 128); // Gris claro
+    doc.text(`Rango de Evaluación: ${this.rangoFechas.replace('_', ' ')}`, 14, 32);
+    
+    doc.setFontSize(12);
+    doc.setTextColor(22, 163, 74); // Verde para ingresos
+    doc.text(`Total Recaudado: S/ ${this.totalIngresos.toFixed(2)}`, 14, 42);
+    
+    doc.setTextColor(37, 99, 235); // Azul para citas
+    doc.text(`Total Citas Registradas: ${this.totalCitasFiltro}`, 14, 50);
+
+    // 3. Título de la tabla
+    doc.setFontSize(14);
+    doc.setTextColor(17, 24, 39);
+    doc.text('Top Pacientes Frecuentes', 14, 65);
+
+    // 4. Armar la tabla
+    const tableBody = this.pacientesFrecuentes.map(p => [
+      p.nombre,
+      p.dni,
+      p.totalCitas.toString()
+    ]);
+
+    autoTable(doc, {
+      startY: 70,
+      head: [['Paciente', 'DNI', 'Atenciones Totales']],
+      body: tableBody,
+      theme: 'grid',
+      headStyles: { fillColor: [59, 130, 246] } // Color azul tipo Tailwind
+    });
+
+    // 5. Descargar el archivo
+    doc.save(`CixClinic_Reporte_${new Date().getTime()}.pdf`);
+    this.mostrarMensajeGlobal('PDF exportado correctamente.', 'success');
   }
 
   exportarExcel() {
-    alert('Compilando filas para exportación a Excel...');
+    // 1. Crear los datos del resumen
+    const resumenData = [
+      { Metrica: 'Clínica', Valor: 'CixClinic' },
+      { Metrica: 'Filtro Aplicado', Valor: this.rangoFechas },
+      { Metrica: 'Total Recaudado (S/)', Valor: this.totalIngresos.toFixed(2) },
+      { Metrica: 'Total Citas Registradas', Valor: this.totalCitasFiltro }
+    ];
+
+    // 2. Crear los datos de los pacientes
+    const pacientesData = this.pacientesFrecuentes.map(p => ({
+      'Nombre del Paciente': p.nombre,
+      'Documento (DNI)': p.dni,
+      'Cantidad de Citas': p.totalCitas
+    }));
+
+    // 3. Crear el libro de Excel y las hojas
+    const wb: XLSX.WorkBook = XLSX.utils.book_new();
+    const wsResumen: XLSX.WorkSheet = XLSX.utils.json_to_sheet(resumenData);
+    const wsPacientes: XLSX.WorkSheet = XLSX.utils.json_to_sheet(pacientesData);
+
+    // 4. Agregar las hojas al archivo
+    XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen Gerencial');
+    XLSX.utils.book_append_sheet(wb, wsPacientes, 'Pacientes Frecuentes');
+
+    // 5. Descargar el archivo
+    const excelBuffer: any = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const data: Blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+    saveAs(data, `CixClinic_Reporte_${new Date().getTime()}.xlsx`);
+    
+    this.mostrarMensajeGlobal('Excel exportado correctamente.', 'success');
   }
 }

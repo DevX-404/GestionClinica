@@ -10,11 +10,16 @@
       <p class="text-sm text-gray-500">Trazabilidad de seguridad de las operaciones del sistema.</p>
     </div>
 
-    <!-- BOTÓN EXPORTAR EXCEL -->
+    <!-- BOTONES EXPORTAR -->
     <div class="flex items-center gap-3">
       <button (click)="exportarExcel()" class="flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 transition-colors shadow-sm">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
         Exportar Excel
+      </button>
+
+      <button (click)="exportarPDF()" class="flex items-center justify-center gap-2 rounded-lg bg-red-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-red-700 transition-colors shadow-sm">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        Exportar PDF
       </button>
     </div>
   </div>
@@ -22,7 +27,7 @@
   <!-- CONTENEDOR DATA-TABLE -->
   <div class="rounded-2xl border border-gray-200 bg-white shadow-theme-xl dark:border-gray-800 dark:bg-gray-900 overflow-hidden mb-6">
     
-    <!-- CONTROLES SUPERIORES (Mostrar X entradas y Buscador) -->
+    <!-- CONTROLES SUPERIORES -->
     <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-center gap-4">
       
       <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
@@ -51,7 +56,6 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
       </div>
-
     </div>
 
     <!-- TABLA DE LOGS -->
@@ -71,7 +75,6 @@
           @if (isLoading) {
             <tr><td colspan="5" class="px-6 py-10 text-center text-sm font-medium text-brand-500 animate-pulse">Analizando trazas de seguridad...</td></tr>
           } @else {
-            <!-- Iteramos sobre logsPaginados -->
             @for (log of logsPaginados; track log.idAuditoria) {
               <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.01]">
                 <td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-gray-300 whitespace-nowrap">
@@ -100,7 +103,7 @@
       </table>
     </div>
 
-    <!-- CONTROLES INFERIORES (Paginación Footer) -->
+    <!-- CONTROLES INFERIORES -->
     <div *ngIf="!isLoading" class="p-4 border-t border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-center gap-4 bg-white dark:bg-gray-900 text-sm text-gray-600 dark:text-gray-400">
       <div>
         Mostrando {{ calcularRangoInicio() }} a {{ calcularRangoFin() }} de {{ logsFiltrados.length }} entradas
@@ -114,6 +117,5 @@
         </button>
       </div>
     </div>
-
   </div>
 </div>
