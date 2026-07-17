@@ -147,7 +147,8 @@ export class AgendaComponent implements OnInit {
 
   cargarCitasDelDia(): void {
     this.isLoading = true;
-    const usernameLogueado = localStorage.getItem('username') || sessionStorage.getItem('username') || '';
+    // Le añadimos el .toLowerCase() al final para que coincida a la perfección
+    const usernameLogueado = (localStorage.getItem('username') || sessionStorage.getItem('username') || '').toLowerCase();
 
     this.citaService.listarTodas().subscribe((data: any[]) => {
       const rolActual = localStorage.getItem('rol') || sessionStorage.getItem('rol') || 'RECEPCIONISTA';
