@@ -170,11 +170,11 @@ export class AgendaComponent implements OnInit {
         extendedProps: { citaCompleta: cita }
       }));
 
-      const fechaLocal = new Date();
-      const year = fechaLocal.getFullYear();
-      const month = String(fechaLocal.getMonth() + 1).padStart(2, '0');
-      const day = String(fechaLocal.getDate()).padStart(2, '0');
-      const hoy = `${year}-${month}-${day}`; 
+      const fechaPeru = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Lima"}));
+      const year = fechaPeru.getFullYear();
+      const month = String(fechaPeru.getMonth() + 1).padStart(2, '0');
+      const day = String(fechaPeru.getDate()).padStart(2, '0');
+      const hoy = `${year}-${month}-${day}`;
       // ==============================================================
 
       this.citasDelDia = citasDelMedico.filter(c => c.fecha === hoy);
@@ -225,6 +225,18 @@ export class AgendaComponent implements OnInit {
   }
 
   seleccionarCita(cita: any): void {
+
+    const fechaPeru = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Lima"}));
+    const year = fechaPeru.getFullYear();
+    const month = String(fechaPeru.getMonth() + 1).padStart(2, '0');
+    const day = String(fechaPeru.getDate()).padStart(2, '0');
+    const hoyPeru = `${year}-${month}-${day}`;
+
+    if (cita.fecha !== hoyPeru) {
+      this.mostrarMensajeGlobal(`Solo puedes atender citas de hoy (${hoyPeru}). Esta cita está programada para el ${cita.fecha}.`, 'error');
+      return;
+    }
+
     if (cita.estado !== 'EN_ESPERA') {
       this.mostrarMensajeGlobal(`No puedes iniciar. El paciente ${cita.nombreCompletoPaciente || ''} debe estar EN ESPERA.`, 'error');
       return;
@@ -401,10 +413,35 @@ export class AgendaComponent implements OnInit {
   quitarMedicamento(index: number): void { this.detallesReceta.splice(index, 1); }
 
   guardarTodo(): void {
-    if (this.sintomasTags.length === 0 || this.diagnosticos.length === 0) {
-      this.mostrarMensajeGlobal('Por favor, ingresa al menos un síntoma y un diagnóstico CIE-10.', 'warning');
+    // 1. RECOPILAR QUÉ CAMPOS FALTAN
+    const camposFaltantes = [];
+    if (!this.consultaForm.motivo || this.consultaForm.motivo.trim() === '') {
+      camposFaltantes.push('Motivo de Consulta');
+    }
+    if (this.sintomasTags.length === 0) {
+      camposFaltantes.push('Síntomas');
+    }
+    if (this.diagnosticos.length === 0) {
+      camposFaltantes.push('Diagnóstico CIE-10');
+    }
+
+    // 2. SI FALTAN CAMPOS, AVISAR Y MOVER A LA PESTAÑA CORRESPONDIENTE
+    if (camposFaltantes.length > 0) {
+      this.pestanaActiva = 'CONSULTA'; // Redirige a la pestaña de diagnóstico
+      this.cdr.detectChanges();
+      this.mostrarMensajeGlobal(`No se puede finalizar. Faltan completar: ${camposFaltantes.join(', ')}.`, 'warning');
       return;
     }
+
+    // 3. PREVENCIÓN DE ERROR COMÚN EN RECETAS:
+    // Si el médico escribió un medicamento pero olvidó presionar el botón "Añadir"
+    if (this.nuevoMedicamento.medicamento && this.nuevoMedicamento.medicamento.trim() !== '') {
+      this.pestanaActiva = 'RECETA'; // Redirige a la pestaña de receta
+      this.cdr.detectChanges();
+      this.mostrarMensajeGlobal('Tienes un medicamento escrito pero no lo has añadido. Presiona "Añadir" o bórralo para continuar.', 'warning');
+      return;
+    }
+
     if (this.isSaving) return;
     this.isSaving = true;
 
@@ -440,9 +477,10 @@ export class AgendaComponent implements OnInit {
               this.mostrarMensajeGlobal('¡Atención y receta médica guardadas con éxito!', 'success');
               this.volverAgenda();
             },
-            error: () => {
+            error: (err) => { // Capturamos el error real del backend si falla la receta
               this.isSaving = false;
-              this.mostrarMensajeGlobal('Se guardó la consulta, pero ocurrió un problema con la receta.', 'warning');
+              const msgBackend = err?.error?.message || err?.error || 'Se guardó la consulta, pero ocurrió un problema con la receta.';
+              this.mostrarMensajeGlobal(msgBackend, 'warning');
               this.volverAgenda();
             }
           });
@@ -452,9 +490,10 @@ export class AgendaComponent implements OnInit {
           this.volverAgenda();
         }
       },
-      error: () => {
+      error: (err) => { // Capturamos el error real del backend si falla la consulta
         this.isSaving = false;
-        this.mostrarMensajeGlobal('Ocurrió un error al registrar la atención médica.', 'error');
+        const msgBackend = err?.error?.message || err?.error || 'Ocurrió un error al registrar la atención médica en la base de datos.';
+        this.mostrarMensajeGlobal(msgBackend, 'error');
       }
     });
   }
