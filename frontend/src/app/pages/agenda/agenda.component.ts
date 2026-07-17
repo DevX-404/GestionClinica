@@ -169,7 +169,13 @@ export class AgendaComponent implements OnInit {
         extendedProps: { citaCompleta: cita }
       }));
 
-      const hoy = new Date().toISOString().split('T')[0];
+      const fechaLocal = new Date();
+      const year = fechaLocal.getFullYear();
+      const month = String(fechaLocal.getMonth() + 1).padStart(2, '0');
+      const day = String(fechaLocal.getDate()).padStart(2, '0');
+      const hoy = `${year}-${month}-${day}`; 
+      // ==============================================================
+
       this.citasDelDia = citasDelMedico.filter(c => c.fecha === hoy);
       this.filtrarListasDelDia();
       this.isLoading = false;
