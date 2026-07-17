@@ -88,17 +88,43 @@ export class IncidenciasComponent implements OnInit {
     this.respuestaAdmin = ticket.respuestaAdmin || '';
     this.nuevoEstado = ticket.estado;
     
-    // Parsear el JSON de imágenes si existe
     this.evidenciasArray = [];
     if (ticket.evidenciasJson) {
       try {
-        this.evidenciasArray = JSON.parse(ticket.evidenciasJson);
+        const parsed = JSON.parse(ticket.evidenciasJson);
+        if (Array.isArray(parsed)) {
+          this.evidenciasArray = parsed;
+        } else if (typeof parsed === 'string') {
+          this.evidenciasArray = [parsed];
+        }
       } catch (e) {
-        console.error("Error al leer evidencias", e);
+        if (ticket.evidenciasJson.includes('data:image')) {
+          this.evidenciasArray = [ticket.evidenciasJson];
+        } else {
+          console.error("Error al leer evidencias", e);
+        }
       }
     }
     
     this.isTicketModalOpen = true;
+  }
+
+  verImagenCompleta(base64Str: string): void {
+    const w = window.open("");
+    if (w) {
+        const img = new Image();
+        img.src = base64Str;
+        img.style.maxWidth = "100%";
+        
+        w.document.title = "Evidencia Adjunta - Soporte TI";
+        w.document.body.appendChild(img);
+        w.document.body.style.margin = "0";
+        w.document.body.style.backgroundColor = "#111827"; 
+        w.document.body.style.display = "flex";
+        w.document.body.style.justifyContent = "center";
+        w.document.body.style.alignItems = "center";
+        w.document.body.style.height = "100vh";
+    }
   }
 
   cerrarTicket(): void {

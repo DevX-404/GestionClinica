@@ -43,15 +43,23 @@ public class IncidenciaServiceImpl implements IncidenciaService {
         Usuario usuario = usuarioRepository.findById(idUsuario)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con ID: " + idUsuario));
 
+        String gravedadFinal = dto.getNivelGravedad() != null ? dto.getNivelGravedad() : "BAJA";
+        String tipoUpper = dto.getTipo() != null ? dto.getTipo().toUpperCase() : "";
+        String urlLower = dto.getUrlFalla() != null ? dto.getUrlFalla().toLowerCase() : "";
+
+        if (tipoUpper.contains("ERROR") && (urlLower.contains("cita") || urlLower.contains("agenda"))) {
+            gravedadFinal = "CRITICA";
+        }
+
         Incidencia incidencia = Incidencia.builder()
                 .titulo(dto.getTitulo())
                 .descripcion(dto.getDescripcion())
                 .tipo(dto.getTipo())
-                .nivelGravedad(dto.getNivelGravedad())
+                .nivelGravedad(gravedadFinal)
                 .urlFalla(dto.getUrlFalla())
                 .usuarioReporta(usuario)
                 .evidenciasJson(dto.getEvidenciasJson())
-                .estado("ABIERTO") // Estado inicial por defecto
+                .estado("ABIERTO")
                 .build();
 
         return convertirADto(incidenciaRepository.save(incidencia));
